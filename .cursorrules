@@ -1,0 +1,297 @@
+# Commercial-Grade Enterprise ERP System - Cursor Rules
+
+## Project Identity
+You are a Senior Full-Stack ERP Architect building a commercial-grade, multi-tenant ERP system with a single codebase supporting three product tiers (L1/L2/L3). Use End-Game Architecture principles: build the correct structure from Day 1 to avoid future refactoring.
+
+## Core Tech Stack
+
+### Frontend
+- **React 18+** with **TypeScript** (strict mode)
+- **Vite** for build tooling
+- **TanStack Router** for type-safe routing
+- **Zustand** for global state management
+- **TanStack Query** for server state and caching
+- **Tailwind CSS** + **shadcn/ui** for UI components
+- **Recharts** for data visualization
+- **React-to-Print** for document printing
+
+### Backend
+- **Node.js** with **Fastify** framework
+- **TypeScript** (shared types with frontend via monorepo)
+- **Prisma ORM** with PostgreSQL
+- **Redis** for caching and sessions
+- **Bull** for background job queues
+- **Winston** for structured logging
+
+### AI Services
+- **Python/FastAPI microservice** for Scikit-learn (L2 tier)
+- **Ollama API client** for GenAI chat assistant (L3 tier)
+
+### Database
+- **PostgreSQL 15+** with Row-Level Security (RLS)
+- Multi-tenancy via `tenant_id` column in all tables
+- Optional schema isolation for Enterprise (L3) clients
+
+---
+
+## Project Structure
+
+```
+erp-system/
+├── apps/
+│   ├── web/                      # React frontend (Vite)
+│   ├── api/                      # Fastify backend
+│   └── ai-service/               # Python FastAPI (Scikit-learn)
+├── packages/
+│   ├── database/                 # Prisma schema and migrations
+│   ├── shared-types/             # Shared TypeScript types
+│   ├── ui/                       # Shared UI components (shadcn/ui)
+│   ├── license/                  # License validation logic
+│   └── config/                   # Shared configs (ESLint, TS, etc.)
+├── docker-compose.yml
+├── turbo.json                    # Turborepo config
+└── package.json
+```
+
+---
+
+## Architecture Patterns
+
+### 1. Multi-Tenancy Implementation
+- **Default: Row-Level Security (RLS)** - All tables include `tenant_id UUID NOT NULL`
+- **Enterprise Option: Schema per tenant** - For L3 clients requiring maximum isolation
+- **Tenant Context**: Extract from JWT, inject into all queries via Prisma middleware
+- **Database indexes**: Composite indexes on `(tenant_id, id)` for performance
+
+```typescript
+// Example Prisma middleware for tenant isolation
+prisma.$use(async (params, next) => {
+  const tenantId = getTenantFromContext();
+  if (params.model && TENANT_ISOLATED_MODELS.includes(params.model)) {
+    if (params.action === 'findMany' || params.action === 'findFirst') {
+      params.args.where = { ...params.args.where, tenantId };
+    }
+  }
+  return next(params);
+});
+```
+
+### 2. License System Architecture
+- **License keys**: Encrypted JWT with tier info, expiration, and feature flags
+- **Validation**: Middleware on both frontend (UI hiding) and backend (enforcement)
+- **Feature flags**: Stored in `license_features` table, cached in Redis
+- **Tier enforcement**: Decorator/middleware pattern
+
+```typescript
+// Example tier enforcement
+@RequiresTier(['L2', 'L3'])
+async function getPredictiveForecast(req, reply) {
+  // L2/L3 only feature
+}
+```
+
+### 3. Feature Tier Structure
+- **L1 (Standard)**: Core CRUD, inventory, basic reports
+- **L2 (Professional)**: L1 + Predictive AI (Scikit-learn)
+- **L3 (Enterprise)**: L2 + GenAI Chat Assistant (Ollama) + Schema isolation option
+
+---
+
+## UI/UX Patterns
+
+### Layout System
+- **Collapsible Sidebar**:
+  - Expanded: `[Logo] Application Name` + collapse icon (right-aligned)
+  - Collapsed: `[Logo]` only (click logo to expand)
+  - Active menu item: Visually integrated with content (border-right removed, background continues)
+  - Use Zustand for sidebar state persistence
+
+```typescript
+// Sidebar state management
+interface SidebarStore {
+  isCollapsed: boolean;
+  toggle: () => void;
+}
+
+// Active menu integration CSS
+.menu-item-active {
+  @apply bg-primary/10 border-r-0 relative;
+  &::after {
+    content: '';
+    @apply absolute right-0 top-0 bottom-0 w-1 bg-primary;
+  }
+}
+```
+
+### Modal/Popup Pattern (Invoice Example)
+- **Two-column layout**: Left = form, Right = live preview
+- **Real-time preview**: Use controlled form state + debounced updates
+- **Print workflow**: 
+  1. User fills form → 2. Clicks print → 3. Browser print dialog → 4. After print confirmation, trigger inventory deduction
+  - Use `react-to-print` with `onAfterPrint` callback
+
+```typescript
+const handleAfterPrint = useCallback(async () => {
+  // Only deduct inventory after actual print
+  await deductInventoryMutation.mutateAsync(orderItems);
+}, [orderItems]);
+```
+
+### Design System
+- **Modern aesthetic**: Clean, spacious, data-dense where needed
+- **shadcn/ui components**: Button, Dialog, Form, Table, Select, etc.
+- **Color scheme**: 
+  - Primary: Professional blue (`hsl(221, 83%, 53%)`)
+  - Accent: Success green, Warning amber, Error red
+  - Neutral grays for backgrounds
+- **Typography**: Inter font family
+- **Spacing**: Tailwind's default scale (4px base unit)
+- **Dark mode**: Respect system preference via CSS variables
+
+---
+
+## Code Standards
+
+### TypeScript
+- **Strict mode enabled**: No implicit `any`, strict null checks
+- **Shared types**: Define in `packages/shared-types`, export for both frontend/backend
+- **Naming conventions**:
+  - PascalCase: Components, Types, Interfaces
+  - camelCase: functions, variables, props
+  - UPPER_SNAKE_CASE: constants, env variables
+  - kebab-case: file names
+
+### React Components
+- **Functional components** with hooks only (no class components)
+- **Component structure**:
+  ```typescript
+  // 1. Imports
+  // 2. Types/Interfaces
+  // 3. Component definition
+  // 4. Hooks (useState, useEffect, custom hooks)
+  // 5. Handlers
+  // 6. Early returns (loading, error states)
+  // 7. Main JSX
+  // 8. Export
+  ```
+- **Prop destructuring** in function signature
+- **Explicit return types** for components returning JSX.Element
+
+### API Design
+- **RESTful conventions**: 
+  - `GET /api/v1/products` - List
+  - `POST /api/v1/products` - Create
+  - `GET /api/v1/products/:id` - Get single
+  - `PATCH /api/v1/products/:id` - Update
+  - `DELETE /api/v1/products/:id` - Delete
+- **Response format**:
+  ```typescript
+  {
+    success: boolean;
+    data?: T;
+    error?: { code: string; message: string; };
+    meta?: { page: number; total: number; }; // For paginated results
+  }
+  ```
+- **Error handling**: Use Fastify error handler with standard HTTP codes
+
+### Database
+- **Prisma schema conventions**:
+  - `id` (UUID, default `uuid()`)
+  - `tenantId` (UUID, indexed)
+  - `createdAt` (DateTime, default `now()`)
+  - `updatedAt` (DateTime, `@updatedAt`)
+  - `deletedAt` (DateTime?, nullable for soft deletes)
+- **Indexes**: Add indexes for foreign keys and query filters
+- **Migrations**: Descriptive names, never edit after deployment
+
+---
+
+## Security & Performance
+
+### Authentication & Authorization
+- **JWT tokens**: Access token (15min) + Refresh token (7 days)
+- **Token payload**: `{ userId, tenantId, tier, permissions[] }`
+- **Role-based access**: Admin, Manager, User roles per tenant
+- **API protection**: All routes require authentication except `/auth/*`
+
+### Performance
+- **Query optimization**: Use Prisma `select` to fetch only needed fields
+- **Pagination**: Required for list endpoints (default 50, max 100)
+- **Caching**: Redis for session data, computed reports, license info
+- **Background jobs**: Use Bull queues for AI predictions, bulk operations
+
+### Security
+- **Input validation**: Use Zod schemas for all API inputs
+- **SQL injection**: Prevented by Prisma (parameterized queries)
+- **XSS**: React escapes by default, sanitize rich text with DOMPurify
+- **CSRF**: SameSite cookies + CSRF tokens for state-changing operations
+- **Rate limiting**: 100 req/min per IP, 1000 req/min per authenticated user
+
+---
+
+## Testing Strategy
+- **Frontend**: Vitest + React Testing Library
+- **Backend**: Vitest + Supertest for API tests
+- **E2E**: Playwright for critical user flows
+- **Coverage target**: 70%+ for business logic
+
+---
+
+## Environment Variables
+
+```env
+# Backend (.env)
+DATABASE_URL=postgresql://...
+REDIS_URL=redis://...
+JWT_SECRET=...
+JWT_REFRESH_SECRET=...
+OLLAMA_API_URL=http://localhost:11434
+AI_SERVICE_URL=http://localhost:8000
+LICENSE_ENCRYPTION_KEY=...
+
+# Frontend (.env)
+VITE_API_BASE_URL=http://localhost:3000
+VITE_APP_NAME=ERP System
+```
+
+---
+
+## Development Workflow
+1. **Branch naming**: `feature/`, `bugfix/`, `hotfix/`
+2. **Commits**: Conventional commits (`feat:`, `fix:`, `refactor:`, etc.)
+3. **PR requirements**: Pass CI (lint, type-check, tests), 1 approval
+4. **Code review focus**: Architecture adherence, security, performance
+
+---
+
+## Key Principles
+1. **No premature optimization** - Profile before optimizing
+2. **Type safety everywhere** - If it compiles, it probably works
+3. **DRY but readable** - Abstraction should clarify, not obscure
+4. **Fail fast** - Validate inputs early, throw descriptive errors
+5. **Mobile-responsive** - All UI must work on tablets (1024px+)
+6. **Accessibility** - WCAG 2.1 AA compliance (semantic HTML, ARIA labels, keyboard nav)
+
+---
+
+## AI Integration Notes
+- **L2 Tier**: Scikit-learn predictions via Python service (async jobs)
+- **L3 Tier**: Ollama chat assistant with system context about ERP data
+- **Error handling**: Graceful degradation if AI services unavailable
+- **Timeouts**: 30s for predictions, 60s for chat responses
+
+---
+
+## Deployment
+- **Docker Compose** for local development
+- **Kubernetes** recommended for production (multi-tenant scaling)
+- **Database migrations**: Run via CI/CD before deployment
+- **Zero-downtime**: Blue-green deployment pattern
+
+---
+
+## Documentation Requirements
+- **API**: OpenAPI/Swagger spec auto-generated from Fastify
+- **Components**: Storybook for UI component library
+- **Architecture**: Maintain ADRs (Architecture Decision Records) in `/docs/adr/`

@@ -1,0 +1,412 @@
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { ArrowLeft, FileText, MoreHorizontal, Plus, Search, Send } from 'lucide-react';
+import { useCallback, useState } from 'react';
+
+import { EInvoiceStatusBadge, type EInvoiceStatus } from '@/components/einvoice';
+import { InvoiceModal, type InvoiceFormData } from '@/components/invoice';
+import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+
+export const Route = createFileRoute('/_dashboard/invoices')({
+  component: InvoicesPage,
+});
+
+// Mock invoice data with e-Invoice status
+const mockInvoices = [
+  {
+    id: '1',
+    invoiceNumber: 'INV-2312-00045',
+    customer: 'Acme Corporation',
+    amount: 1250.0,
+    status: 'paid',
+    issueDate: '2024-12-01',
+    dueDate: '2024-12-31',
+    eInvoiceId: 'ei-001',
+    eInvoiceStatus: 'VALID' as EInvoiceStatus,
+    lhdnUuid: 'ABC123XYZ456',
+  },
+  {
+    id: '2',
+    invoiceNumber: 'INV-2312-00044',
+    customer: 'TechStart Inc.',
+    amount: 890.0,
+    status: 'pending',
+    issueDate: '2024-12-03',
+    dueDate: '2025-01-02',
+    eInvoiceId: 'ei-002',
+    eInvoiceStatus: 'SUBMITTED' as EInvoiceStatus,
+    lhdnUuid: 'DEF789GHI012',
+  },
+  {
+    id: '3',
+    invoiceNumber: 'INV-2312-00043',
+    customer: 'Global Systems',
+    amount: 2340.0,
+    status: 'overdue',
+    issueDate: '2024-11-15',
+    dueDate: '2024-12-15',
+    eInvoiceId: 'ei-003',
+    eInvoiceStatus: 'ERROR' as EInvoiceStatus,
+  },
+  {
+    id: '4',
+    invoiceNumber: 'INV-2312-00042',
+    customer: 'Local Store',
+    amount: 456.0,
+    status: 'paid',
+    issueDate: '2024-11-20',
+    dueDate: '2024-12-20',
+    eInvoiceId: undefined,
+    eInvoiceStatus: undefined,
+  },
+  {
+    id: '5',
+    invoiceNumber: 'INV-2312-00041',
+    customer: 'Smart Solutions',
+    amount: 1780.0,
+    status: 'draft',
+    issueDate: '2024-12-05',
+    dueDate: '2025-01-04',
+    eInvoiceId: 'ei-005',
+    eInvoiceStatus: 'DRAFT' as EInvoiceStatus,
+  },
+];
+
+const statusStyles = {
+  paid: 'bg-success/10 text-success',
+  pending: 'bg-warning/10 text-warning',
+  overdue: 'bg-destructive/10 text-destructive',
+  draft: 'bg-muted text-muted-foreground',
+};
+
+function InvoicesPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filter, setFilter] = useState<string>('');
+
+  // Handle saving invoice (draft)
+  const handleSave = useCallback(async (data: InvoiceFormData) => {
+    console.log('💾 Saving invoice as draft:', data);
+    // TODO: Call API to save invoice
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }, []);
+
+  // Handle print complete - this is where inventory deduction happens
+  const handlePrintComplete = useCallback(async (data: InvoiceFormData) => {
+    console.log('🖨️ Invoice printed, deducting inventory...');
+    
+    // Deduct inventory for each item
+    for (const item of data.items) {
+      console.log(`📦 Deducting ${item.quantity} x ${item.productName} (${item.sku}) from inventory`);
+      
+      // TODO: Call API to deduct inventory
+      // await api.post('/api/v1/inventory/deduct', {
+      //   productId: item.productId,
+      //   quantity: item.quantity,
+      //   reference: invoiceNumber,
+      //   referenceType: 'invoice',
+      // });
+    }
+
+    // TODO: Update invoice status to 'sent' or 'pending'
+    // await api.patch(`/api/v1/invoices/${invoiceId}`, { status: 'pending' });
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    console.log('✅ Inventory deducted successfully!');
+  }, []);
+
+  // E-Invoice handlers
+  const handleSubmitEInvoice = useCallback(async (invoiceId: string) => {
+    console.log('📤 Creating and submitting e-Invoice for:', invoiceId);
+    // TODO: Call API to create and submit e-Invoice
+    // await api.post('/api/v1/einvoices', { invoiceId });
+    // await api.post(`/api/v1/einvoices/${eInvoiceId}/submit`);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    console.log('✅ E-Invoice submitted successfully!');
+  }, []);
+
+  const handleSyncEInvoice = useCallback(async (eInvoiceId: string) => {
+    console.log('🔄 Syncing e-Invoice status:', eInvoiceId);
+    // TODO: Call API to sync e-Invoice status
+    // await api.post(`/api/v1/einvoices/${eInvoiceId}/sync`);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log('✅ E-Invoice status synced!');
+  }, []);
+
+  const handleCancelEInvoice = useCallback(async (eInvoiceId: string, reason: string) => {
+    console.log('❌ Cancelling e-Invoice:', eInvoiceId, 'Reason:', reason);
+    // TODO: Call API to cancel e-Invoice
+    // await api.post(`/api/v1/einvoices/${eInvoiceId}/cancel`, { reason });
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log('✅ E-Invoice cancelled!');
+  }, []);
+
+  const handleRetryEInvoice = useCallback(async (eInvoiceId: string) => {
+    console.log('🔁 Retrying e-Invoice submission:', eInvoiceId);
+    // TODO: Call API to retry e-Invoice
+    // await api.post(`/api/v1/einvoices/${eInvoiceId}/retry`);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    console.log('✅ E-Invoice retry submitted!');
+  }, []);
+
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Invoices"
+        description="Manage and track your invoices"
+        actions={
+          <div className="flex gap-2">
+            <Link to="/orders">
+              <Button variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Orders
+              </Button>
+            </Link>
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Invoice
+            </Button>
+          </div>
+        }
+      />
+
+      {/* Search and filters */}
+      <DashboardCard className="mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Search invoices..."
+              className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-4 text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">All Status</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </div>
+        </div>
+      </DashboardCard>
+
+      {/* Invoices table */}
+      <DashboardCard>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b text-left text-sm text-muted-foreground">
+                <th className="pb-3 font-medium">Invoice</th>
+                <th className="pb-3 font-medium">Customer</th>
+                <th className="pb-3 font-medium">Issue Date</th>
+                <th className="pb-3 font-medium">Due Date</th>
+                <th className="pb-3 font-medium text-right">Amount</th>
+                <th className="pb-3 font-medium">Status</th>
+                <th className="pb-3 font-medium">E-Invoice</th>
+                <th className="pb-3 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {mockInvoices.map((invoice) => (
+                <tr
+                  key={invoice.id}
+                  className="border-b last:border-0 table-row-hover"
+                >
+                  <td className="py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <FileText className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="font-medium">{invoice.invoiceNumber}</span>
+                    </div>
+                  </td>
+                  <td className="py-4">{invoice.customer}</td>
+                  <td className="py-4 text-muted-foreground">
+                    {new Date(invoice.issueDate).toLocaleDateString()}
+                  </td>
+                  <td className="py-4 text-muted-foreground">
+                    {new Date(invoice.dueDate).toLocaleDateString()}
+                  </td>
+                  <td className="py-4 text-right font-medium">
+                    ${invoice.amount.toFixed(2)}
+                  </td>
+                  <td className="py-4">
+                    <span
+                      className={cn(
+                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize',
+                        statusStyles[invoice.status as keyof typeof statusStyles]
+                      )}
+                    >
+                      {invoice.status}
+                    </span>
+                  </td>
+                  <td className="py-4">
+                    <TooltipProvider>
+                      <div className="flex items-center gap-2">
+                        {invoice.eInvoiceStatus ? (
+                          <>
+                            <EInvoiceStatusBadge 
+                              status={invoice.eInvoiceStatus} 
+                              size="sm" 
+                            />
+                            {invoice.lhdnUuid && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="text-xs text-muted-foreground cursor-help">
+                                    {invoice.lhdnUuid.slice(0, 8)}...
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>LHDN UUID: {invoice.lhdnUuid}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1 text-xs"
+                            onClick={() => handleSubmitEInvoice(invoice.id)}
+                          >
+                            <Send className="h-3 w-3" />
+                            Submit
+                          </Button>
+                        )}
+                      </div>
+                    </TooltipProvider>
+                  </td>
+                  <td className="py-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon-sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>View</DropdownMenuItem>
+                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem>Download PDF</DropdownMenuItem>
+                        <DropdownMenuItem>Send Email</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>Record Payment</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {/* E-Invoice Actions */}
+                        {invoice.eInvoiceStatus === 'SUBMITTED' && (
+                          <DropdownMenuItem onClick={() => handleSyncEInvoice(invoice.eInvoiceId!)}>
+                            Sync E-Invoice Status
+                          </DropdownMenuItem>
+                        )}
+                        {(invoice.eInvoiceStatus === 'ERROR' || invoice.eInvoiceStatus === 'INVALID') && (
+                          <DropdownMenuItem onClick={() => handleRetryEInvoice(invoice.eInvoiceId!)}>
+                            Retry E-Invoice
+                          </DropdownMenuItem>
+                        )}
+                        {invoice.eInvoiceStatus === 'VALID' && (
+                          <DropdownMenuItem 
+                            onClick={() => handleCancelEInvoice(invoice.eInvoiceId!, 'User requested cancellation')}
+                            className="text-destructive"
+                          >
+                            Cancel E-Invoice
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive">
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="mt-4 flex items-center justify-between border-t pt-4">
+          <p className="text-sm text-muted-foreground">
+            Showing 1 to 5 of 5 invoices
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled>
+              Previous
+            </Button>
+            <Button variant="outline" size="sm" disabled>
+              Next
+            </Button>
+          </div>
+        </div>
+      </DashboardCard>
+
+      {/* Invoice Modal */}
+      <InvoiceModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSave={handleSave}
+        onPrintComplete={handlePrintComplete}
+        mode="create"
+      />
+
+      {/* Info cards about workflows */}
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        {/* Print workflow */}
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+            🖨️ Print Workflow
+          </h3>
+          <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+            When you print an invoice, inventory is automatically deducted after the print
+            dialog is confirmed.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+            <span>Fill form</span>
+            <span>→</span>
+            <span>Print</span>
+            <span>→</span>
+            <span className="font-medium">Inventory deducted ✓</span>
+          </div>
+        </div>
+
+        {/* E-Invoice workflow */}
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
+          <h3 className="font-semibold text-green-900 dark:text-green-100">
+            🧾 LHDN E-Invoice Workflow
+          </h3>
+          <p className="mt-1 text-sm text-green-700 dark:text-green-300">
+            Submit invoices to LHDN MyInvois for tax compliance. Configure your API credentials
+            in Settings → E-Invoice.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-green-600 dark:text-green-400">
+            <span>Submit</span>
+            <span>→</span>
+            <span>Validation</span>
+            <span>→</span>
+            <span className="font-medium">Valid ✓</span>
+          </div>
+        </div>
+      </div>
+    </PageContainer>
+  );
+}
+
