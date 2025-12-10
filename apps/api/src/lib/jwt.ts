@@ -66,17 +66,70 @@ export interface JwtConfig {
 }
 
 /**
+ * Minimum secret length for security
+ */
+const MIN_SECRET_LENGTH = 32;
+
+/**
+ * Cached JWT config to avoid repeated validation
+ */
+let cachedConfig: JwtConfig | null = null;
+
+/**
  * Get JWT configuration from environment
+ * Throws an error if secrets are not properly configured in production
  */
 export function getJwtConfig(): JwtConfig {
-  return {
-    accessSecret: process.env.JWT_SECRET || 'change-this-secret-in-production',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'change-this-refresh-secret',
+  // Return cached config if available
+  if (cachedConfig) {
+    return cachedConfig;
+  }
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const accessSecret = process.env.JWT_SECRET;
+  const refreshSecret = process.env.JWT_REFRESH_SECRET;
+
+  // In production, require properly configured secrets
+  if (isProduction) {
+    if (!accessSecret || accessSecret.length < MIN_SECRET_LENGTH) {
+      throw new Error(
+        `JWT_SECRET environment variable must be set with at least ${MIN_SECRET_LENGTH} characters in production`
+      );
+    }
+    if (!refreshSecret || refreshSecret.length < MIN_SECRET_LENGTH) {
+      throw new Error(
+        `JWT_REFRESH_SECRET environment variable must be set with at least ${MIN_SECRET_LENGTH} characters in production`
+      );
+    }
+  }
+
+  // In development, use defaults but log a warning
+  const finalAccessSecret = accessSecret || 'dev-only-jwt-secret-not-for-production-use';
+  const finalRefreshSecret = refreshSecret || 'dev-only-refresh-secret-not-for-production';
+
+  if (!isProduction && (!accessSecret || !refreshSecret)) {
+    console.warn(
+      '⚠️  WARNING: Using default JWT secrets. Set JWT_SECRET and JWT_REFRESH_SECRET environment variables for security.'
+    );
+  }
+
+  cachedConfig = {
+    accessSecret: finalAccessSecret,
+    refreshSecret: finalRefreshSecret,
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     issuer: process.env.JWT_ISSUER || 'erp-system',
     audience: process.env.JWT_AUDIENCE || 'erp-api',
   };
+
+  return cachedConfig;
+}
+
+/**
+ * Clear cached JWT config (useful for testing)
+ */
+export function clearJwtConfigCache(): void {
+  cachedConfig = null;
 }
 
 /**

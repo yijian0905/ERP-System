@@ -16,6 +16,7 @@ import {
   verifyRefreshToken,
 } from '../lib/jwt.js';
 import { logger } from '../lib/logger.js';
+import { prisma } from '../lib/prisma.js';
 
 // Validation schemas
 const loginSchema = z.object({
@@ -28,126 +29,185 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });
 
-// Mock users for development (replace with database queries)
-// Note: Password hash is generated at runtime for "password123"
-let MOCK_USERS_PASSWORD_HASH = '$2a$10$rGqOG.xSRKF3xvT0.qC1QODq7L5m/BuL3LY1xE1qZ5zV6Y.bT5KIi';
+/**
+ * Find user by email from database
+ */
+async function findUserByEmail(email: string) {
+  const user = await prisma.user.findFirst({
+    where: {
+      email,
+      isActive: true,
+      deletedAt: null,
+    },
+    include: {
+      tenant: true,
+      customRole: {
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
-// Generate fresh hash on startup (temporary for debugging)
-bcrypt.hash('password123', 10).then(hash => {
-  MOCK_USERS_PASSWORD_HASH = hash;
-  logger.info('[AUTH] Generated fresh password hash for development users');
-  logger.info(`[AUTH] Hash: ${hash}`);
-});
+  return user;
+}
 
-const MOCK_USERS = [
-  {
-    id: '550e8400-e29b-41d4-a716-446655440000',
-    email: 'admin@demo-company.com',
-    name: 'Admin User',
-    get password() { return MOCK_USERS_PASSWORD_HASH; }, // Dynamic hash
-    role: 'ADMIN' as const,
-    tenantId: '550e8400-e29b-41d4-a716-446655440001',
-    tenantName: 'Demo Company',
-    tier: 'L2' as const,
-    permissions: [
-      'users:view', 'users:create', 'users:update', 'users:delete',
-      'products:view', 'products:create', 'products:update', 'products:delete',
-      'inventory:view', 'inventory:adjust', 'inventory:transfer',
-      'customers:view', 'customers:create', 'customers:update', 'customers:delete',
-      'suppliers:view', 'suppliers:create', 'suppliers:update', 'suppliers:delete',
-      'orders:view', 'orders:create', 'orders:update', 'orders:delete', 'orders:approve',
-      'invoices:view', 'invoices:create', 'invoices:update', 'invoices:delete', 'invoices:send',
-      'payments:view', 'payments:create', 'payments:update',
-      'reports:view', 'reports:export',
-      'settings:view', 'settings:update',
-      'ai:predictions',
-    ],
-    isActive: true,
-  },
-  // L3 Enterprise Test Account
-  {
-    id: '550e8400-e29b-41d4-a716-446655440010',
-    email: 'admin@enterprise.test',
-    name: 'Enterprise Admin',
-    get password() { return MOCK_USERS_PASSWORD_HASH; }, // Dynamic hash
-    role: 'ADMIN' as const,
-    tenantId: '550e8400-e29b-41d4-a716-446655440011',
-    tenantName: 'Enterprise Corp',
-    tier: 'L3' as const,
-    permissions: [
-      // Standard permissions (using dot notation to match frontend)
-      'dashboard.view',
+/**
+ * Find user by ID from database
+ */
+async function findUserById(id: string) {
+  const user = await prisma.user.findFirst({
+    where: {
+      id,
+      isActive: true,
+      deletedAt: null,
+    },
+    include: {
+      tenant: true,
+      customRole: {
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return user;
+}
+
+/**
+ * Get user permissions from custom role or default role
+ */
+function getUserPermissions(user: Awaited<ReturnType<typeof findUserByEmail>>): string[] {
+  if (!user) return [];
+
+  // If user has custom role with permissions, use those
+  if (user.customRole?.permissions) {
+    return user.customRole.permissions.map(rp => rp.permission.code);
+  }
+
+  // Otherwise, use default permissions based on role
+  const defaultPermissions: Record<string, string[]> = {
+    ADMIN: [
       'users.view', 'users.create', 'users.update', 'users.delete',
       'products.view', 'products.create', 'products.edit', 'products.delete',
       'inventory.view', 'inventory.adjust', 'inventory.transfer',
-      'warehouses.view', 'warehouses.manage',
       'customers.view', 'customers.create', 'customers.edit', 'customers.delete',
       'suppliers.view', 'suppliers.manage',
       'orders.view', 'orders.create', 'orders.edit', 'orders.cancel',
       'invoices.view', 'invoices.create', 'invoices.print',
       'payments.view', 'payments.record',
-      'purchasing.view', 'purchasing.create', 'purchasing.approve',
-      'requisitions.view', 'requisitions.create', 'requisitions.approve',
-      'cost-centers.view', 'cost-centers.manage',
-      'assets.view', 'assets.manage',
-      'recurring.view', 'recurring.manage',
       'reports.view', 'reports.export',
-      'forecasting.view',
       'settings.view', 'settings.edit', 'settings.users', 'settings.company',
-      // L3 Enterprise exclusive features
-      'ai.chat', // L3 GenAI Chat Assistant
-      'audit.view', // L3 Audit logs
+      'audit.view',
     ],
-    isActive: true,
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440002',
-    email: 'manager@demo-company.com',
-    name: 'Manager User',
-    get password() { return MOCK_USERS_PASSWORD_HASH; }, // Dynamic hash
-    role: 'MANAGER' as const,
-    tenantId: '550e8400-e29b-41d4-a716-446655440001',
-    tenantName: 'Demo Company',
-    tier: 'L2' as const,
-    permissions: [
-      'users:view',
-      'products:view', 'products:create', 'products:update',
-      'inventory:view', 'inventory:adjust', 'inventory:transfer',
-      'customers:view', 'customers:create', 'customers:update',
-      'suppliers:view', 'suppliers:create', 'suppliers:update',
-      'orders:view', 'orders:create', 'orders:update', 'orders:approve',
-      'invoices:view', 'invoices:create', 'invoices:update', 'invoices:send',
-      'payments:view', 'payments:create',
-      'reports:view', 'reports:export',
-      'ai:predictions',
+    MANAGER: [
+      'users.view',
+      'products.view', 'products.create', 'products.edit',
+      'inventory.view', 'inventory.adjust', 'inventory.transfer',
+      'customers.view', 'customers.create', 'customers.edit',
+      'suppliers.view', 'suppliers.manage',
+      'orders.view', 'orders.create', 'orders.edit',
+      'invoices.view', 'invoices.create', 'invoices.print',
+      'payments.view', 'payments.record',
+      'reports.view', 'reports.export',
     ],
-    isActive: true,
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440003',
-    email: 'user@demo-company.com',
-    name: 'Regular User',
-    get password() { return MOCK_USERS_PASSWORD_HASH; }, // Dynamic hash
-    role: 'USER' as const,
-    tenantId: '550e8400-e29b-41d4-a716-446655440001',
-    tenantName: 'Demo Company',
-    tier: 'L2' as const,
-    permissions: [
-      'products:view',
-      'inventory:view',
-      'customers:view', 'customers:create',
-      'suppliers:view',
-      'orders:view', 'orders:create',
-      'invoices:view', 'invoices:create',
-      'payments:view',
-      'reports:view',
+    USER: [
+      'products.view',
+      'inventory.view',
+      'customers.view', 'customers.create',
+      'suppliers.view',
+      'orders.view', 'orders.create',
+      'invoices.view', 'invoices.create',
+      'payments.view',
+      'reports.view',
     ],
-    isActive: true,
-  },
-];
+    VIEWER: [
+      'products.view',
+      'inventory.view',
+      'customers.view',
+      'suppliers.view',
+      'orders.view',
+      'invoices.view',
+      'payments.view',
+      'reports.view',
+    ],
+  };
 
-// In-memory refresh token store (replace with Redis in production)
-const refreshTokenStore = new Map<string, { userId: string; family: string; expiresAt: number }>();
+  return defaultPermissions[user.role] || [];
+}
+
+/**
+ * Store refresh token in database
+ */
+async function storeRefreshToken(
+  userId: string,
+  token: string,
+  family: string,
+  expiresAt: Date,
+  request: FastifyRequest
+) {
+  await prisma.refreshToken.create({
+    data: {
+      userId,
+      token,
+      userAgent: request.headers['user-agent'] || null,
+      ipAddress: request.ip || null,
+      expiresAt,
+    },
+  });
+}
+
+/**
+ * Get refresh token from database
+ */
+async function getRefreshToken(token: string) {
+  return prisma.refreshToken.findUnique({
+    where: { token },
+  });
+}
+
+/**
+ * Delete refresh token from database
+ */
+async function deleteRefreshToken(token: string) {
+  await prisma.refreshToken.delete({
+    where: { token },
+  }).catch(() => {
+    // Ignore if token doesn't exist
+  });
+}
+
+/**
+ * Delete all refresh tokens for a user
+ */
+async function deleteAllUserRefreshTokens(userId: string) {
+  const result = await prisma.refreshToken.deleteMany({
+    where: { userId },
+  });
+  return result.count;
+}
+
+/**
+ * Clean up expired refresh tokens (should be run periodically)
+ */
+async function cleanupExpiredTokens() {
+  await prisma.refreshToken.deleteMany({
+    where: {
+      expiresAt: {
+        lt: new Date(),
+      },
+    },
+  });
+}
 
 export async function authRoutes(fastify: FastifyInstance) {
   /**
@@ -200,22 +260,11 @@ export async function authRoutes(fastify: FastifyInstance) {
             },
           },
         },
-      } as any,
+      },
     },
     async (request: FastifyRequest<{ Body: LoginRequest }>, reply: FastifyReply) => {
-      logger.info('[AUTH] Login request received', { //debug log
-        email: request.body?.email, //debug log
-        hasPassword: !!request.body?.password, //debug log
-        ip: request.ip, //debug log
-        userAgent: request.headers['user-agent'], //debug log
-        origin: request.headers.origin, //debug log
-      }); //debug log
-
       const validation = loginSchema.safeParse(request.body);
       if (!validation.success) {
-        logger.warn('[AUTH] Validation failed', { //debug log
-          errors: validation.error.errors, //debug log
-        }); //debug log
         return reply.status(400).send({
           success: false,
           error: {
@@ -226,15 +275,9 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       const { email, password } = validation.data;
-      logger.info('[AUTH] Validation successful, looking up user', { email }); //debug log
 
-      // Find user (replace with database query)
-      const user = MOCK_USERS.find((u) => u.email === email);
-      logger.info('[AUTH] User lookup result', { //debug log
-        email, //debug log
-        found: !!user, //debug log
-        availableUsers: MOCK_USERS.map(u => u.email), //debug log
-      }); //debug log
+      // Find user from database
+      const user = await findUserByEmail(email);
 
       if (!user) {
         logger.warn(`Login attempt for unknown email: ${email}`);
@@ -259,26 +302,35 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Check if account is locked
+      if (user.lockedUntil && user.lockedUntil > new Date()) {
+        logger.warn(`Login attempt for locked account: ${email}`);
+        return reply.status(401).send({
+          success: false,
+          error: {
+            code: 'ACCOUNT_LOCKED',
+            message: 'Your account is temporarily locked. Please try again later.',
+          },
+        });
+      }
+
       // Verify password
-      logger.info('[AUTH] Verifying password', { //debug log
-        email, //debug log
-        passwordLength: password.length, //debug log
-        passwordPreview: password.substring(0, 3) + '...', //debug log
-        storedHashPreview: user.password.substring(0, 20) + '...', //debug log
-      }); //debug log
-      
       const isValidPassword = await bcrypt.compare(password, user.password);
-      
-      logger.info('[AUTH] Password verification result', { //debug log
-        email, //debug log
-        isValid: isValidPassword, //debug log
-        providedPassword: password, //debug log - REMOVE IN PRODUCTION!
-        storedHash: user.password, //debug log - REMOVE IN PRODUCTION!
-      }); //debug log
 
       if (!isValidPassword) {
-        /*logger.warn(`Failed login attempt for: ${email}`);*/ //after delete debug log, bring back this line
-        logger.warn(`[AUTH] Failed login attempt for: ${email}`); //debug log
+        // Increment failed login count
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedLogins: { increment: 1 },
+            // Lock account after 5 failed attempts for 15 minutes
+            lockedUntil: user.failedLogins >= 4
+              ? new Date(Date.now() + 15 * 60 * 1000)
+              : null,
+          },
+        });
+
+        logger.warn(`Failed login attempt for: ${email}`);
         return reply.status(401).send({
           success: false,
           error: {
@@ -288,10 +340,21 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Reset failed login count and update last login
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLogins: 0,
+          lockedUntil: null,
+          lastLoginAt: new Date(),
+          lastLoginIp: request.ip,
+        },
+      });
+
       // Generate tokens
-      logger.info('[AUTH] Generating tokens', { email }); //debug log
       const config = getJwtConfig();
       const family = generateTokenFamily();
+      const permissions = getUserPermissions(user);
 
       const tokens = generateTokenPair(
         {
@@ -299,30 +362,20 @@ export async function authRoutes(fastify: FastifyInstance) {
           tid: user.tenantId,
           email: user.email,
           role: user.role,
-          tier: user.tier,
-          permissions: user.permissions,
+          tier: user.tenant.tier,
+          permissions,
         },
         family,
         config
       );
 
-      // Store refresh token (replace with database/Redis)
-      const refreshExpiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-      refreshTokenStore.set(tokens.refreshToken, {
-        userId: user.id,
-        family,
-        expiresAt: refreshExpiresAt,
-      });
+      // Store refresh token in database
+      const refreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      await storeRefreshToken(user.id, tokens.refreshToken, family, refreshExpiresAt, request);
 
-      /*logger.info(`User logged in: ${email}`);*/ //after delete debug log, bring back this line
-      logger.info(`[AUTH] User logged in successfully: ${email}`, { //debug log
-        userId: user.id, //debug log
-        role: user.role, //debug log
-        tier: user.tier, //debug log
-        tenantId: user.tenantId, //debug log
-      }); //debug log
-      /*return reply.send({*/ //after delete debug log, bring back this line
-      const responseData = { //debug log
+      logger.info(`User logged in: ${email}`);
+
+      return reply.send({
         success: true,
         data: {
           accessToken: tokens.accessToken,
@@ -332,23 +385,15 @@ export async function authRoutes(fastify: FastifyInstance) {
             id: user.id,
             email: user.email,
             name: user.name,
-            avatar: null,
+            avatar: user.avatar,
             role: user.role,
             tenantId: user.tenantId,
-            tenantName: user.tenantName,
-            tier: user.tier,
-            permissions: user.permissions,
+            tenantName: user.tenant.name,
+            tier: user.tenant.tier,
+            permissions,
           },
         },
-      }; //debug log
-
-      logger.info('[AUTH] Sending login response', { //debug log
-        hasAccessToken: !!responseData.data.accessToken, //debug log
-        hasRefreshToken: !!responseData.data.refreshToken, //debug log
-        userId: responseData.data.user.id, //debug log
       });
-
-      return reply.send(responseData); //debug log
     }
   );
 
@@ -372,7 +417,7 @@ export async function authRoutes(fastify: FastifyInstance) {
             refreshToken: { type: 'string' },
           },
         },
-      } as any,
+      },
     },
     async (request: FastifyRequest<{ Body: RefreshTokenRequest }>, reply: FastifyReply) => {
       const validation = refreshSchema.safeParse(request.body);
@@ -390,12 +435,12 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       try {
         const config = getJwtConfig();
-        
+
         // Verify refresh token
         const decoded = verifyRefreshToken(refreshToken, config);
 
-        // Check if token is in store (not revoked)
-        const storedToken = refreshTokenStore.get(refreshToken);
+        // Check if token exists in database (not revoked)
+        const storedToken = await getRefreshToken(refreshToken);
         if (!storedToken) {
           logger.warn(`Refresh token not found or revoked for user: ${decoded.sub}`);
           return reply.status(401).send({
@@ -407,29 +452,20 @@ export async function authRoutes(fastify: FastifyInstance) {
           });
         }
 
-        // Check if token family matches (detect token reuse attacks)
-        if (storedToken.family !== decoded.family) {
-          // Possible token reuse attack - revoke all tokens in family
-          logger.warn(`Token family mismatch - possible reuse attack for user: ${decoded.sub}`);
-          
-          // Revoke all tokens for this user
-          for (const [token, data] of refreshTokenStore.entries()) {
-            if (data.userId === decoded.sub) {
-              refreshTokenStore.delete(token);
-            }
-          }
-
+        // Check if token has expired
+        if (storedToken.expiresAt < new Date()) {
+          await deleteRefreshToken(refreshToken);
           return reply.status(401).send({
             success: false,
             error: {
-              code: 'TOKEN_REUSED',
-              message: 'Security alert: Please login again',
+              code: 'TOKEN_EXPIRED',
+              message: 'Refresh token has expired. Please login again.',
             },
           });
         }
 
-        // Get user data (replace with database query)
-        const user = MOCK_USERS.find((u) => u.id === decoded.sub);
+        // Get user data from database
+        const user = await findUserById(decoded.sub);
         if (!user) {
           return reply.status(401).send({
             success: false,
@@ -441,30 +477,28 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
 
         // Delete old refresh token (rotation)
-        refreshTokenStore.delete(refreshToken);
+        await deleteRefreshToken(refreshToken);
 
         // Generate new token pair
         const newFamily = generateTokenFamily();
+        const permissions = getUserPermissions(user);
+
         const tokens = generateTokenPair(
           {
             sub: user.id,
             tid: user.tenantId,
             email: user.email,
             role: user.role,
-            tier: user.tier,
-            permissions: user.permissions,
+            tier: user.tenant.tier,
+            permissions,
           },
           newFamily,
           config
         );
 
         // Store new refresh token
-        const refreshExpiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
-        refreshTokenStore.set(tokens.refreshToken, {
-          userId: user.id,
-          family: newFamily,
-          expiresAt: refreshExpiresAt,
-        });
+        const refreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await storeRefreshToken(user.id, tokens.refreshToken, newFamily, refreshExpiresAt, request);
 
         return reply.send({
           success: true,
@@ -475,7 +509,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           },
         });
       } catch (error) {
-        logger.warn('Refresh token verification failed', { error });
+        logger.warn('Refresh token verification failed');
 
         if (error instanceof Error && error.name === 'TokenExpiredError') {
           return reply.status(401).send({
@@ -520,8 +554,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const { refreshToken } = request.body || {};
 
       if (refreshToken) {
-        // Revoke the specific refresh token
-        refreshTokenStore.delete(refreshToken);
+        await deleteRefreshToken(refreshToken);
         logger.info('Refresh token revoked');
       }
 
@@ -543,7 +576,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         description: 'Logout from all devices',
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      },
       preHandler: async (request, reply) => {
         // This route requires authentication
         const authHeader = request.headers.authorization;
@@ -562,14 +595,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const user = request.user;
 
       if (user) {
-        // Revoke all tokens for this user
-        let revokedCount = 0;
-        for (const [token, data] of refreshTokenStore.entries()) {
-          if (data.userId === user.sub) {
-            refreshTokenStore.delete(token);
-            revokedCount++;
-          }
-        }
+        const revokedCount = await deleteAllUserRefreshTokens(user.sub);
         logger.info(`Revoked ${revokedCount} refresh tokens for user: ${user.sub}`);
       }
 
@@ -591,7 +617,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         description: 'Get current authenticated user info',
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      },
       preHandler: async (request, reply) => {
         const authHeader = request.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
@@ -633,8 +659,8 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Get full user data (replace with database query)
-      const user = MOCK_USERS.find((u) => u.id === tokenPayload.sub);
+      // Get full user data from database
+      const user = await findUserById(tokenPayload.sub);
 
       if (!user) {
         return reply.status(404).send({
@@ -646,18 +672,20 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
+      const permissions = getUserPermissions(user);
+
       return reply.send({
         success: true,
         data: {
           id: user.id,
           email: user.email,
           name: user.name,
-          avatar: null,
+          avatar: user.avatar,
           role: user.role,
           tenantId: user.tenantId,
-          tenantName: user.tenantName,
-          tier: user.tier,
-          permissions: user.permissions,
+          tenantName: user.tenant.name,
+          tier: user.tenant.tier,
+          permissions,
         },
       });
     }

@@ -6,11 +6,53 @@ import swaggerUi from '@fastify/swagger-ui';
 import Fastify from 'fastify';
 import type { FastifyRequest } from 'fastify';
 
-import { errorHandler } from './lib/error-handler.js';
+import { errorHandler, notFoundHandler } from './lib/error-handler.js';
 import { logger } from './lib/logger.js';
 import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
 import { v1Routes } from './routes/v1/index.js';
+
+/**
+ * Parse and validate CORS origins from environment variable
+ */
+function parseCorsOrigins(): string[] | boolean {
+  const corsEnv = process.env.CORS_ORIGIN;
+
+  // Default to localhost in development
+  if (!corsEnv) {
+    return ['http://localhost:5173', 'http://localhost:3000'];
+  }
+
+  // Allow all origins with '*' (not recommended for production)
+  if (corsEnv === '*') {
+    if (process.env.NODE_ENV === 'production') {
+      logger.warn('⚠️  WARNING: CORS_ORIGIN is set to "*" in production. This is not recommended.');
+    }
+    return true;
+  }
+
+  // Parse comma-separated list of origins
+  const origins = corsEnv.split(',').map((origin) => origin.trim()).filter(Boolean);
+
+  // Validate each origin
+  const validOrigins: string[] = [];
+  for (const origin of origins) {
+    try {
+      // Validate URL format
+      new URL(origin);
+      validOrigins.push(origin);
+    } catch {
+      logger.warn(`Invalid CORS origin ignored: ${origin}`);
+    }
+  }
+
+  if (validOrigins.length === 0) {
+    logger.warn('No valid CORS origins found, using default');
+    return ['http://localhost:5173'];
+  }
+
+  return validOrigins;
+}
 
 export async function buildServer() {
   const server = Fastify({
@@ -23,8 +65,9 @@ export async function buildServer() {
     contentSecurityPolicy: false, // Disable for API
   });
 
+  const corsOrigins = parseCorsOrigins();
   await server.register(cors, {
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
+    origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
@@ -134,15 +177,7 @@ export async function buildServer() {
   await server.register(v1Routes, { prefix: '/api/v1' });
 
   // 404 handler
-  server.setNotFoundHandler(async (request, reply) => {
-    return reply.status(404).send({
-      success: false,
-      error: {
-        code: 'NOT_FOUND',
-        message: `Route ${request.method} ${request.url} not found`,
-      },
-    });
-  });
+  server.setNotFoundHandler(notFoundHandler);
 
   return server;
 }

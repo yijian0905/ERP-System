@@ -6,12 +6,15 @@ import type {
   UpdateProductRequest,
 } from '@erp/shared-types';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { randomUUID } from 'crypto';
 import { z } from 'zod';
 
 import { getTenantId } from '../../middleware/auth.js';
 import { requireFeature, requireTier } from '../../middleware/license.js';
 import { forecastDemand, checkAIServiceHealth } from '../../services/ai/index.js';
 import { logger } from '../../lib/logger.js';
+import { uuidSchema } from '../../lib/validation.js';
+import type { RouteSchema } from '../../lib/schema-types.js';
 import {
   mockProducts as globalMockProducts,
 } from '../../data/mock-data.js';
@@ -72,7 +75,7 @@ export async function productsRoutes(fastify: FastifyInstance) {
             search: { type: 'string' },
           },
         },
-      } as any,
+      } satisfies RouteSchema,
     },
     async (request, reply) => {
       const params = paginationSchema.parse(request.query);
@@ -130,12 +133,24 @@ export async function productsRoutes(fastify: FastifyInstance) {
             id: { type: 'string' },
           },
         },
-      } as any,
+      } satisfies RouteSchema,
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
-      const tenantId = getTenantId(request);
 
+      // Validate ID format
+      const idValidation = uuidSchema.safeParse(id);
+      if (!idValidation.success) {
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: 'INVALID_ID',
+            message: 'Invalid product ID format',
+          },
+        });
+      }
+
+      const tenantId = getTenantId(request);
       const product = mockProducts.find((p) => p.id === id && p.tenantId === tenantId);
 
       if (!product) {
@@ -184,7 +199,7 @@ export async function productsRoutes(fastify: FastifyInstance) {
             maxStock: { type: 'number' },
           },
         },
-      } as any,
+      } satisfies RouteSchema,
     },
     async (request: FastifyRequest<{ Body: CreateProductRequest }>, reply: FastifyReply) => {
       const validation = createProductSchema.safeParse(request.body);
@@ -217,7 +232,7 @@ export async function productsRoutes(fastify: FastifyInstance) {
       const { category, ...productData } = validation.data;
 
       const newProduct: Product = {
-        id: String(mockProducts.length + 1),
+        id: randomUUID(),
         tenantId,
         categoryId: category || null,
         barcode: null,
@@ -256,7 +271,7 @@ export async function productsRoutes(fastify: FastifyInstance) {
         description: 'Update a product',
         tags: ['Products'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } satisfies RouteSchema,
     },
     async (
       request: FastifyRequest<{ Params: { id: string }; Body: UpdateProductRequest }>,
@@ -320,7 +335,7 @@ export async function productsRoutes(fastify: FastifyInstance) {
         description: 'Delete a product (soft delete)',
         tags: ['Products'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } satisfies RouteSchema,
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
@@ -375,7 +390,7 @@ export async function productsRoutes(fastify: FastifyInstance) {
             includeConfidence: { type: 'boolean', default: false },
           },
         },
-      } as any,
+      } satisfies RouteSchema,
       // Require L2 tier for this endpoint
       preHandler: [requireTier('L2', 'L3'), requireFeature('demandForecasting')],
     },
@@ -490,7 +505,7 @@ export async function productsRoutes(fastify: FastifyInstance) {
         description: 'Get advanced product analytics (L2+ feature)',
         tags: ['Products', 'Analytics'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } satisfies RouteSchema,
       preHandler: [requireTier('L2', 'L3'), requireFeature('advancedReports')],
     },
     async (_request, reply) => {
@@ -530,7 +545,7 @@ export async function productsRoutes(fastify: FastifyInstance) {
         description: 'Generate AI product description (L3 feature)',
         tags: ['Products', 'AI'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } satisfies RouteSchema,
       // Require L3 tier for this endpoint
       preHandler: [requireTier('L3'), requireFeature('aiChatAssistant')],
     },
@@ -582,7 +597,7 @@ export async function productsRoutes(fastify: FastifyInstance) {
         description: 'Get product audit log (L3 feature)',
         tags: ['Products', 'Audit'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } satisfies RouteSchema,
       preHandler: [requireTier('L3'), requireFeature('auditLogs')],
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {

@@ -44,6 +44,15 @@ export const TENANT_ISOLATED_MODELS = [
   'Payment',
   'License',
   'AuditLog',
+  // Additional models that require tenant isolation
+  'Asset',
+  'EInvoice',
+  'EInvoiceItem',
+  'EInvoiceLog',
+  'LhdnToken',
+  'LhdnCredential',
+  'CurrencyRate',
+  'RefreshToken',
 ] as const;
 
 export type TenantIsolatedModel = (typeof TENANT_ISOLATED_MODELS)[number];

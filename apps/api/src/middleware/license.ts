@@ -9,12 +9,41 @@ import type { ApiResponse, LicenseFeatures, LicenseTier } from '@erp/shared-type
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { logger } from '../lib/logger.js';
+import { prisma } from '../lib/prisma.js';
 
-// License encryption key from environment
-const LICENSE_ENCRYPTION_KEY = process.env.LICENSE_ENCRYPTION_KEY || 'default-license-key-change-in-production-32chars';
+/**
+ * Minimum key length for security
+ */
+const MIN_KEY_LENGTH = 32;
+
+/**
+ * Get license encryption key with validation
+ */
+function getLicenseEncryptionKey(): string {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const key = process.env.LICENSE_ENCRYPTION_KEY;
+
+  if (isProduction) {
+    if (!key || key.length < MIN_KEY_LENGTH) {
+      throw new Error(
+        `LICENSE_ENCRYPTION_KEY environment variable must be set with at least ${MIN_KEY_LENGTH} characters in production`
+      );
+    }
+    return key;
+  }
+
+  // In development, use default but log a warning
+  if (!key) {
+    console.warn(
+      '⚠️  WARNING: Using default license encryption key. Set LICENSE_ENCRYPTION_KEY environment variable for security.'
+    );
+  }
+
+  return key || 'dev-only-license-key-not-for-production-use';
+}
 
 // Create a singleton license validator
-const licenseValidator = createLicenseValidator(LICENSE_ENCRYPTION_KEY);
+const licenseValidator = createLicenseValidator(getLicenseEncryptionKey());
 
 // Cache for validated licenses per tenant
 const licenseCache = new Map<string, { license: ValidatedLicense; expiresAt: number }>();
@@ -32,20 +61,31 @@ declare module 'fastify' {
 
 /**
  * Get license from database for a tenant
- * This should be replaced with actual database query
  */
 async function getLicenseKeyFromDatabase(tenantId: string): Promise<string | null> {
-  // TODO: Replace with actual Prisma query
-  // const license = await prisma.license.findFirst({
-  //   where: { tenantId, isActive: true },
-  //   orderBy: { createdAt: 'desc' },
-  // });
-  // return license?.licenseKey || null;
+  try {
+    const license = await prisma.license.findFirst({
+      where: {
+        tenantId,
+        isActive: true,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
-  // For now, return a mock license key for development
-  // In production, this would query the database
-  logger.debug(`Looking up license for tenant: ${tenantId}`);
-  return null; // Will trigger demo license generation
+    if (license) {
+      logger.debug(`Found active license for tenant: ${tenantId}`);
+      return license.licenseKey;
+    }
+
+    logger.debug(`No active license found for tenant: ${tenantId}`);
+    return null;
+  } catch (error) {
+    logger.error('Error fetching license from database', { tenantId, error });
+    return null;
+  }
 }
 
 /**

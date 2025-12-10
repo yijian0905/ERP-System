@@ -6,4 +6,5 @@ export * from './license';
 export * from './entities';
 export * from './einvoice';
 export * from './currency';
+export * from './permissions';
 
