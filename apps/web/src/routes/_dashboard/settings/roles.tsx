@@ -1037,7 +1037,7 @@ function RolesManagementPage() {
           <DialogHeader>
             <DialogTitle>Delete Role</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the "{selectedRole?.displayName}" role? This action cannot be undone.
+              Are you sure you want to delete the &quot;{selectedRole?.displayName}&quot; role? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           

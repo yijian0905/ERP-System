@@ -6,7 +6,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import { getTenantId } from '../../middleware/auth.js';
-import { mockCustomers as globalMockCustomers, type MockCustomer } from '../../data/mock-data.js';
+import { mockCustomers as globalMockCustomers } from '../../data/mock-data.js';
 
 // Types
 interface Customer {

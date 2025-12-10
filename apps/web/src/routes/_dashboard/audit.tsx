@@ -416,7 +416,7 @@ function AuditLogsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{todayLogs}</p>
-              <p className="text-sm text-muted-foreground">Today's Logs</p>
+              <p className="text-sm text-muted-foreground">{"Today's Logs"}</p>
             </div>
           </div>
         </DashboardCard>

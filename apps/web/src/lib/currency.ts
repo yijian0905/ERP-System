@@ -171,7 +171,7 @@ export function parseCurrencyString(
   } else {
     // Default: remove common symbols and separators
     cleanValue = cleanValue
-      .replace(/[^0-9.,\-]/g, '')
+      .replace(/[^0-9.,-]/g, '')
       .replace(/,/g, '');
   }
 
