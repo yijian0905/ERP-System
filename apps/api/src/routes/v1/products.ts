@@ -14,11 +14,6 @@ import { forecastDemand, checkAIServiceHealth } from '../../services/ai/index.js
 import { logger } from '../../lib/logger.js';
 import {
   mockProducts as globalMockProducts,
-  filterByTenant,
-  findByIdAndTenant,
-  paginate,
-  searchProducts,
-  type MockProduct,
 } from '../../data/mock-data.js';
 
 // Validation schemas

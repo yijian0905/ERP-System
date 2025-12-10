@@ -617,7 +617,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
       const params = paginationSchema.parse(request.query);
       const tenantId = getTenantId(request);
 
-      let filteredRates = mockExchangeRates.filter((r) => 
+      const filteredRates = mockExchangeRates.filter((r) => 
         r.tenantId === tenantId && (!params.activeOnly || r.isActive)
       );
 
@@ -914,7 +914,6 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
 
       // Recalculate inverse rate if rate changed
       if (data.rate !== undefined) {
-        data.rate = data.rate;
         (data as any).inverseRate = Number((1 / data.rate).toFixed(8));
       }
 
@@ -1058,7 +1057,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
       // Find exchange rate
       const targetDate = date ? new Date(date) : new Date();
       
-      let exchangeRate = mockExchangeRates.find(
+      const exchangeRate = mockExchangeRates.find(
         (r) =>
           r.tenantId === tenantId &&
           r.fromCurrencyId === fromCurrency.id &&
@@ -1199,7 +1198,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
 
         const targetDate = date ? new Date(date) : new Date();
         
-        let exchangeRate = mockExchangeRates.find(
+        const exchangeRate = mockExchangeRates.find(
           (r) =>
             r.tenantId === tenantId &&
             r.fromCurrencyId === fromCurrency.id &&

@@ -685,7 +685,7 @@ function UsersSettingsPage() {
                       <div className="flex items-center gap-3">
                         <Checkbox
                           checked={allSelected}
-                          // @ts-ignore - indeterminate is valid but not typed
+                          // @ts-expect-error - indeterminate is valid but not typed
                           indeterminate={someSelected}
                           onCheckedChange={() => toggleCategory(categoryKey)}
                           onClick={(e) => e.stopPropagation()}

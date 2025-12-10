@@ -42,8 +42,6 @@ import { cn } from '@/lib/utils';
 import {
   forecastingApi,
   type AIInsight,
-  type ForecastPrediction,
-  type StockOptimizationResponse,
 } from '@/lib/api/forecasting';
 import {
   mockProducts,
@@ -51,7 +49,6 @@ import {
   recommendationStyles,
   forecastPeriods,
   type ForecastPeriod,
-  type RecommendationStatus,
 } from '@/lib/mock-data';
 
 export const Route = createFileRoute('/_dashboard/forecasting')({
@@ -101,7 +98,7 @@ function ForecastingPage() {
   // Data states
   const [demandForecast, setDemandForecast] = useState<DemandForecastItem[]>([]);
   const [productForecasts, setProductForecasts] = useState<ProductForecast[]>([]);
-  const [seasonalTrends, setSeasonalTrends] = useState<SeasonalTrend[]>(defaultSeasonalTrends);
+  const [seasonalTrends] = useState<SeasonalTrend[]>(defaultSeasonalTrends);
   const [insights, setInsights] = useState<AIInsight[]>([]);
   const [forecastAccuracy, setForecastAccuracy] = useState(0);
 

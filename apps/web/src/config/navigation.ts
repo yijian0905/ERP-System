@@ -13,7 +13,6 @@ import {
   Package,
   PieChart,
   Receipt,
-  RefreshCw,
   Send,
   Settings,
   ShoppingCart,

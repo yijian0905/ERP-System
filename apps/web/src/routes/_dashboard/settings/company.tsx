@@ -273,7 +273,7 @@ function CompanySettingsPage() {
                 Business Address
               </h2>
               <p className="text-sm text-muted-foreground">
-                Your company's primary address
+                {"Your company's primary address"}
               </p>
             </div>
             <div className="p-4 space-y-4">
