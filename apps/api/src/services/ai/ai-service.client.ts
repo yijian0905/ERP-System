@@ -3,7 +3,7 @@
  * Handles communication with the Python AI Service for predictive analytics
  */
 
-import { logger } from '../../lib/logger';
+import { logger } from '../../lib/logger.js';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 const AI_SERVICE_TIMEOUT = 30000; // 30 seconds

@@ -187,10 +187,12 @@ export function errorHandler(
       error: {
         code: ErrorCodes.VALIDATION_ERROR,
         message: 'Validation failed',
-        details: error.errors.map((e) => ({
-          field: e.path.join('.'),
-          message: e.message,
-        })),
+        details: {
+          errors: error.errors.map((e) => ({
+            field: e.path.join('.'),
+            message: e.message,
+          })),
+        },
       },
     };
     return reply.status(400).send(response);
@@ -283,9 +285,9 @@ export function errorHandler(
       message: statusCode >= 500 ? 'An unexpected error occurred' : error.message,
       // Include debug info in non-production
       ...(!isProduction && statusCode >= 500 && {
-        debug: {
-          name: error.name,
-          message: error.message,
+        details: {
+          errorName: error.name,
+          errorMessage: error.message,
         }
       }),
     },
