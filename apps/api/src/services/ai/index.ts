@@ -2,5 +2,5 @@
  * AI Service exports
  */
 
-export * from './ai-service.client';
+export * from './ai-service.client.js';
 

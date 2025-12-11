@@ -91,7 +91,7 @@ function getUserPermissions(user: Awaited<ReturnType<typeof findUserByEmail>>): 
 
   // If user has custom role with permissions, use those
   if (user.customRole?.permissions) {
-    return user.customRole.permissions.map(rp => rp.permission.code);
+    return user.customRole.permissions.map((rp: { permission: { code: string } }) => rp.permission.code);
   }
 
   // Otherwise, use default permissions based on role
@@ -147,11 +147,12 @@ function getUserPermissions(user: Awaited<ReturnType<typeof findUserByEmail>>): 
 
 /**
  * Store refresh token in database
+ * @param _family - Token family ID for rotation tracking (reserved for future use)
  */
 async function storeRefreshToken(
   userId: string,
   token: string,
-  family: string,
+  _family: string,
   expiresAt: Date,
   request: FastifyRequest
 ) {
@@ -198,15 +199,17 @@ async function deleteAllUserRefreshTokens(userId: string) {
 
 /**
  * Clean up expired refresh tokens (should be run periodically)
+ * This function is exported for use in scheduled jobs/cron tasks
  */
-async function cleanupExpiredTokens() {
-  await prisma.refreshToken.deleteMany({
+export async function cleanupExpiredTokens() {
+  const result = await prisma.refreshToken.deleteMany({
     where: {
       expiresAt: {
         lt: new Date(),
       },
     },
   });
+  return result.count;
 }
 
 export async function authRoutes(fastify: FastifyInstance) {
