@@ -52,8 +52,15 @@ export interface NavGroup {
 
 /**
  * Main navigation configuration
+ * Reorganized to follow logical business flow:
+ * 1. Dashboard (Overview)
+ * 2. Core Business Operations (Inventory, Sales, Purchasing)
+ * 3. Operational Management (Requisitions, Cost Centers, Assets)
+ * 4. Analytics & Intelligence (Reports, Forecasting, AI)
+ * 5. Compliance & Settings (E-Invoice, Audit, Settings)
  */
 export const navigationConfig: NavGroup[] = [
+  // ========== OVERVIEW ==========
   {
     id: 'main',
     title: 'Main',
@@ -67,9 +74,11 @@ export const navigationConfig: NavGroup[] = [
       },
     ],
   },
+
+  // ========== INVENTORY MANAGEMENT ==========
   {
     id: 'inventory',
-    title: 'Inventory',
+    title: 'Inventory Management',
     items: [
       {
         id: 'products',
@@ -118,9 +127,11 @@ export const navigationConfig: NavGroup[] = [
       },
     ],
   },
+
+  // ========== SALES & CUSTOMER MANAGEMENT ==========
   {
     id: 'sales',
-    title: 'Sales',
+    title: 'Sales & Customer',
     items: [
       {
         id: 'customers',
@@ -144,6 +155,13 @@ export const navigationConfig: NavGroup[] = [
         requiredPermissions: ['invoices.view'],
       },
       {
+        id: 'einvoice',
+        title: 'E-Invoice (LHDN)',
+        href: '/einvoice',
+        icon: FileCheck,
+        requiredPermissions: ['invoices.view'],
+      },
+      {
         id: 'payments',
         title: 'Payments',
         href: '/payments',
@@ -152,9 +170,11 @@ export const navigationConfig: NavGroup[] = [
       },
     ],
   },
+
+  // ========== PURCHASING & SUPPLIER MANAGEMENT ==========
   {
     id: 'purchasing',
-    title: 'Purchasing',
+    title: 'Purchasing & Supplier',
     items: [
       {
         id: 'suppliers',
@@ -165,6 +185,8 @@ export const navigationConfig: NavGroup[] = [
       },
     ],
   },
+
+  // ========== OPERATIONS ==========
   {
     id: 'operations',
     title: 'Operations',
@@ -192,9 +214,11 @@ export const navigationConfig: NavGroup[] = [
       },
     ],
   },
+
+  // ========== ANALYTICS & INTELLIGENCE ==========
   {
     id: 'analytics',
-    title: 'Analytics',
+    title: 'Analytics & Intelligence',
     items: [
       {
         id: 'reports',
@@ -243,15 +267,9 @@ export const navigationConfig: NavGroup[] = [
         requiredFeature: 'demandForecasting',
         requiredPermissions: ['forecasting.view'],
       },
-    ],
-  },
-  {
-    id: 'ai',
-    title: 'AI Assistant',
-    items: [
       {
         id: 'ai-chat',
-        title: 'Chat Assistant',
+        title: 'AI Assistant',
         href: '/ai/chat',
         icon: Sparkles,
         requiredTier: 'L3',
@@ -260,22 +278,11 @@ export const navigationConfig: NavGroup[] = [
       },
     ],
   },
+
+  // ========== COMPLIANCE & ADMINISTRATION ==========
   {
-    id: 'einvoice',
-    title: 'E-Invoice',
-    items: [
-      {
-        id: 'einvoice',
-        title: 'E-Invoice (LHDN)',
-        href: '/einvoice',
-        icon: FileCheck,
-        requiredPermissions: ['invoices.view'],
-      },
-    ],
-  },
-  {
-    id: 'audit',
-    title: 'Audit & Compliance',
+    id: 'compliance',
+    title: 'Compliance & Admin',
     items: [
       {
         id: 'audit-logs',
@@ -285,12 +292,6 @@ export const navigationConfig: NavGroup[] = [
         requiredTier: 'L3',
         requiredPermissions: ['audit.view'],
       },
-    ],
-  },
-  {
-    id: 'settings',
-    title: 'Settings',
-    items: [
       {
         id: 'settings',
         title: 'Settings',
