@@ -1,10 +1,14 @@
 import type { LicenseTier } from './entities';
+import type { Capability } from './capability';
+import type { AuthPolicy } from './auth-policy';
+import type { TenantBranding } from './branding';
 
 // Re-export LicenseTier for convenience
 export type { LicenseTier } from './entities';
 
 /**
  * Feature flags for license validation
+ * @deprecated Use capabilities array for new implementations
  */
 export interface LicenseFeatures {
   // L1 Features (Standard)
@@ -15,14 +19,14 @@ export interface LicenseFeatures {
   products: boolean;
   orders: boolean;
   warehouses: boolean;
-  
+
   // L2 Features (Professional)
   predictiveAnalytics: boolean;
   demandForecasting: boolean;
   advancedReports: boolean;
   multiWarehouse: boolean;
   batchTracking: boolean;
-  
+
   // L3 Features (Enterprise)
   aiChatAssistant: boolean;
   schemaIsolation: boolean;
@@ -41,7 +45,10 @@ export interface License {
   tenantId: string;
   tier: LicenseTier;
   licenseKey: string;
+  /** @deprecated Use capabilities for new implementations */
   features: LicenseFeatures;
+  /** New capability-based feature gating */
+  capabilities?: Capability[];
   maxUsers: number;
   maxProducts?: number | null;
   startsAt: string;
@@ -57,7 +64,10 @@ export interface License {
 export interface LicenseValidation {
   valid: boolean;
   tier: LicenseTier;
+  /** @deprecated Use capabilities for new implementations */
   features: LicenseFeatures;
+  /** New capability-based feature gating */
+  capabilities?: Capability[];
   startsAt: string;
   expiresAt: string;
   daysRemaining: number;
@@ -69,10 +79,37 @@ export interface LicenseValidation {
 
 /**
  * License activation request
+ * @see spec.md §6 Desktop Application Lifecycle - POST /license/activate
  */
 export interface LicenseActivationRequest {
   licenseKey: string;
+  /** Optional server URL for self-hosted deployments */
+  serverUrl?: string;
 }
+
+/**
+ * License activation response
+ * Returns License Context as per spec.md
+ */
+export interface LicenseActivationResponse {
+  success: boolean;
+  licenseContext: LicenseContext;
+}
+
+/**
+ * License Context - persisted locally on Desktop app
+ * @see spec.md §6 Desktop Application Lifecycle
+ */
+export interface LicenseContext {
+  tenantId: string;
+  capabilities: Capability[];
+  authPolicy: AuthPolicy;
+  branding: TenantBranding;
+  tier: LicenseTier;
+  expiresAt: string;
+  activatedAt: string;
+}
+
 
 /**
  * Default features by tier

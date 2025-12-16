@@ -37,17 +37,10 @@ function LoginPage() {
   } = useForm<LoginFormData>();
 
   const onSubmit = async (data: LoginFormData) => {
-    console.log('[LOGIN] Starting login process...', { //debug log 
-      email: data.email, //debug log
-      hasPassword: !!data.password, //debug log
-      rememberMe: data.rememberMe, //debug log
-    }); //debug log
-
     setIsLoading(true);
     setError(null);
 
     try {
-      console.log('[LOGIN] Sending login request to /auth/login'); //
       const response = await post<{
         accessToken: string;
         refreshToken: string;
@@ -63,22 +56,25 @@ function LoginPage() {
         };
       }>('/auth/login', data);
 
-      console.log('[LOGIN] Received response:', { //debug log
-        success: response.success, //debug log
-        hasData: !!response.data, //debug log
-        error: response.error, //debug log
-      }); //debug log
-
       if (response.success && response.data) {
         const { accessToken, refreshToken, user } = response.data;
-        console.log('[LOGIN] Login successful!', { //debug log
-          userId: user.id, //debug log
-          email: user.email, //debug log
-          role: user.role, //debug log
-          tier: user.tier, //debug log
-          hasAccessToken: !!accessToken, //debug log
-          hasRefreshToken: !!refreshToken, //debug log  
-        }); //debug log
+
+        // Calculate user permissions based on role and server response
+        // Use server permissions if provided, otherwise fall back to role-based defaults
+        let userPermissions: string[];
+        if (user.permissions && user.permissions.length > 0) {
+          // Use permissions from server (already in dot notation)
+          userPermissions = user.permissions;
+        } else if (user.role === 'ADMIN') {
+          // ADMIN gets all permissions
+          userPermissions = getAllPermissions();
+        } else if (ROLE_PERMISSIONS[user.role]) {
+          // Use role-based defaults
+          userPermissions = ROLE_PERMISSIONS[user.role];
+        } else {
+          // Fallback to empty
+          userPermissions = [];
+        }
 
         setAuth(
           {
@@ -88,55 +84,22 @@ function LoginPage() {
             role: user.role,
             tenantId: user.tenantId,
             tier: user.tier,
+            permissions: userPermissions,
           },
           accessToken,
           refreshToken
         );
 
-        // Set user permissions based on role and server response
-        // Use server permissions if provided, otherwise fall back to role-based defaults
-        let userPermissions: string[];
-        if (user.permissions && user.permissions.length > 0) {
-          // Use permissions from server (already in dot notation)
-          userPermissions = user.permissions;
-          console.log('[LOGIN] Using server-provided permissions:', userPermissions.length, userPermissions);
-        } else if (user.role === 'ADMIN') {
-          // ADMIN gets all permissions
-          userPermissions = getAllPermissions();
-          console.log('[LOGIN] Using all permissions for ADMIN');
-        } else if (ROLE_PERMISSIONS[user.role]) {
-          // Use role-based defaults
-          userPermissions = ROLE_PERMISSIONS[user.role];
-          console.log('[LOGIN] Using role-based permissions for', user.role);
-        } else {
-          // Fallback to empty
-          userPermissions = [];
-          console.log('[LOGIN] No permissions found');
-        }
         setCurrentUserPermissions(userPermissions);
 
-        console.log('[LOGIN] Navigating to /dashboard'); //debug log
         navigate({ to: '/dashboard' });
       } else {
-        /*setError(response.error?.message || 'Login failed');*/ //after delete debug log, bring back this line
-        const errorMsg = response.error?.message || 'Login failed';
-        console.error('[LOGIN] Login failed:', {
-          error: response.error,
-          errorMessage: errorMsg,
-        });
-        setError(errorMsg); //debug log
+        setError(response.error?.message || 'Login failed');
       }
     } catch (err) {
-      console.error('[LOGIN] Exception during login:', { //debug log
-        error: err, //debug log
-        errorType: err instanceof Error ? err.constructor.name : typeof err, //debug log
-        errorMessage: err instanceof Error ? err.message : String(err), //debug log
-        errorStack: err instanceof Error ? err.stack : undefined, //debug log
-      }); //debug log
       setError('Unable to connect to server. Please try again.');
     } finally {
       setIsLoading(false);
-      console.log('[LOGIN] Login process completed'); //debug log
     }
   };
 
@@ -150,7 +113,7 @@ function LoginPage() {
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }} />
         </div>
-        
+
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
           <div className="flex items-center gap-4 mb-8">
             <div className="h-14 w-14 rounded-xl bg-primary flex items-center justify-center">
@@ -170,15 +133,15 @@ function LoginPage() {
             </div>
             <span className="text-3xl font-bold text-white">ERP System</span>
           </div>
-          
+
           <h1 className="text-4xl xl:text-5xl font-bold text-white mb-4">
             Enterprise Resource
             <br />
             <span className="text-primary">Planning System</span>
           </h1>
-          
+
           <p className="text-lg text-slate-300 mb-8 max-w-md">
-            Streamline your business operations with our comprehensive ERP solution. 
+            Streamline your business operations with our comprehensive ERP solution.
             Manage inventory, orders, and customers all in one place.
           </p>
 

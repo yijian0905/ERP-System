@@ -1,0 +1,2 @@
+﻿src/routes/v1/forecasting.ts(298,12): error TS6133: 'request' is declared but its value is never read.
+src/routes/v1/forecasting.ts(340,12): error TS6133: 'request' is declared but its value is never read.

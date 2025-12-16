@@ -35,7 +35,10 @@ const refreshSchema = z.object({
 async function findUserByEmail(email: string) {
   const user = await prisma.user.findFirst({
     where: {
-      email,
+      email: {
+        equals: email,
+        mode: 'insensitive',
+      },
       isActive: true,
       deletedAt: null,
     },
@@ -354,6 +357,26 @@ export async function authRoutes(fastify: FastifyInstance) {
         },
       });
 
+      // Check if tenant has active license
+      const hasActiveLicense = await prisma.license.findFirst({
+        where: {
+          tenantId: user.tenantId,
+          isActive: true,
+          expiresAt: { gt: new Date() },
+        },
+      });
+
+      if (!hasActiveLicense) {
+        logger.warn(`Login attempt for tenant without active license: ${user.tenantId}`);
+        return reply.status(403).send({
+          success: false,
+          error: {
+            code: 'NO_ACTIVE_LICENSE',
+            message: 'Your organization does not have an active license. Please contact your administrator.',
+          },
+        });
+      }
+
       // Generate tokens
       const config = getJwtConfig();
       const family = generateTokenFamily();
@@ -592,6 +615,22 @@ export async function authRoutes(fastify: FastifyInstance) {
             },
           });
         }
+
+        // Verify the token
+        try {
+          const token = authHeader.slice(7);
+          const config = getJwtConfig();
+          const { verifyAccessToken } = await import('../lib/jwt.js');
+          request.user = verifyAccessToken(token, config);
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: {
+              code: 'INVALID_TOKEN',
+              message: 'Invalid or expired token',
+            },
+          });
+        }
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -611,13 +650,14 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   /**
    * GET /auth/me
-   * Get current user info
+   * Get current user info with capabilities, branding, and authPolicy
+   * @see spec.md §5 Login Flow - step 4
    */
   fastify.get(
     '/me',
     {
       schema: {
-        description: 'Get current authenticated user info',
+        description: 'Get current authenticated user info with capabilities and branding',
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
       },
@@ -677,18 +717,80 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       const permissions = getUserPermissions(user);
 
+      // Get tenant's active license for capabilities
+      const license = await prisma.license.findFirst({
+        where: {
+          tenantId: user.tenantId,
+          isActive: true,
+          expiresAt: { gt: new Date() },
+        },
+      });
+
+      // Map tier to capabilities (capability-based model)
+      const tierCapabilities: Record<string, Array<{ code: string; enabled: boolean }>> = {
+        L1: [
+          { code: 'erp_core', enabled: true },
+          { code: 'forecasting', enabled: false },
+          { code: 'ai_chat', enabled: false },
+          { code: 'ai_agent', enabled: false },
+          { code: 'automation_rules', enabled: false },
+        ],
+        L2: [
+          { code: 'erp_core', enabled: true },
+          { code: 'forecasting', enabled: true },
+          { code: 'ai_chat', enabled: false },
+          { code: 'ai_agent', enabled: false },
+          { code: 'automation_rules', enabled: false },
+        ],
+        L3: [
+          { code: 'erp_core', enabled: true },
+          { code: 'forecasting', enabled: true },
+          { code: 'ai_chat', enabled: true },
+          { code: 'ai_agent', enabled: false },
+          { code: 'automation_rules', enabled: false },
+        ],
+      };
+
+      const capabilities = license
+        ? tierCapabilities[license.tier] || tierCapabilities.L1
+        : tierCapabilities.L1;
+
+      // Get auth policy (default for now, TODO: store per-tenant)
+      const authPolicy = {
+        primary: 'password' as const,
+        allowPasswordFallback: true,
+        mfa: 'off' as const,
+        identifier: 'email' as const,
+      };
+
+      // Get branding (default for now, TODO: store per-tenant)
+      const branding = {
+        companyName: user.tenant.name,
+        primaryColor: '#3B82F6',
+        secondaryColor: '#1E40AF',
+        logoUrl: undefined,
+        faviconUrl: undefined,
+      };
+
       return reply.send({
         success: true,
         data: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatar: user.avatar,
-          role: user.role,
-          tenantId: user.tenantId,
-          tenantName: user.tenant.name,
-          tier: user.tenant.tier,
-          permissions,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            avatar: user.avatar,
+            role: user.role,
+            permissions,
+          },
+          tenant: {
+            id: user.tenantId,
+            name: user.tenant.name,
+            tier: user.tenant.tier,
+          },
+          capabilities,
+          branding,
+          authPolicy,
         },
       });
     }

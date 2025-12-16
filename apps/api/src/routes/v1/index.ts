@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { authMiddlewareAsync } from '../../middleware/auth.js';
 import { licenseMiddleware } from '../../middleware/license.js';
 import { auditRoutes } from './audit.js';
+import { brandingRoutes } from './branding.js';
 import { currenciesRoutes } from './currencies.js';
 import { customersRoutes } from './customers.js';
 import { einvoicesRoutes } from './einvoices.js';
@@ -31,4 +32,5 @@ export async function v1Routes(fastify: FastifyInstance) {
   await fastify.register(einvoicesRoutes, { prefix: '/einvoices' });
   await fastify.register(currenciesRoutes, { prefix: '/currencies' });
   await fastify.register(forecastingRoutes, { prefix: '/forecasting' });
+  await fastify.register(brandingRoutes, { prefix: '/tenant/branding' });
 }

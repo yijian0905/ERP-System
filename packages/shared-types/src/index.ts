@@ -5,6 +5,9 @@ export * from './license';
 export * from './entities';
 export * from './einvoice';
 export * from './currency';
+export * from './capability';
+export * from './auth-policy';
+export * from './branding';
 
 // Re-export auth types (excluding Permission to avoid conflict with permissions.ts)
 export {

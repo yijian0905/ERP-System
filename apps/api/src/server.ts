@@ -10,6 +10,7 @@ import { errorHandler, notFoundHandler } from './lib/error-handler.js';
 import { logger } from './lib/logger.js';
 import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
+import { licenseRoutes } from './routes/license.js';
 import { v1Routes } from './routes/v1/index.js';
 
 /**
@@ -97,8 +98,8 @@ export async function buildServer() {
     openapi: {
       info: {
         title: 'ERP System API',
-        description: 'Enterprise Resource Planning System API with multi-tenant support and tiered licensing (L1/L2/L3)',
-        version: '1.0.0',
+        description: 'Enterprise Resource Planning System API with multi-tenant support and capability-based licensing (BASIC/PRO/ENTERPRISE)',
+        version: '1.2.0',
         contact: {
           name: 'ERP Support',
           email: 'support@erp-system.com',
@@ -113,10 +114,12 @@ export async function buildServer() {
       tags: [
         { name: 'Health', description: 'Health check endpoints' },
         { name: 'Auth', description: 'Authentication endpoints' },
+        { name: 'License', description: 'License activation and validation' },
+        { name: 'Branding', description: 'Tenant branding configuration' },
         { name: 'Products', description: 'Product management' },
-        { name: 'Analytics', description: 'Analytics and reporting (L2+)' },
-        { name: 'AI', description: 'AI-powered features (L2/L3)' },
-        { name: 'Audit', description: 'Audit logging (L3)' },
+        { name: 'Analytics', description: 'Analytics and reporting (forecasting capability)' },
+        { name: 'AI', description: 'AI-powered features (ai_chat capability)' },
+        { name: 'Audit', description: 'Audit logging (Enterprise)' },
       ],
       components: {
         securitySchemes: {
@@ -174,6 +177,7 @@ export async function buildServer() {
   // Register routes
   await server.register(healthRoutes);
   await server.register(authRoutes, { prefix: '/auth' });
+  await server.register(licenseRoutes, { prefix: '/license' });
   await server.register(v1Routes, { prefix: '/api/v1' });
 
   // 404 handler

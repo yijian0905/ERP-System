@@ -1,11 +1,14 @@
 # 🏢 Enterprise ERP System
 
-A commercial-grade, multi-tenant Enterprise Resource Planning (ERP) system built with modern web technologies. Designed with a single codebase supporting three product tiers (L1/L2/L3), featuring predictive analytics, AI-powered assistance, and comprehensive business management tools.
+A commercial-grade, multi-tenant Enterprise Resource Planning (ERP) system built with modern web technologies. Delivered primarily as a **Desktop Application (Electron)** with a shared Web build. Monetized via **License Keys** with **capability-based** feature gating.
+
+> 📘 **Spec Version**: 1.2.0 | See [spec.md](spec.md) for full specification
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?logo=typescript)
 ![React](https://img.shields.io/badge/React-18.2-61DAFB?logo=react)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql)
+![Electron](https://img.shields.io/badge/Electron-Desktop-47848F?logo=electron)
 ![License](https://img.shields.io/badge/License-Proprietary-red)
 
 ---
@@ -33,9 +36,10 @@ This ERP system is designed for small to enterprise-level businesses requiring c
 
 - **Multi-Tenant Architecture**: Single codebase serving multiple organizations with complete data isolation
 - **Row-Level Security (RLS)**: All data is automatically filtered by `tenant_id` ensuring data privacy
-- **Tiered Licensing**: Three product tiers (L1/L2/L3) with feature gating
+- **Capability-Based Licensing**: Feature access gated by capabilities (not hard-coded tiers)
+- **Desktop + Web Delivery**: Primary Electron desktop app with shared web build for development
 - **Real-time Analytics**: Dashboard with live metrics and reporting
-- **AI Integration**: Predictive analytics (L2) and AI chat assistant (L3)
+- **Enterprise AI**: AI chat with agent-ready architecture (Enterprise tier)
 
 ### Key Business Modules
 
@@ -47,8 +51,8 @@ This ERP system is designed for small to enterprise-level businesses requiring c
 | **Invoicing & Payments** | Invoice generation, payment tracking, and accounts receivable |
 | **Supplier Management** | Supplier database, pricing, and lead time tracking |
 | **Reporting & Analytics** | Sales reports, inventory reports, and financial summaries |
-| **AI Forecasting** | Demand prediction and stock optimization (L2+) |
-| **AI Assistant** | Natural language queries and insights (L3) |
+| **AI Forecasting** | Demand prediction and stock optimization (PRO+) |
+| **AI Assistant** | Natural language queries and insights (ENTERPRISE) |
 
 ---
 
@@ -64,7 +68,7 @@ This ERP system is designed for small to enterprise-level businesses requiring c
 - 🔐 **Role-Based Access** - Admin, Manager, User, and Viewer roles
 - 🌙 **Dark Mode** - System preference detection with manual override
 
-### Professional Features (L2+)
+### Professional Features (PRO+)
 
 - 📈 **Predictive Analytics** - AI-powered demand forecasting using Scikit-learn
 - 🔮 **Stock Optimization** - Automatic reorder point suggestions
@@ -72,9 +76,9 @@ This ERP system is designed for small to enterprise-level businesses requiring c
 - 🏪 **Multi-Warehouse** - Advanced inventory distribution and transfer optimization
 - 🏷️ **Batch Tracking** - Lot numbers, expiry dates, and serial numbers
 
-### Enterprise Features (L3)
+### Enterprise Features (ENTERPRISE)
 
-- 🤖 **AI Chat Assistant** - Natural language queries powered by Ollama
+- 🤖 **AI Chat Assistant** - Natural language queries powered by Ollama (agent-ready)
 - 📝 **Audit Logs** - Complete change history for compliance
 - 🔌 **Custom Integrations** - API access and webhook support
 - 💱 **Multi-Currency** - International pricing and exchange rates
@@ -82,10 +86,24 @@ This ERP system is designed for small to enterprise-level businesses requiring c
 
 ---
 
-## 📊 License Tiers
+## 📊 Subscription Tiers & Capabilities
 
-| Feature | L1 Standard | L2 Professional | L3 Enterprise |
-|---------|:-----------:|:---------------:|:-------------:|
+> ⚠️ **Engineering Note**: Tiers are business-facing labels only. All feature enforcement is via **capabilities** returned from the server.
+
+### Capability Codes
+
+| Capability | BASIC | PRO | ENTERPRISE | Description |
+|------------|:-----:|:---:|:----------:|-------------|
+| `erp_core` | ✅ | ✅ | ✅ | Core ERP functionality |
+| `forecasting` | ❌ | ✅ | ✅ | AI-powered demand forecasting |
+| `ai_chat` | ❌ | ❌ | ✅ | AI chat assistant |
+| `ai_agent` | ❌ | ❌ | 🔒 | AI agent actions (default off) |
+| `automation_rules` | ❌ | ❌ | 🔒 | Automation rules (future) |
+
+### Feature Matrix
+
+| Feature | BASIC | PRO | ENTERPRISE |
+|---------|:-----:|:---:|:----------:|
 | Core Inventory | ✅ | ✅ | ✅ |
 | Basic Reports | ✅ | ✅ | ✅ |
 | Invoicing | ✅ | ✅ | ✅ |
@@ -139,6 +157,14 @@ This ERP system is designed for small to enterprise-level businesses requiring c
 | Scikit-learn | Predictive Analytics |
 | Ollama | LLM Chat Assistant |
 
+### Desktop (`apps/desktop`) - Future
+| Technology | Purpose |
+|------------|---------|
+| Electron | Desktop Runtime |
+| electron-builder | Packaging |
+| electron-updater | Auto Updates |
+| contextBridge | Secure IPC |
+
 ### Infrastructure
 | Technology | Purpose |
 |------------|---------|
@@ -174,12 +200,23 @@ erp-system/
 │   │   │   ├── routes/           # API routes
 │   │   │   │   ├── auth.ts       # Authentication
 │   │   │   │   ├── health.ts     # Health checks
+│   │   │   │   ├── license.ts    # License activation (NEW)
 │   │   │   │   └── v1/           # API v1 routes
-│   │   │   ├── middleware/       # Auth & License middleware
+│   │   │   │       └── branding.ts # Branding API (NEW)
+│   │   │   ├── middleware/       # Auth, License & Capability middleware
+│   │   │   │   └── capability.ts # Capability gating (NEW)
 │   │   │   └── lib/              # Utilities (JWT, logging)
 │   │   └── tsconfig.json
 │   │
-│   └── ai-service/               # Python ML Service (L2+)
+│   ├── desktop/                  # Electron App (Future)
+│   │   ├── src/
+│   │   │   ├── main/             # Main process
+│   │   │   ├── preload/          # Preload scripts
+│   │   │   └── renderer/         # Shared with web
+│   │   ├── electron-builder.yml
+│   │   └── package.json
+│   │
+│   └── ai-service/               # Python ML Service (PRO+)
 │       ├── app/
 │       ├── models/
 │       └── requirements.txt
@@ -195,8 +232,11 @@ erp-system/
 │   │   └── src/
 │   │       ├── api.ts            # API types
 │   │       ├── auth.ts           # Auth types
+│   │       ├── auth-policy.ts    # Auth policy (NEW)
+│   │       ├── branding.ts       # Branding types (NEW)
+│   │       ├── capability.ts     # Capability model (NEW)
 │   │       ├── entities.ts       # Entity types
-│   │       ├── license.ts        # License types
+│   │       ├── license.ts        # License types (updated)
 │   │       └── tenant.ts         # Tenant types
 │   │
 │   ├── license/                  # License validation
@@ -963,5 +1003,6 @@ For licensing inquiries, contact: sales@erp-system.com
 </p>
 
 
-#   E R P - S y s t e m  
+#   E R P - S y s t e m 
+ 
  
