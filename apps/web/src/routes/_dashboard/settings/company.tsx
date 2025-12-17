@@ -6,6 +6,7 @@ import { PageContainer, PageHeader } from '@/components/layout/dashboard-layout'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { patch } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { useCompany, useCompanyStore } from '@/stores/company';
 
@@ -81,15 +82,24 @@ function CompanySettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // TODO: Call API to save company data including logo
-    // const formData = new FormData();
-    // if (company.logo) {
-    //   // Convert base64 back to file if needed, or send base64 directly
-    //   formData.append('logo', company.logo);
-    // }
-    // await api.patch('/api/v1/company', company);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
+    try {
+      await patch('/v1/company', {
+        name: company.name,
+        legalName: company.legalName,
+        taxId: company.taxId,
+        email: company.email,
+        phone: company.phone,
+        website: company.website,
+        address: company.address,
+        logo: company.logo,
+      });
+      // Company data already updated in local store, API call syncs to database
+    } catch (error) {
+      console.error('Failed to save company settings:', error);
+      alert('Failed to save company settings. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

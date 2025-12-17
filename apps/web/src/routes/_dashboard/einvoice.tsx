@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle, FileText, Info } from 'lucide-react';
 
 import { LhdnSettings } from '@/components/einvoice';
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
+import { get, post, del } from '@/lib/api-client';
 
 export const Route = createFileRoute('/_dashboard/einvoice')({
   component: EInvoicePage,
@@ -20,18 +21,6 @@ interface LhdnCredential {
   isActive: boolean;
 }
 
-// Mock data - replace with actual API calls
-const mockCredential: LhdnCredential = {
-  id: 'cred-001',
-  clientId: 'my-client-id',
-  tin: 'C1234567890',
-  brn: '202001234567',
-  idType: 'BRN',
-  idValue: '202001234567',
-  environment: 'SANDBOX',
-  isActive: true,
-};
-
 function EInvoicePage() {
   const [credential, setCredential] = useState<LhdnCredential | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,13 +30,13 @@ function EInvoicePage() {
     const loadCredential = async () => {
       setIsLoading(true);
       try {
-        // TODO: Call API to get credentials
-        // const response = await api.get('/api/v1/einvoices/settings/credentials');
-        // setCredential(response.data.data);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setCredential(mockCredential);
+        const response = await get<LhdnCredential>('/v1/einvoices/settings/credentials');
+        if (response.success && response.data) {
+          setCredential(response.data);
+        }
       } catch (error) {
-        console.error('Failed to load credentials:', error);
+        // 404 means no credentials configured, which is okay
+        console.log('No credentials configured yet');
         setCredential(null);
       } finally {
         setIsLoading(false);
@@ -67,39 +56,30 @@ function EInvoicePage() {
     environment: 'SANDBOX' | 'PRODUCTION';
   }) => {
     console.log('💾 Saving LHDN credentials:', data);
-    // TODO: Call API to save credentials
-    // await api.post('/api/v1/einvoices/settings/credentials', data);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    setCredential({
-      id: 'cred-new',
-      clientId: data.clientId,
-      tin: data.tin,
-      brn: data.brn,
-      idType: data.idType,
-      idValue: data.idValue,
-      environment: data.environment,
-      isActive: true,
-    });
+    const response = await post<LhdnCredential>('/v1/einvoices/settings/credentials', data);
+
+    if (response.success && response.data) {
+      setCredential(response.data);
+    }
   }, []);
 
   const handleTest = useCallback(async () => {
     console.log('🔌 Testing LHDN connection...');
-    // TODO: Call API to test connection
-    // const response = await api.post('/api/v1/einvoices/settings/credentials/test');
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
+    const response = await post<{ connected: boolean; message: string }>('/v1/einvoices/settings/credentials/test', {});
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
     return {
-      connected: true,
-      message: 'Successfully connected to LHDN MyInvois API',
+      connected: false,
+      message: 'Connection test failed',
     };
   }, []);
 
   const handleDelete = useCallback(async () => {
     console.log('🗑️ Deleting LHDN credentials...');
-    // TODO: Call API to delete credentials
-    // await api.delete('/api/v1/einvoices/settings/credentials');
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await del('/v1/einvoices/settings/credentials');
     setCredential(null);
   }, []);
 

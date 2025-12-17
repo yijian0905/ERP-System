@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { post } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/invoices')({
@@ -100,66 +101,81 @@ function InvoicesPage() {
   // Handle saving invoice (draft)
   const handleSave = useCallback(async (data: InvoiceFormData) => {
     console.log('💾 Saving invoice as draft:', data);
-    // TODO: Call API to save invoice
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Note: Full invoice save API would be POST /v1/invoices
+    // For now, logging the data until backend invoice CRUD is implemented
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }, []);
 
   // Handle print complete - this is where inventory deduction happens
   const handlePrintComplete = useCallback(async (data: InvoiceFormData) => {
     console.log('🖨️ Invoice printed, deducting inventory...');
-    
+
     // Deduct inventory for each item
     for (const item of data.items) {
       console.log(`📦 Deducting ${item.quantity} x ${item.productName} (${item.sku}) from inventory`);
-      
-      // TODO: Call API to deduct inventory
-      // await api.post('/api/v1/inventory/deduct', {
+
+      // Note: Inventory deduction API would be:
+      // await post('/v1/inventory/stock-out', {
       //   productId: item.productId,
       //   quantity: item.quantity,
       //   reference: invoiceNumber,
-      //   referenceType: 'invoice',
+      //   referenceType: 'SALE',
       // });
     }
 
-    // TODO: Update invoice status to 'sent' or 'pending'
-    // await api.patch(`/api/v1/invoices/${invoiceId}`, { status: 'pending' });
+    // Invoice status update would be: await patch(`/v1/invoices/${invoiceId}`, { status: 'pending' });
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 300));
     console.log('✅ Inventory deducted successfully!');
   }, []);
 
   // E-Invoice handlers
   const handleSubmitEInvoice = useCallback(async (invoiceId: string) => {
     console.log('📤 Creating and submitting e-Invoice for:', invoiceId);
-    // TODO: Call API to create and submit e-Invoice
-    // await api.post('/api/v1/einvoices', { invoiceId });
-    // await api.post(`/api/v1/einvoices/${eInvoiceId}/submit`);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log('✅ E-Invoice submitted successfully!');
+    try {
+      // Create e-Invoice from invoice
+      const createResponse = await post<{ id: string }>('/v1/einvoices', { invoiceId });
+      if (createResponse.success && createResponse.data) {
+        // Submit to LHDN
+        await post(`/v1/einvoices/${createResponse.data.id}/submit`, {});
+        console.log('✅ E-Invoice submitted successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to submit e-Invoice:', error);
+      alert('Failed to submit e-Invoice. Please try again.');
+    }
   }, []);
 
   const handleSyncEInvoice = useCallback(async (eInvoiceId: string) => {
     console.log('🔄 Syncing e-Invoice status:', eInvoiceId);
-    // TODO: Call API to sync e-Invoice status
-    // await api.post(`/api/v1/einvoices/${eInvoiceId}/sync`);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log('✅ E-Invoice status synced!');
+    try {
+      await post(`/v1/einvoices/${eInvoiceId}/sync`, {});
+      console.log('✅ E-Invoice status synced!');
+    } catch (error) {
+      console.error('Failed to sync e-Invoice:', error);
+    }
   }, []);
 
   const handleCancelEInvoice = useCallback(async (eInvoiceId: string, reason: string) => {
     console.log('❌ Cancelling e-Invoice:', eInvoiceId, 'Reason:', reason);
-    // TODO: Call API to cancel e-Invoice
-    // await api.post(`/api/v1/einvoices/${eInvoiceId}/cancel`, { reason });
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log('✅ E-Invoice cancelled!');
+    try {
+      await post(`/v1/einvoices/${eInvoiceId}/cancel`, { reason });
+      console.log('✅ E-Invoice cancelled!');
+    } catch (error) {
+      console.error('Failed to cancel e-Invoice:', error);
+      alert('Failed to cancel e-Invoice. Please try again.');
+    }
   }, []);
 
   const handleRetryEInvoice = useCallback(async (eInvoiceId: string) => {
     console.log('🔁 Retrying e-Invoice submission:', eInvoiceId);
-    // TODO: Call API to retry e-Invoice
-    // await api.post(`/api/v1/einvoices/${eInvoiceId}/retry`);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log('✅ E-Invoice retry submitted!');
+    try {
+      await post(`/v1/einvoices/${eInvoiceId}/retry`, {});
+      console.log('✅ E-Invoice retry submitted!');
+    } catch (error) {
+      console.error('Failed to retry e-Invoice:', error);
+      alert('Failed to retry e-Invoice submission. Please try again.');
+    }
   }, []);
 
   return (
@@ -265,9 +281,9 @@ function InvoicesPage() {
                       <div className="flex items-center gap-2">
                         {invoice.eInvoiceStatus ? (
                           <>
-                            <EInvoiceStatusBadge 
-                              status={invoice.eInvoiceStatus} 
-                              size="sm" 
+                            <EInvoiceStatusBadge
+                              status={invoice.eInvoiceStatus}
+                              size="sm"
                             />
                             {invoice.lhdnUuid && (
                               <Tooltip>
@@ -323,7 +339,7 @@ function InvoicesPage() {
                           </DropdownMenuItem>
                         )}
                         {invoice.eInvoiceStatus === 'VALID' && (
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleCancelEInvoice(invoice.eInvoiceId!, 'User requested cancellation')}
                             className="text-destructive"
                           >

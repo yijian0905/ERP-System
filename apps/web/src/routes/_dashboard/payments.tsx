@@ -166,7 +166,7 @@ const methodLabels: Record<PaymentMethod, string> = {
 };
 
 function PaymentsPage() {
-  const [payments] = useState<Payment[]>(mockPayments);
+  const [payments, setPayments] = useState<Payment[]>(mockPayments);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -205,8 +205,30 @@ function PaymentsPage() {
 
   const handleRecordPayment = async () => {
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    // TODO: Add payment to list
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Generate new payment number
+    const paymentCount = payments.length + 1;
+    const today = new Date();
+    const yymm = `${String(today.getFullYear()).slice(2)}${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const paymentNumber = `PAY-${yymm}-${String(paymentCount).padStart(5, '0')}`;
+
+    const newPayment: Payment = {
+      id: String(paymentCount),
+      paymentNumber,
+      type: 'RECEIVED',
+      method: formData.method,
+      status: 'COMPLETED',
+      customer: formData.customer,
+      invoiceNumber: formData.invoiceNumber || null,
+      amount: parseFloat(formData.amount) || 0,
+      reference: formData.reference || null,
+      paymentDate: today.toISOString().split('T')[0],
+      notes: formData.notes || null,
+    };
+
+    setPayments((prev) => [newPayment, ...prev]);
+
     setIsSaving(false);
     setIsModalOpen(false);
     setFormData({

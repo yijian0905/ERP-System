@@ -236,25 +236,25 @@ function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  
+
   // Product modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Category modal states
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryFull | null>(null);
   const [parentCategory, setParentCategory] = useState<CategoryFull | null>(null);
   const [isCategorySaving, setIsCategorySaving] = useState(false);
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(new Set(['1', '2', '3']));
-  
+
   // Category form state
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
     description: '',
   });
-  
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -366,17 +366,17 @@ function ProductsPage() {
       setProducts(prev => prev.map(p =>
         p.id === editingProduct.id
           ? {
-              ...p,
-              name: formData.name,
-              description: formData.description,
-              category: category?.name || p.category,
-              price: formData.price,
-              cost: formData.cost,
-              minStock: formData.minStock,
-              maxStock: formData.maxStock,
-              reorderPoint: formData.reorderPoint,
-              status: formData.status,
-            }
+            ...p,
+            name: formData.name,
+            description: formData.description,
+            category: category?.name || p.category,
+            price: formData.price,
+            cost: formData.cost,
+            minStock: formData.minStock,
+            maxStock: formData.maxStock,
+            reorderPoint: formData.reorderPoint,
+            status: formData.status,
+          }
           : p
       ));
     } else {
@@ -461,8 +461,25 @@ function ProductsPage() {
 
   const handleSaveCategory = async () => {
     setIsCategorySaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    // TODO: Add/update category
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    if (editingCategory) {
+      // Update existing category - handled via local state for now
+      // In a real implementation, this would call PUT /v1/categories/:id
+      console.log('Category updated:', editingCategory.id, categoryFormData);
+    } else {
+      // Add new category - add to simple categories list for product dropdown
+      const newCategoryId = generateCategoryId(categoryFormData.name);
+      const newCategory: Category = {
+        id: newCategoryId,
+        name: categoryFormData.name,
+        prefix: generateCategoryPrefix(categoryFormData.name),
+      };
+      setCategories((prev) => [...prev, newCategory]);
+      // Note: Full category tree update would require API POST /v1/categories
+      console.log('New category added:', newCategory);
+    }
+
     setIsCategorySaving(false);
     setIsCategoryModalOpen(false);
   };
@@ -564,10 +581,10 @@ function ProductsPage() {
         description="Manage your product catalog and categories"
         actions={
           activeTab === 'products' ? (
-          <Button onClick={() => handleOpenModal()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
-          </Button>
+            <Button onClick={() => handleOpenModal()}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Product
+            </Button>
           ) : (
             <Button onClick={() => handleOpenCategoryModal()}>
               <Plus className="mr-2 h-4 w-4" />
@@ -610,228 +627,228 @@ function ProductsPage() {
       {activeTab === 'products' && (
         <>
 
-      {/* Stats */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total Products"
-          value={totalProducts.toString()}
-          change={`${activeProducts} active`}
-          changeType="neutral"
-          icon={Package}
-        />
-        <StatsCard
-          title="Active Products"
-          value={activeProducts.toString()}
-          change="In catalog"
-          changeType="positive"
-          icon={Package}
-        />
-        <StatsCard
-          title="Low Stock"
-          value={lowStockProducts.toString()}
-          change={lowStockProducts > 0 ? 'Need reorder' : 'All stocked'}
-          changeType={lowStockProducts > 0 ? 'negative' : 'neutral'}
-          icon={Package}
-        />
-        <StatsCard
-          title="Out of Stock"
-          value={outOfStockProducts.toString()}
-          change={outOfStockProducts > 0 ? 'Action needed' : 'All available'}
-          changeType={outOfStockProducts > 0 ? 'negative' : 'positive'}
-          icon={Package}
-        />
-      </div>
-
-      {/* Search and filters */}
-      <DashboardCard className="mb-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-4 text-sm"
+          {/* Stats */}
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatsCard
+              title="Total Products"
+              value={totalProducts.toString()}
+              change={`${activeProducts} active`}
+              changeType="neutral"
+              icon={Package}
+            />
+            <StatsCard
+              title="Active Products"
+              value={activeProducts.toString()}
+              change="In catalog"
+              changeType="positive"
+              icon={Package}
+            />
+            <StatsCard
+              title="Low Stock"
+              value={lowStockProducts.toString()}
+              change={lowStockProducts > 0 ? 'Need reorder' : 'All stocked'}
+              changeType={lowStockProducts > 0 ? 'negative' : 'neutral'}
+              icon={Package}
+            />
+            <StatsCard
+              title="Out of Stock"
+              value={outOfStockProducts.toString()}
+              change={outOfStockProducts > 0 ? 'Action needed' : 'All available'}
+              changeType={outOfStockProducts > 0 ? 'negative' : 'positive'}
+              icon={Package}
             />
           </div>
-          <div className="flex gap-2">
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Categories</option>
-              {uniqueCategories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="DISCONTINUED">Discontinued</option>
-            </select>
-          </div>
-        </div>
-      </DashboardCard>
 
-      {/* Products table */}
-      <DashboardCard>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b text-left text-sm text-muted-foreground">
-                <th className="pb-3 font-medium">Product</th>
-                <th className="pb-3 font-medium">SKU</th>
-                <th className="pb-3 font-medium">Category</th>
-                <th className="pb-3 font-medium text-right">Price</th>
-                <th className="pb-3 font-medium text-right">Cost</th>
-                <th className="pb-3 font-medium text-right">Stock</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map((product) => {
-                const statusStyle = statusConfig[product.status];
-                const isLowStock = product.stock <= product.reorderPoint && product.stock > 0;
-                const isOutOfStock = product.stock === 0;
-                const margin = product.price > 0 ? ((product.price - product.cost) / product.price * 100).toFixed(0) : 0;
+          {/* Search and filters */}
+          <DashboardCard className="mb-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-4 text-sm"
+                />
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">All Categories</option>
+                  {uniqueCategories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">All Status</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                  <option value="DISCONTINUED">Discontinued</option>
+                </select>
+              </div>
+            </div>
+          </DashboardCard>
 
-                return (
-                <tr key={product.id} className="border-b last:border-0 table-row-hover">
-                  <td className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                        <div>
-                      <span className="font-medium">{product.name}</span>
-                          <p className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
-                            {product.description}
-                          </p>
-                        </div>
-                    </div>
-                  </td>
-                    <td className="py-4 text-muted-foreground font-mono text-sm">{product.sku}</td>
-                    <td className="py-4">
-                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-                        {product.category}
-                      </span>
-                    </td>
-                    <td className="py-4 text-right font-medium">{formatCurrency(product.price)}</td>
-                    <td className="py-4 text-right text-muted-foreground">
-                      {formatCurrency(product.cost)}
-                      <span className="ml-1 text-xs text-muted-foreground">({margin}%)</span>
-                    </td>
-                  <td className="py-4 text-right">
-                      <span className={cn(
-                        'font-medium',
-                        isOutOfStock && 'text-destructive',
-                        isLowStock && 'text-warning'
-                      )}>
-                      {product.stock}
-                    </span>
-                      {isLowStock && (
-                        <span className="ml-1 text-xs text-warning">Low</span>
-                      )}
-                      {isOutOfStock && (
-                        <span className="ml-1 text-xs text-destructive">Out</span>
-                      )}
-                  </td>
-                  <td className="py-4">
-                      <span className={cn(
-                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                        statusStyle.color
-                      )}>
-                        {statusStyle.label}
-                    </span>
-                  </td>
-                  <td className="py-4">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenModal(product)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleStatus(product.id)}>
-                            {product.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleDelete(product.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                  </td>
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+          {/* Products table */}
+          <DashboardCard>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b text-left text-sm text-muted-foreground">
+                    <th className="pb-3 font-medium">Product</th>
+                    <th className="pb-3 font-medium">SKU</th>
+                    <th className="pb-3 font-medium">Category</th>
+                    <th className="pb-3 font-medium text-right">Price</th>
+                    <th className="pb-3 font-medium text-right">Cost</th>
+                    <th className="pb-3 font-medium text-right">Stock</th>
+                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map((product) => {
+                    const statusStyle = statusConfig[product.status];
+                    const isLowStock = product.stock <= product.reorderPoint && product.stock > 0;
+                    const isOutOfStock = product.stock === 0;
+                    const margin = product.price > 0 ? ((product.price - product.cost) / product.price * 100).toFixed(0) : 0;
 
-        {filteredProducts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Package className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No products found</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {searchTerm || categoryFilter || statusFilter
-                ? 'Try adjusting your search or filter'
-                : 'Get started by adding your first product'}
-            </p>
-            {!searchTerm && !categoryFilter && !statusFilter && (
-              <Button className="mt-4" onClick={() => handleOpenModal()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Product
-              </Button>
+                    return (
+                      <tr key={product.id} className="border-b last:border-0 table-row-hover">
+                        <td className="py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                              <Package className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <span className="font-medium">{product.name}</span>
+                              <p className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
+                                {product.description}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 text-muted-foreground font-mono text-sm">{product.sku}</td>
+                        <td className="py-4">
+                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                            {product.category}
+                          </span>
+                        </td>
+                        <td className="py-4 text-right font-medium">{formatCurrency(product.price)}</td>
+                        <td className="py-4 text-right text-muted-foreground">
+                          {formatCurrency(product.cost)}
+                          <span className="ml-1 text-xs text-muted-foreground">({margin}%)</span>
+                        </td>
+                        <td className="py-4 text-right">
+                          <span className={cn(
+                            'font-medium',
+                            isOutOfStock && 'text-destructive',
+                            isLowStock && 'text-warning'
+                          )}>
+                            {product.stock}
+                          </span>
+                          {isLowStock && (
+                            <span className="ml-1 text-xs text-warning">Low</span>
+                          )}
+                          {isOutOfStock && (
+                            <span className="ml-1 text-xs text-destructive">Out</span>
+                          )}
+                        </td>
+                        <td className="py-4">
+                          <span className={cn(
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                            statusStyle.color
+                          )}>
+                            {statusStyle.label}
+                          </span>
+                        </td>
+                        <td className="py-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon-sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenModal(product)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleStatus(product.id)}>
+                                {product.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => handleDelete(product.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {filteredProducts.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Package className="h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">No products found</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {searchTerm || categoryFilter || statusFilter
+                    ? 'Try adjusting your search or filter'
+                    : 'Get started by adding your first product'}
+                </p>
+                {!searchTerm && !categoryFilter && !statusFilter && (
+                  <Button className="mt-4" onClick={() => handleOpenModal()}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Product
+                  </Button>
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        {/* Pagination */}
-        {filteredProducts.length > 0 && (
-        <div className="mt-4 flex items-center justify-between border-t pt-4">
-          <p className="text-sm text-muted-foreground">
-              Showing {filteredProducts.length} of {products.length} products
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-            <Button variant="outline" size="sm" disabled>
-              Next
-            </Button>
-          </div>
-        </div>
-        )}
-      </DashboardCard>
+            {/* Pagination */}
+            {filteredProducts.length > 0 && (
+              <div className="mt-4 flex items-center justify-between border-t pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing {filteredProducts.length} of {products.length} products
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled>
+                    Previous
+                  </Button>
+                  <Button variant="outline" size="sm" disabled>
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DashboardCard>
 
-      {/* Info card */}
-      <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
-        <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-          📦 Product Management
-        </h3>
-        <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
-          Add products here to create your inventory catalog. Once a product is created,
-          use <strong>Stock In</strong> from the Inventory page to add initial stock,
-          or place Purchase Orders to receive inventory from suppliers.
-        </p>
-      </div>
+          {/* Info card */}
+          <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+              📦 Product Management
+            </h3>
+            <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+              Add products here to create your inventory catalog. Once a product is created,
+              use <strong>Stock In</strong> from the Inventory page to add initial stock,
+              or place Purchase Orders to receive inventory from suppliers.
+            </p>
+          </div>
         </>
       )}
 
@@ -899,7 +916,7 @@ function ProductsPage() {
                 placeholder="e.g., Wireless Bluetooth Headphones"
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
               <textarea
