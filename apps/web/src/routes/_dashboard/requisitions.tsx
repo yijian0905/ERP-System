@@ -46,6 +46,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/stores/auth';
 
 export const Route = createFileRoute('/_dashboard/requisitions')({
   component: RequisitionsPage,
@@ -284,6 +285,7 @@ const mockRequisitions: Requisition[] = [
 ];
 
 function RequisitionsPage() {
+  const user = useUser();
   const [requisitions, setRequisitions] = useState<Requisition[]>(mockRequisitions);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -371,7 +373,7 @@ function RequisitionsPage() {
   // Add item to requisition
   const handleAddItem = () => {
     if (!selectedProductId) return;
-    
+
     const product = mockInventoryItems.find((p) => p.id === selectedProductId);
     if (!product) return;
 
@@ -443,7 +445,7 @@ function RequisitionsPage() {
       requisitionNumber: generateRequisitionNumber(),
       status: asDraft ? 'DRAFT' : 'PENDING',
       priority: formData.priority,
-      requestedBy: 'Current User', // TODO: Get from auth
+      requestedBy: user?.name || 'Unknown User',
       requestedByDept: costCenter?.department || '',
       costCenterId: formData.costCenterId,
       costCenterName: costCenter?.name || '',
@@ -471,7 +473,7 @@ function RequisitionsPage() {
   // Handle approval/rejection
   const handleApprovalAction = async () => {
     if (!selectedRequisition) return;
-    
+
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -479,13 +481,13 @@ function RequisitionsPage() {
       prev.map((req) =>
         req.id === selectedRequisition.id
           ? {
-              ...req,
-              status: approvalAction === 'approve' ? 'APPROVED' : 'REJECTED',
-              approvedBy: approvalAction === 'approve' ? 'Current Manager' : null,
-              approvedDate: approvalAction === 'approve' ? new Date().toISOString().split('T')[0] : null,
-              rejectionReason: approvalAction === 'reject' ? rejectionReason : null,
-              updatedAt: new Date().toISOString(),
-            }
+            ...req,
+            status: approvalAction === 'approve' ? 'APPROVED' : 'REJECTED',
+            approvedBy: approvalAction === 'approve' ? 'Current Manager' : null,
+            approvedDate: approvalAction === 'approve' ? new Date().toISOString().split('T')[0] : null,
+            rejectionReason: approvalAction === 'reject' ? rejectionReason : null,
+            updatedAt: new Date().toISOString(),
+          }
           : req
       )
     );
@@ -502,11 +504,11 @@ function RequisitionsPage() {
       prev.map((req) =>
         req.id === reqId
           ? {
-              ...req,
-              status: 'FULFILLED',
-              fulfilledDate: new Date().toISOString().split('T')[0],
-              updatedAt: new Date().toISOString(),
-            }
+            ...req,
+            status: 'FULFILLED',
+            fulfilledDate: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString(),
+          }
           : req
       )
     );
@@ -518,10 +520,10 @@ function RequisitionsPage() {
       prev.map((req) =>
         req.id === reqId
           ? {
-              ...req,
-              status: 'CANCELLED',
-              updatedAt: new Date().toISOString(),
-            }
+            ...req,
+            status: 'CANCELLED',
+            updatedAt: new Date().toISOString(),
+          }
           : req
       )
     );

@@ -29,6 +29,12 @@ model Tenant {
   updatedAt DateTime     @updatedAt @map("updated_at")
   deletedAt DateTime?    @map("deleted_at")
 
+  // Auth Policy fields (per spec.md §120-144)
+  authPolicyPrimary       AuthPolicyPrimary   @default(password) @map("auth_policy_primary")
+  authPolicyMfa           AuthPolicyMfa       @default(off) @map("auth_policy_mfa")
+  authPolicyIdentifier    AuthPolicyIdentifier @default(email) @map("auth_policy_identifier")
+  authPolicyAllowFallback Boolean             @default(true) @map("auth_policy_allow_fallback")
+
   // Relations
   users              User[]
   products           Product[]
@@ -48,6 +54,8 @@ model Tenant {
   eInvoices          EInvoice[]
   lhdnToken          LhdnToken?
   lhdnCredential     LhdnCredential?
+  capabilities       TenantCapability[]
+  printAudits        PrintAudit[]
 
   @@index([status])
   @@index([tier])
@@ -65,6 +73,23 @@ enum LicenseTier {
   L1 // Standard
   L2 // Professional
   L3 // Enterprise
+}
+
+// Auth Policy enums (per spec.md §120-144)
+enum AuthPolicyPrimary {
+  password
+  sso
+}
+
+enum AuthPolicyMfa {
+  off
+  optional
+  required
+}
+
+enum AuthPolicyIdentifier {
+  email
+  username
 }
 
 /// User belongs to a tenant with role-based access
@@ -97,6 +122,7 @@ model User {
   invoicesCreated    Invoice[]           @relation("InvoiceCreatedBy")
   paymentsReceived   Payment[]           @relation("PaymentReceivedBy")
   auditLogs          AuditLog[]
+  printAudits        PrintAudit[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1100,4 +1126,60 @@ enum EInvoiceStatus {
 enum LhdnEnvironment {
   SANDBOX          // Test environment
   PRODUCTION       // Live environment
+}
+
+// ============================================
+// CAPABILITY-BASED ACCESS CONTROL (per spec.md §81-94)
+// ============================================
+
+/// Tenant capabilities - controls feature access
+/// Codes: erp_core, forecasting, ai_chat, ai_agent, automation_rules
+model TenantCapability {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  code      String   @db.VarChar(50) // e.g., erp_core, forecasting, ai_chat
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([code])
+  @@map("tenant_capabilities")
+}
+
+// ============================================
+// PRINT AUDIT (per spec.md §283-291)
+// ============================================
+
+/// Print audit logs for tracking all print events (Enterprise feature)
+model PrintAudit {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  documentType   String   @map("document_type") @db.VarChar(50) // invoice, delivery_note, receipt
+  documentId     String   @map("document_id") @db.Uuid
+  documentNumber String?  @map("document_number") @db.VarChar(100)
+  printerName    String?  @map("printer_name") @db.VarChar(255)
+  paperSize      String?  @map("paper_size") @db.VarChar(20) // A4, Letter, etc.
+  copies         Int      @default(1)
+  printMode      String?  @map("print_mode") @db.VarChar(20) // silent, pdf, preview
+  success        Boolean  @default(true)
+  errorMessage   String?  @map("error_message") @db.Text
+  ipAddress      String?  @map("ip_address") @db.VarChar(45)
+  userAgent      String?  @map("user_agent") @db.VarChar(500)
+  printTimestamp DateTime @default(now()) @map("print_timestamp")
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@index([tenantId, documentType])
+  @@index([tenantId, printTimestamp])
+  @@map("print_audits")
 }

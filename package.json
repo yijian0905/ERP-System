@@ -33,7 +33,13 @@
     "maintenance:backup": "bash scripts/maintenance/backup-db.sh",
     "maintenance:rotate-logs": "bash scripts/maintenance/rotate-logs.sh",
     "check:ports": "bash scripts/utils/check-ports.sh",
-    "check:env": "bash scripts/utils/validate-env.sh"
+    "check:env": "bash scripts/utils/validate-env.sh",
+    "desktop:dev": "pnpm --filter @erp/desktop dev",
+    "desktop:build": "pnpm --filter @erp/desktop build",
+    "desktop:package": "pnpm --filter @erp/desktop package",
+    "desktop:package:win": "pnpm --filter @erp/desktop package:win",
+    "desktop:package:mac": "pnpm --filter @erp/desktop package:mac",
+    "desktop:package:linux": "pnpm --filter @erp/desktop package:linux"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
+import { patch, post } from '@/lib/api-client';
 
 export const Route = createFileRoute('/_dashboard/settings/profile')({
   component: ProfileSettingsPage,
@@ -50,10 +51,22 @@ function ProfileSettingsPage() {
 
   const handleSaveProfile = async () => {
     setIsSaving(true);
-    // TODO: Call API to update profile
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setIsEditing(false);
+    try {
+      const response = await patch<{ id: string; name: string; email: string }>('/auth/profile', {
+        name: profile.name,
+        phone: profile.phone,
+      });
+      if (response.success && response.data) {
+        // Update local auth store with new name
+        useAuthStore.getState().updateUser({ name: response.data.name });
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+      setIsEditing(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -61,12 +74,29 @@ function ProfileSettingsPage() {
       alert('Passwords do not match');
       return;
     }
+    if (passwords.new.length < 8) {
+      alert('New password must be at least 8 characters');
+      return;
+    }
     setIsSaving(true);
-    // TODO: Call API to change password
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setIsChangingPassword(false);
-    setPasswords({ current: '', new: '', confirm: '' });
+    try {
+      const response = await post<{ message: string }>('/auth/change-password', {
+        currentPassword: passwords.current,
+        newPassword: passwords.new,
+      });
+      if (response.success) {
+        alert('Password changed successfully');
+        setIsChangingPassword(false);
+        setPasswords({ current: '', new: '', confirm: '' });
+      }
+    } catch (error: unknown) {
+      console.error('Failed to change password:', error);
+      const axiosError = error as { response?: { data?: { error?: { message?: string } } } };
+      const message = axiosError.response?.data?.error?.message || 'Failed to change password';
+      alert(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getRoleColor = (role?: string) => {
@@ -138,9 +168,9 @@ function ProfileSettingsPage() {
                 <div className="relative">
                   <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
                     {profile.avatar ? (
-                      <img 
-                        src={profile.avatar} 
-                        alt={profile.name} 
+                      <img
+                        src={profile.avatar}
+                        alt={profile.name}
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -153,7 +183,7 @@ function ProfileSettingsPage() {
                     </button>
                   )}
                 </div>
-      <div>
+                <div>
                   <h3 className="text-xl font-semibold">{user?.name || 'User'}</h3>
                   <p className="text-muted-foreground">{user?.email}</p>
                   <span className={cn(
@@ -164,10 +194,10 @@ function ProfileSettingsPage() {
                     {user?.role || 'USER'}
                   </span>
                 </div>
-      </div>
+              </div>
 
               {/* Profile form */}
-        <div className="space-y-4">
+              <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
                     <Label htmlFor="name">
@@ -237,7 +267,7 @@ function ProfileSettingsPage() {
           {/* Password Card */}
           <div className="rounded-lg border bg-card">
             <div className="border-b p-4 flex items-center justify-between">
-          <div>
+              <div>
                 <h2 className="text-lg font-semibold">
                   <KeyRound className="inline h-5 w-5 mr-2" />
                   Change Password
@@ -308,7 +338,7 @@ function ProfileSettingsPage() {
             <div className="p-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
+                  <div>
                     <p className="font-medium">Current Session</p>
                     <p className="text-sm text-muted-foreground">
                       Windows • Chrome • Last active: Now

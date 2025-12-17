@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
-  Calendar,
   CreditCard,
   DollarSign,
   TrendingDown,
@@ -25,7 +24,11 @@ import {
   PageHeader,
   StatsCard,
 } from '@/components/layout/dashboard-layout';
-import { Button } from '@/components/ui/button';
+import {
+  DateRangeSelector,
+  type DateRange,
+  type PresetOption,
+} from '@/components/ui/date-range-selector';
 import {
   exportData,
   formatCurrencyForExport,
@@ -110,8 +113,20 @@ interface CashFlowItem {
 }
 
 function FinancialReportPage() {
-  const [dateRange, setDateRange] = useState('year');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: '',
+    endDate: '',
+    preset: 'this_year'
+  });
   const [isExporting, setIsExporting] = useState(false);
+
+  // Financial report presets
+  const financialPresets: PresetOption[] = [
+    { value: 'this_quarter', label: 'This Quarter' },
+    { value: 'last_quarter', label: 'Last Quarter' },
+    { value: 'this_year', label: 'This Year' },
+    { value: 'last_year', label: 'Last Year' },
+  ];
 
   // Calculate totals
   const totalRevenue = monthlyPL.reduce((sum, m) => sum + m.revenue, 0);
@@ -127,7 +142,7 @@ function FinancialReportPage() {
   // Export handler
   const handleExport = useCallback(async (format: ExportFormat) => {
     setIsExporting(true);
-    
+
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     try {
@@ -206,19 +221,11 @@ function FinancialReportPage() {
         description="Revenue, expenses, and profitability analysis"
         actions={
           <div className="flex gap-2">
-            <select
+            <DateRangeSelector
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="quarter">This Quarter</option>
-              <option value="year">This Year</option>
-              <option value="custom">Custom Range</option>
-            </select>
-            <Button variant="outline">
-              <Calendar className="mr-2 h-4 w-4" />
-              Custom Date
-            </Button>
+              onChange={setDateRange}
+              presets={financialPresets}
+            />
             <ExportDropdown onExport={handleExport} isExporting={isExporting} />
           </div>
         }

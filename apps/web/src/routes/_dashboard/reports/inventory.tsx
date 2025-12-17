@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
-  Calendar,
   Package,
   TrendingDown,
   Warehouse,
@@ -29,6 +28,11 @@ import {
   StatsCard,
 } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
+import {
+  DateRangeSelector,
+  type DateRange,
+  type PresetOption,
+} from '@/components/ui/date-range-selector';
 import {
   exportData,
   formatCurrencyForExport,
@@ -117,8 +121,22 @@ interface TopMovingProduct {
 }
 
 function InventoryReportPage() {
-  const [dateRange, setDateRange] = useState('month');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: '',
+    endDate: '',
+    preset: 'this_month',
+  });
   const [isExporting, setIsExporting] = useState(false);
+
+  // Inventory report presets
+  const inventoryPresets: PresetOption[] = [
+    { value: 'this_week', label: 'This Week' },
+    { value: 'last_week', label: 'Last Week' },
+    { value: 'this_month', label: 'This Month' },
+    { value: 'last_month', label: 'Last Month' },
+    { value: 'this_quarter', label: 'This Quarter' },
+    { value: 'this_year', label: 'This Year' },
+  ];
 
   const totalStock = 285;
   const totalValue = 188500;
@@ -128,7 +146,7 @@ function InventoryReportPage() {
   // Export handler
   const handleExport = useCallback(async (format: ExportFormat) => {
     setIsExporting(true);
-    
+
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     try {
@@ -223,20 +241,11 @@ function InventoryReportPage() {
         description="Stock levels, movements, and valuations"
         actions={
           <div className="flex gap-2">
-            <select
+            <DateRangeSelector
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="quarter">This Quarter</option>
-              <option value="year">This Year</option>
-            </select>
-            <Button variant="outline">
-              <Calendar className="mr-2 h-4 w-4" />
-              Custom Date
-            </Button>
+              onChange={setDateRange}
+              presets={inventoryPresets}
+            />
             <ExportDropdown onExport={handleExport} isExporting={isExporting} />
           </div>
         }
@@ -418,8 +427,8 @@ function InventoryReportPage() {
                   <span className={cn(
                     'text-sm font-medium',
                     warehouse.capacity >= 80 ? 'text-destructive' :
-                    warehouse.capacity >= 60 ? 'text-warning' :
-                    'text-success'
+                      warehouse.capacity >= 60 ? 'text-warning' :
+                        'text-success'
                   )}>
                     {warehouse.capacity}% full
                   </span>
@@ -429,8 +438,8 @@ function InventoryReportPage() {
                     className={cn(
                       'h-full rounded-full transition-all',
                       warehouse.capacity >= 80 ? 'bg-destructive' :
-                      warehouse.capacity >= 60 ? 'bg-warning' :
-                      'bg-success'
+                        warehouse.capacity >= 60 ? 'bg-warning' :
+                          'bg-success'
                     )}
                     style={{ width: `${warehouse.capacity}%` }}
                   />

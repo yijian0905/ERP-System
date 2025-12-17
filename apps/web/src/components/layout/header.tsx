@@ -13,14 +13,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
-import { useSidebarStore, SIDEBAR_WIDTH } from '@/stores/sidebar';
+import { useSidebarStore } from '@/stores/sidebar';
 
 /**
  * Page header component with breadcrumbs and actions
  */
 export function Header() {
-  const { isCollapsed, toggleMobile } = useSidebarStore();
-  const { user, tier, logout } = useAuthStore();
+  const { toggleMobile } = useSidebarStore();
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -28,28 +28,20 @@ export function Header() {
     navigate({ to: '/login' });
   };
 
-  const tierLabels = {
-    L1: { label: 'Standard', color: 'bg-slate-500' },
-    L2: { label: 'Professional', color: 'bg-blue-500' },
-    L3: { label: 'Enterprise', color: 'bg-purple-500' },
-  };
 
-  const tierInfo = tier ? tierLabels[tier] : tierLabels.L1;
 
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 transition-all duration-300'
+        'sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 transition-all duration-300',
+        'electron-drag-region' // Allow window dragging in Electron
       )}
-      style={{
-        marginLeft: isCollapsed ? SIDEBAR_WIDTH.collapsed : SIDEBAR_WIDTH.expanded,
-      }}
     >
       {/* Mobile menu button */}
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden"
+        className="md:hidden electron-no-drag"
         onClick={toggleMobile}
       >
         <Menu className="h-5 w-5" />
@@ -57,7 +49,7 @@ export function Header() {
       </Button>
 
       {/* Search */}
-      <div className="flex-1">
+      <div className="flex-1 electron-no-drag">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -71,22 +63,12 @@ export function Header() {
         </div>
       </div>
 
-      {/* Tier badge */}
-      <div className="hidden md:flex">
-        <span
-          className={cn(
-            'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white',
-            tierInfo.color
-          )}
-        >
-          {tierInfo.label}
-        </span>
-      </div>
+
 
       {/* Notifications */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative">
+          <Button variant="ghost" size="icon" className="relative electron-no-drag">
             <Bell className="h-5 w-5" />
             <span className="absolute right-1 top-1 flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
@@ -139,7 +121,7 @@ export function Header() {
       {/* User avatar (mobile) */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild className="md:hidden">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full electron-no-drag">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user?.avatar || undefined} />
               <AvatarFallback className="bg-primary text-primary-foreground text-xs">

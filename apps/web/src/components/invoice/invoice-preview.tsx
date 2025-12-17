@@ -97,10 +97,10 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
                 <span className="font-medium">
                   {formData.invoiceDate
                     ? new Date(formData.invoiceDate).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
                     : '-'}
                 </span>
               </p>
@@ -109,10 +109,10 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
                 <span className="font-medium">
                   {formData.dueDate
                     ? new Date(formData.dueDate).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
                     : '-'}
                 </span>
               </p>

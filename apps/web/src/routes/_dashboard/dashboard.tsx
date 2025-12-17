@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -194,9 +194,11 @@ function DashboardPage() {
           title="Recent Orders"
           description="Latest customer orders"
           actions={
-            <Button variant="outline" size="sm">
-              View All
-            </Button>
+            <Link to="/orders">
+              <Button variant="outline" size="sm">
+                View All
+              </Button>
+            </Link>
           }
         >
           <div className="space-y-4">
@@ -217,15 +219,14 @@ function DashboardPage() {
                 <div className="text-right">
                   <p className="font-medium">{order.amount}</p>
                   <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                      order.status === 'Delivered'
-                        ? 'bg-success/10 text-success'
-                        : order.status === 'Shipped'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                          : order.status === 'Processing'
-                            ? 'bg-warning/10 text-warning'
-                            : 'bg-muted text-muted-foreground'
-                    }`}
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${order.status === 'Delivered'
+                      ? 'bg-success/10 text-success'
+                      : order.status === 'Shipped'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        : order.status === 'Processing'
+                          ? 'bg-warning/10 text-warning'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
                   >
                     {order.status}
                   </span>
@@ -240,9 +241,11 @@ function DashboardPage() {
           title="Low Stock Alert"
           description="Products that need restocking"
           actions={
-            <Button variant="outline" size="sm">
-              View Inventory
-            </Button>
+            <Link to="/inventory">
+              <Button variant="outline" size="sm">
+                View Inventory
+              </Button>
+            </Link>
           }
         >
           <div className="space-y-4">

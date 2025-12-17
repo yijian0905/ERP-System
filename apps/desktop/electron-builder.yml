@@ -1,0 +1,54 @@
+appId: com.erp.desktop
+productName: ERP System
+copyright: Copyright © 2024-2025
+
+directories:
+  output: release
+  buildResources: resources
+
+files:
+  - dist/**/*
+  - resources/**/*
+
+# Windows 配置
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+  artifactName: ${productName}-${version}-Setup.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+# macOS 配置
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: resources/icon.icns
+  category: public.app-category.business
+  artifactName: ${productName}-${version}.${ext}
+
+# Linux 配置
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  icon: resources/icon.png
+  category: Office
+  artifactName: ${productName}-${version}.${ext}
+
+# 自動更新配置
+publish:
+  provider: generic
+  url: https://updates.your-domain.com

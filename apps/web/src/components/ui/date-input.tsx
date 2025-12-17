@@ -14,6 +14,10 @@ import { cn } from '@/lib/utils';
 interface DateInputProps {
   value?: string;
   onChange?: (value: string) => void;
+  /** Called when the date is fully entered (DD/MM/YYYY complete) */
+  onComplete?: () => void;
+  /** Called when Enter key is pressed */
+  onEnterPress?: () => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -25,6 +29,8 @@ interface DateInputProps {
 export function DateInput({
   value,
   onChange,
+  onComplete,
+  onEnterPress,
   disabled = false,
   className,
   error = false,
@@ -106,13 +112,18 @@ export function DateInput({
 
     setYear(val);
     updateParent(day, month, val);
+
+    // When year is complete (4 digits), call onComplete
+    if (val.length === 4 && day.length === 2 && month.length === 2) {
+      onComplete?.();
+    }
   };
 
   // Handle Backspace key (UX enhancement)
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     currentField: string,
-    prevRef: React.RefObject<HTMLInputElement> | null
+    prevRef: React.RefObject<HTMLInputElement | null> | null
   ) => {
     // If current field is empty and Backspace pressed, jump to previous field
     if (e.key === 'Backspace' && !currentField && prevRef) {
@@ -136,6 +147,13 @@ export function DateInput({
         } else if (e.currentTarget === monthRef.current) {
           yearRef.current?.focus();
         }
+      }
+    }
+    // Handle Enter key - call onEnterPress if date is complete
+    if (e.key === 'Enter') {
+      if (day.length === 2 && month.length === 2 && year.length === 4) {
+        e.preventDefault();
+        onEnterPress?.();
       }
     }
   };

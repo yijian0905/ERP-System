@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
   ArrowUpRight,
-  Calendar,
   DollarSign,
   ShoppingCart,
   TrendingUp,
@@ -26,10 +25,14 @@ import {
   PageHeader,
   StatsCard,
 } from '@/components/layout/dashboard-layout';
-import { Button } from '@/components/ui/button';
-import { 
-  exportData, 
-  formatCurrencyForExport, 
+import {
+  DateRangeSelector,
+  type DateRange,
+  type PresetOption,
+} from '@/components/ui/date-range-selector';
+import {
+  exportData,
+  formatCurrencyForExport,
   getExportTimestamp,
   type ExportColumn,
   type ExportFormat,
@@ -102,8 +105,22 @@ interface TopCustomer {
 }
 
 function SalesReportPage() {
-  const [dateRange, setDateRange] = useState('month');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: '',
+    endDate: '',
+    preset: 'this_month',
+  });
   const [isExporting, setIsExporting] = useState(false);
+
+  // Sales report presets
+  const salesPresets: PresetOption[] = [
+    { value: 'this_week', label: 'This Week' },
+    { value: 'last_week', label: 'Last Week' },
+    { value: 'this_month', label: 'This Month' },
+    { value: 'last_month', label: 'Last Month' },
+    { value: 'this_quarter', label: 'This Quarter' },
+    { value: 'this_year', label: 'This Year' },
+  ];
 
   // Calculate current month stats
   const currentMonth = monthlySalesData[monthlySalesData.length - 1];
@@ -114,7 +131,7 @@ function SalesReportPage() {
   // Export handlers
   const handleExport = useCallback(async (format: ExportFormat) => {
     setIsExporting(true);
-    
+
     // Simulate processing time for better UX
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -177,20 +194,11 @@ function SalesReportPage() {
         description="Analyze your sales performance"
         actions={
           <div className="flex gap-2">
-            <select
+            <DateRangeSelector
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="quarter">This Quarter</option>
-              <option value="year">This Year</option>
-            </select>
-            <Button variant="outline">
-              <Calendar className="mr-2 h-4 w-4" />
-              Custom Date
-            </Button>
+              onChange={setDateRange}
+              presets={salesPresets}
+            />
             <ExportDropdown onExport={handleExport} isExporting={isExporting} />
           </div>
         }

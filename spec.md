@@ -174,101 +174,142 @@ Triggered when no local License Context exists or user resets license.
 
 ---
 
-## 🖨️ Printing System Design
+## 🖨️ Invoice Printing & Preview System
 
-### Design Principles
+### Scope
 
-1. Print preview MUST be application-controlled
-2. Output MUST be consistent across platforms
-3. Silent print MUST be supported
-4. Print actions MUST be auditable (Enterprise)
+Applies to Invoice, Delivery Notes, Receipts, and all documents requiring high layout consistency.
 
 ---
 
-### Print Pipeline
+### Core Design Principles
 
-```
- → Render HTML (Hidden BrowserWindow)
- → Preview UI
- → Confirm
- → Print (silent)
-```
-
-Electron native print preview MUST NOT be relied upon.
+1. **Live Preview and Print Source MUST be separated**
+   - What users see in Live Preview ≠ actual print source
+2. **Print output MUST be fully controllable**
+   - System MUST NOT rely on browser/OS print headers/footers
+3. **Print behavior MUST be decoupled from UI state**
+   - Print uses Data Snapshot only, not current UI structure
 
 ---
 
-### Preview UI Requirements
+### Live Preview (即時預覽)
 
-The Preview UI MUST allow:
+**Definition**: HTML-based dynamic preview where form inputs (left side) reflect immediately on preview (right side).
 
-- Page thumbnails
-- Page count
+**Rules**:
+- Live Preview is for visual confirmation and content proofing ONLY
+- Live Preview MUST NOT be used directly as print source
+- Preview may include UI padding, containers, scroll behavior
+- Preview does NOT need precise print pagination
+
+---
+
+### Print Snapshot (列印資料快照)
+
+**Definition**: Complete data snapshot captured when user triggers "Print".
+
+**Content** (minimum):
+- Invoice main data
+- Line items
+- Tax amounts, totals
+- Company and customer info
+- Print settings (paper size, orientation, printer)
+
+**Rules**:
+- Snapshot MUST be immutable during print flow
+- Snapshot MUST NOT sync with form state once captured
+
+---
+
+### Print Layout (列印專用版面)
+
+**Requirements**:
+- Print MUST use a **dedicated print layout**
+- Print layout should be visually similar to Live Preview but NOT 1:1 DOM structure
+
+**Print Layout MUST**:
+- Define exact paper size (e.g., A4)
+- Control margins, spacing, and pagination
+- Contain ONLY document content (no UI controls)
+- Include system-defined headers/footers (company info, terms)
+
+---
+
+### Header/Footer Constraints (關鍵)
+
+System MUST NOT use browser default print headers/footers.
+
+All headers and footers MUST:
+- Be designed by the system
+- Be part of document layout
+
+Print output MUST NOT contain:
+- URL
+- Auto-generated date/time (unless document requires)
+- Browser name
+- Page numbers (unless document requires)
+
+---
+
+### Print Execution Strategy
+
+**Supported Modes**:
+- Silent Print (requires target printer specification)
+- Save to PDF (default option available)
+
+**Rules**:
+- Silent print failures MUST fallback to non-silent print flow
+- Print failures MUST NOT cause data loss or system interruption
+
+---
+
+### Print Settings
+
+**Required Settings**:
+- Target printer (default: connected printer, with "Save to PDF" option)
 - Paper size
-- Orientation
+- Orientation (Portrait / Landscape)
+- Color mode (Color / B&W)
 - Scale
-- Margins
-- Printer selection
 - Copy count
 
-Preview rendering MUST use PDF output.
-
----
-
-### Silent Printing
-
-Silent printing MAY be used after preview confirmation.
-
-```tsx
-webContents.print({
-  silent: true,
-  deviceName,
-  copies,
-  landscape,
-  pageSize
-})
-```
-
-**Rules**
-
-- `deviceName` is REQUIRED
-- Silent print failures MUST fallback to OS dialog
-- First-time silent print MUST require confirmation
-
----
-
-### Printer Discovery
-
-Available printers MUST be enumerated via:
-
-```
-webContents.getPrintersAsync()
-```
-
----
-
-### Print Profile (Workstation-level)
-
-Stored locally (encrypted):
-
-- preferredPrinterDeviceName
-- defaultPaperSize
-- orientation
-- scale
+**Storage**:
+- Print settings stored locally (Workstation-level)
+- Different devices may have different defaults
 
 ---
 
 ### Print Audit (Enterprise)
 
-For Enterprise tier, log:
-
+**Log the following** (at minimum):
 - tenantId
 - userId
-- workstationId
 - documentType
-- templateVersion
-- printerName
-- timestamp
+- documentId
+- printTimestamp
+
+---
+
+### Anti-Patterns (明確不採用)
+
+System MUST NOT:
+- Print the Live Preview directly
+- Rely on browser print preview UI
+- Attempt to disable browser headers/footers via print settings
+- Treat UI structure as print layout
+
+---
+
+### Specification Summary
+
+| Principle | Requirement |
+|-----------|-------------|
+| Live Preview ≠ Print Output | ✅ Separated |
+| PDF as print source | ✅ Required |
+| Headers/Footers by system | ✅ Required |
+| Cross-platform consistency | ✅ Required |
+
 
 ---
 

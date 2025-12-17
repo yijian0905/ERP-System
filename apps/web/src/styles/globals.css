@@ -86,9 +86,29 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  /* Focus styles */
+  /* Focus styles - only for keyboard navigation */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Remove focus ring from interactive elements that have their own visual feedback */
+  button:focus-visible,
+  [role="menuitem"]:focus-visible,
+  [role="option"]:focus-visible,
+  [role="menu"]:focus-visible,
+  [role="dialog"]:focus-visible,
+  [role="listbox"]:focus-visible,
+  [data-radix-menu-content]:focus-visible,
+  [data-radix-popper-content-wrapper]:focus-visible,
+  [data-radix-collection-item]:focus-visible,
+  a:focus-visible {
+    @apply ring-0 ring-offset-0 outline-none;
+  }
+
+  /* Remove focus from elements on initial load */
+  :focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   /* DateInput component: Remove inner input focus borders only */
@@ -104,10 +124,10 @@
     border-color: transparent !important;
   }
 
-  /* Scrollbar styling */
+  /* Scrollbar styling - hidden but functional */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 0;
+    height: 0;
   }
 
   ::-webkit-scrollbar-track {
@@ -122,14 +142,15 @@
     @apply bg-muted-foreground/40;
   }
 
-  /* Firefox scrollbar */
+  /* Firefox scrollbar - hidden */
   * {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
+    scrollbar-width: none;
+    scrollbar-color: transparent transparent;
   }
 }
 
 @layer components {
+
   /* Sidebar active item integration pattern */
   .sidebar-item-active {
     @apply relative bg-sidebar-accent text-sidebar-accent-foreground;
@@ -157,6 +178,7 @@
 }
 
 @layer utilities {
+
   /* Text balance for headings */
   .text-balance {
     text-wrap: balance;
@@ -198,6 +220,17 @@
   .gradient-sidebar {
     @apply bg-gradient-to-b from-sidebar to-sidebar/95;
   }
+
+  /* Electron window drag region for frameless window */
+  .electron-drag-region {
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+
+  .electron-no-drag {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+  }
 }
 
 /* Compact mode - reduce spacing */
@@ -225,11 +258,11 @@
   margin-bottom: 1rem;
 }
 
-:root.compact .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+:root.compact .space-y-4> :not([hidden])~ :not([hidden]) {
   margin-top: 0.75rem;
 }
 
-:root.compact .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+:root.compact .space-y-6> :not([hidden])~ :not([hidden]) {
   margin-top: 1rem;
 }
 

@@ -1,6 +1,5 @@
 import { Loader2, Printer, Save, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +17,8 @@ import { useCompanyForInvoice } from '@/stores/company';
 
 import { InvoiceForm } from './invoice-form';
 import { InvoicePreview } from './invoice-preview';
+import { InvoicePrintLayout } from './invoice-print-layout';
+import { usePrintService } from './use-print-service';
 import {
   calculateInvoiceTotals,
   type CompanyInfo,
@@ -65,9 +66,6 @@ export function InvoiceModal({
 
   // Invoice number (generated once on open)
   const [invoiceNumber] = useState(generateInvoiceNumber());
-
-  // Print ref
-  const printRef = useRef<HTMLDivElement>(null);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -148,40 +146,50 @@ export function InvoiceModal({
     }
   }, [formData, onSave, onOpenChange, validateForm]);
 
-  // Handle print with inventory deduction
-  const handleAfterPrint = useCallback(async () => {
-    setIsPrinting(false);
-    setPrintSuccess(true);
-
-    // Trigger inventory deduction after successful print
-    try {
-      console.log('📦 Deducting inventory for items:', formData.items);
-      await onPrintComplete?.(formData);
-      
-      // Show success message briefly, then close
-      setTimeout(() => {
-        onOpenChange(false);
-      }, 1500);
-    } catch (error) {
-      console.error('Failed to deduct inventory:', error);
-    }
-  }, [formData, onPrintComplete, onOpenChange]);
-
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-    documentTitle: `Invoice-${invoiceNumber}`,
-    onBeforePrint: async () => {
-      if (!validateForm()) {
-        throw new Error('Validation failed');
-      }
+  // Handle print with inventory deduction using PDF-based workflow
+  // @see spec.md §7 Invoice Printing & Preview System
+  const { print: printPdf } = usePrintService({
+    onPrintStart: () => {
       setIsPrinting(true);
     },
-    onAfterPrint: handleAfterPrint,
-    onPrintError: (error) => {
+    onPrintComplete: async () => {
+      setIsPrinting(false);
+      setPrintSuccess(true);
+
+      // Trigger inventory deduction after successful print
+      try {
+        console.log('📦 Deducting inventory for items:', formData.items);
+        await onPrintComplete?.(formData);
+
+        // Show success message briefly, then close
+        setTimeout(() => {
+          onOpenChange(false);
+        }, 1500);
+      } catch (error) {
+        console.error('Failed to deduct inventory:', error);
+      }
+    },
+    onPrintError: (error: Error) => {
       console.error('Print failed:', error);
       setIsPrinting(false);
     },
   });
+
+  // Handle print button click
+  const handlePrint = useCallback(async () => {
+    if (!validateForm()) return;
+
+    // Use PDF-based printing workflow
+    // 1. Captures immutable data snapshot
+    // 2. Generates PDF from dedicated print layout
+    // 3. Triggers download
+    await printPdf(
+      formData,
+      invoiceNumber,
+      companyInfo,
+      InvoicePrintLayout
+    );
+  }, [validateForm, printPdf, formData, invoiceNumber, companyInfo]);
 
   // Calculate if form is valid for preview
   const isFormValid = useMemo(() => {
@@ -249,8 +257,9 @@ export function InvoiceModal({
             <ScrollArea className="flex-1">
               <div className="p-6">
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                  {/* Live Preview - for visual confirmation only (spec §7.2) */}
+                  {/* NOT used as print source - PDF is generated from InvoicePrintLayout */}
                   <InvoicePreview
-                    ref={printRef}
                     formData={formData}
                     invoiceNumber={invoiceNumber}
                     companyInfo={companyInfo}

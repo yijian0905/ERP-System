@@ -23,12 +23,34 @@ const activationSchema = z.object({
 });
 
 /**
- * Get auth policy for a tenant
- * TODO: Fetch from database once auth policy storage is implemented
+ * Get auth policy for a tenant from database or tier defaults
+ * 
+ * Priority:
+ * 1. Fetch from Tenant model's auth policy fields
+ * 2. Fall back to tier-based defaults
  */
-function getTenantAuthPolicy(tier: string) {
-    // Default auth policies based on tier
-    // In production, this should be stored per-tenant in the database
+async function getTenantAuthPolicy(tenantId: string, tier: string) {
+    // Try to get auth policy from tenant settings
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: {
+            authPolicyPrimary: true,
+            authPolicyMfa: true,
+            authPolicyIdentifier: true,
+            authPolicyAllowFallback: true,
+        },
+    });
+
+    if (tenant) {
+        return {
+            primary: tenant.authPolicyPrimary as 'password' | 'sso',
+            allowPasswordFallback: tenant.authPolicyAllowFallback,
+            mfa: tenant.authPolicyMfa as 'off' | 'optional' | 'required',
+            identifier: tenant.authPolicyIdentifier as 'email' | 'username',
+        };
+    }
+
+    // Fall back to tier-based defaults
     const policies = {
         L1: {
             primary: 'password' as const,
@@ -196,7 +218,7 @@ export async function licenseRoutes(fastify: FastifyInstance) {
             const licenseContext: LicenseContext = {
                 tenantId: license.tenantId,
                 capabilities,
-                authPolicy: getTenantAuthPolicy(license.tier),
+                authPolicy: await getTenantAuthPolicy(license.tenantId, license.tier),
                 branding: getTenantBranding(license.tenant),
                 tier: license.tier,
                 expiresAt: license.expiresAt.toISOString(),

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
   ArrowLeft,
   Calendar,
@@ -187,6 +187,7 @@ const mockCustomers = [
 ];
 
 function RecurringRevenuePage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<RecurringItem[]>(mockRecurringItems);
   const [searchTerm, setSearchTerm] = useState('');
   const [cycleFilter, setCycleFilter] = useState<string>('');
@@ -264,10 +265,10 @@ function RecurringRevenuePage() {
         prev.map((item) =>
           item.id === editingItem.id
             ? {
-                ...item,
-                ...formData,
-                customer: customer?.name || item.customer,
-              }
+              ...item,
+              ...formData,
+              customer: customer?.name || item.customer,
+            }
             : item
         )
       );
@@ -311,9 +312,19 @@ function RecurringRevenuePage() {
   };
 
   const handleGenerateInvoice = (item: RecurringItem) => {
-    console.log('Generating invoice for:', item.name);
-    // TODO: Navigate to invoice creation with pre-filled data
-    alert(`Invoice will be generated for ${item.name} - $${item.amount}`);
+    // Navigate to invoices page with recurring item data as search params
+    // The invoices page can read this and open the create modal with pre-filled data
+    navigate({
+      to: '/invoices',
+      search: {
+        action: 'create',
+        recurringId: item.id,
+        customerId: item.customerId,
+        customerName: item.customer,
+        description: item.name,
+        amount: item.amount.toString(),
+      },
+    });
   };
 
   return (

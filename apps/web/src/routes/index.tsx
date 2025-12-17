@@ -47,7 +47,7 @@ function HomePage() {
 
           {/* Subtitle */}
           <p className="text-xl text-slate-400 text-center max-w-2xl">
-            Enterprise Resource Planning System with multi-tenant support, 
+            Enterprise Resource Planning System with multi-tenant support,
             predictive analytics, and AI-powered assistance.
           </p>
 
@@ -107,11 +107,10 @@ interface FeatureCardProps {
 function FeatureCard({ tier, title, description, features, highlighted }: FeatureCardProps) {
   return (
     <div
-      className={`relative rounded-2xl p-6 ${
-        highlighted
+      className={`relative rounded-2xl p-6 ${highlighted
           ? 'bg-primary/10 border-2 border-primary'
           : 'bg-slate-800/50 border border-slate-700'
-      }`}
+        }`}
     >
       {highlighted && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-xs font-semibold rounded-full">

@@ -31,6 +31,11 @@ import {
   StatsCard,
 } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
+import {
+  DateRangeSelector,
+  type DateRange,
+  type PresetOption,
+} from '@/components/ui/date-range-selector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   exportData,
@@ -127,9 +132,22 @@ const mockRequisitionSummary: RequisitionSummary[] = [
 ];
 
 function CostAccountingReportPage() {
-  const [dateRange, setDateRange] = useState('this_month');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: '',
+    endDate: '',
+    preset: 'this_month',
+  });
   const [selectedCostCenter, setSelectedCostCenter] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+
+  // Cost accounting report presets
+  const costAccountingPresets: PresetOption[] = [
+    { value: 'this_month', label: 'This Month' },
+    { value: 'last_month', label: 'Last Month' },
+    { value: 'this_quarter', label: 'This Quarter' },
+    { value: 'this_year', label: 'This Year (YTD)' },
+    { value: 'last_year', label: 'Last Year' },
+  ];
 
   // Calculate totals
   const totalBudget = mockCostCenterSummaries.reduce((sum, cc) => sum + cc.budget, 0);
@@ -159,7 +177,7 @@ function CostAccountingReportPage() {
   // Export handler
   const handleExport = useCallback(async (format: ExportFormat) => {
     setIsExporting(true);
-    
+
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     try {
@@ -245,8 +263,8 @@ function CostAccountingReportPage() {
         title="Cost Accounting Report"
         description="Analyze cost allocations, budget utilization, and departmental expenses"
         actions={
-          <ExportDropdown 
-            onExport={handleExport} 
+          <ExportDropdown
+            onExport={handleExport}
             isExporting={isExporting}
             label="Export Report"
           />
@@ -261,17 +279,11 @@ function CostAccountingReportPage() {
             <span className="text-sm font-medium">Filters</span>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <select
+            <DateRangeSelector
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="this_month">This Month</option>
-              <option value="last_month">Last Month</option>
-              <option value="this_quarter">This Quarter</option>
-              <option value="this_year">This Year (YTD)</option>
-              <option value="last_year">Last Year</option>
-            </select>
+              onChange={setDateRange}
+              presets={costAccountingPresets}
+            />
             <select
               value={selectedCostCenter}
               onChange={(e) => setSelectedCostCenter(e.target.value)}
@@ -343,14 +355,14 @@ function CostAccountingReportPage() {
             <BarChart data={mockMonthlyData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis dataKey="month" className="text-xs" />
-              <YAxis 
-                className="text-xs" 
+              <YAxis
+                className="text-xs"
                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--background))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '8px'
                 }}
@@ -383,10 +395,10 @@ function CostAccountingReportPage() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   formatter={(value: number) => formatCurrency(value)}
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--background))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
                   }}
@@ -469,8 +481,8 @@ function CostAccountingReportPage() {
                             className={cn(
                               'h-full rounded-full',
                               utilization >= 100 ? 'bg-red-500' :
-                              utilization >= 80 ? 'bg-amber-500' :
-                              'bg-green-500'
+                                utilization >= 80 ? 'bg-amber-500' :
+                                  'bg-green-500'
                             )}
                             style={{ width: `${Math.min(utilization, 100)}%` }}
                           />

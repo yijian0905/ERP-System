@@ -19,9 +19,31 @@ function hasCapability(capabilities: Capability[], code: CapabilityCode): boolea
 }
 
 /**
- * Get capabilities for a tenant from their active license
+ * Get capabilities for a tenant from database or license tier
+ * 
+ * Priority:
+ * 1. Fetch from TenantCapability table in database
+ * 2. Fall back to tier-based defaults from license
  */
 async function getTenantCapabilities(tenantId: string): Promise<Capability[]> {
+    // First, try to get capabilities from the database
+    const dbCapabilities = await prisma.tenantCapability.findMany({
+        where: { tenantId },
+        select: {
+            code: true,
+            enabled: true,
+        },
+    });
+
+    if (dbCapabilities.length > 0) {
+        // Return database-stored capabilities
+        return dbCapabilities.map((c) => ({
+            code: c.code as CapabilityCode,
+            enabled: c.enabled,
+        }));
+    }
+
+    // Fall back to license tier-based capabilities
     const license = await prisma.license.findFirst({
         where: {
             tenantId,
@@ -38,7 +60,6 @@ async function getTenantCapabilities(tenantId: string): Promise<Capability[]> {
     }
 
     // Map tier to capabilities (legacy tier-based mapping)
-    // TODO: Once capabilities are stored in database, fetch them directly
     const tierCapabilities: Record<string, Capability[]> = {
         L1: [
             { code: 'erp_core', enabled: true },

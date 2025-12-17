@@ -36,7 +36,13 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const { refreshToken, setTokens, logout } = useAuthStore.getState();
+      const { refreshToken, setTokens, logout, user } = useAuthStore.getState();
+
+      // Dev mode bypass - don't logout/redirect for dev users
+      if (import.meta.env.DEV && user?.id === 'dev-user-1') {
+        console.warn('[Dev Mode] API returned 401, but skipping logout for dev bypass user');
+        return Promise.reject(error);
+      }
 
       if (refreshToken) {
         try {

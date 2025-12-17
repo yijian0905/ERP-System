@@ -4,10 +4,13 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  HelpCircle,
   LogOut,
   Moon,
+  Power,
+  Settings,
+  Sparkles,
   Sun,
-  User,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -16,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -307,7 +311,42 @@ function NavGroupComponent({
 function UserMenu({ collapsed }: { collapsed: boolean }) {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [isDark, setIsDark] = useState(false);
+
+  // Check if running in Electron
+  const [isElectron, setIsElectron] = useState(false);
+
+  // Initialize isDark based on current DOM state
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
+
+  // Check for Electron environment on mount
+  useEffect(() => {
+    // Check if electronAPI is available
+    setIsElectron(typeof window !== 'undefined' && !!window.electronAPI);
+  }, []);
+
+  // Sync isDark state with DOM changes (e.g., from theme provider or system preference)
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const hasDark = document.documentElement.classList.contains('dark');
+          setIsDark(hasDark);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+
+    // Initial sync
+    setIsDark(document.documentElement.classList.contains('dark'));
+
+    return () => observer.disconnect();
+  }, []);
 
   const toggleTheme = useCallback(() => {
     setIsDark((prev) => {
@@ -322,12 +361,57 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
     navigate({ to: '/login' });
   }, [logout, navigate]);
 
+  const handleExitApp = useCallback(() => {
+    if (window.electronAPI?.quitApp) {
+      window.electronAPI.quitApp();
+    }
+  }, []);
+
   const initials = user?.name
     ?.split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2) || 'U';
+
+  // Common menu items for consistency
+  const menuItems = (
+    <>
+      <DropdownMenuGroup>
+        <DropdownMenuItem>
+          <Sparkles className="h-4 w-4 mr-2" />
+          Upgrade Plan
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={toggleTheme}>
+          {isDark ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
+          {isDark ? 'Light Mode' : 'Dark Mode'}
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/settings">
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuItem>
+          <HelpCircle className="h-4 w-4 mr-2" />
+          Help
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign out
+        </DropdownMenuItem>
+        {isElectron && (
+          <DropdownMenuItem onClick={handleExitApp} className="text-destructive focus:text-destructive">
+            <Power className="h-4 w-4 mr-2" />
+            Exit App
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuGroup>
+    </>
+  );
 
   if (collapsed) {
     return (
@@ -349,29 +433,28 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
             {user?.name || 'User'}
           </TooltipContent>
         </Tooltip>
-        <DropdownMenuContent side="right" align="end" className="w-56">
-          <DropdownMenuLabel>
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">{user?.name}</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
+        <DropdownMenuContent
+          side="right"
+          align="end"
+          className="w-64 p-2"
+          sideOffset={10}
+        >
+          <DropdownMenuLabel className="font-normal p-0 mb-2">
+            <div className="flex items-center gap-3 px-2 py-2 text-left text-sm bg-sidebar-accent/50 rounded-md">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={user?.avatar || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left leading-tight">
+                <span className="truncate font-semibold">{user?.name}</span>
+                <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+              </div>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link to="/settings/profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={toggleTheme}>
-            {isDark ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
-            {isDark ? 'Light Mode' : 'Dark Mode'}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-            <LogOut className="h-4 w-4 mr-2" />
-            Log out
-          </DropdownMenuItem>
+          {menuItems}
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -380,46 +463,38 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-sidebar-accent">
-          <Avatar className="h-9 w-9">
+        <button className="group flex w-full items-center gap-3 rounded-lg p-2 text-left transition-all hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent">
+          <Avatar className="h-9 w-9 border border-sidebar-border">
             <AvatarImage src={user?.avatar || undefined} />
             <AvatarFallback className="bg-primary text-primary-foreground text-sm">
               {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 truncate">
-            <p className="text-sm font-medium text-sidebar-foreground">{user?.name}</p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
+            <p className="text-sm font-medium text-sidebar-foreground group-hover:text-sidebar-accent-foreground transiton-colors">{user?.name}</p>
+            <p className="text-xs text-muted-foreground truncate group-hover:text-sidebar-accent-foreground/70 transition-colors">{user?.tier || 'Free'} Plan</p>
           </div>
-          <ChevronRight className="h-4 w-4 text-sidebar-foreground/50" />
+          <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 group-data-[state=open]:rotate-90 transition-transform" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="right" align="end" className="w-56">
-        <DropdownMenuLabel>
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">{user?.name}</p>
-            <p className="text-xs text-muted-foreground">{user?.email}</p>
-            <p className="text-xs text-muted-foreground">
-              {user?.tier} • {user?.role}
-            </p>
+      <DropdownMenuContent
+        side="top"
+        align="center"
+        className="w-[--radix-dropdown-menu-trigger-width] min-w-[16rem] p-2 mb-2"
+        sideOffset={8}
+      >
+        <DropdownMenuLabel className="font-normal p-0 mb-2">
+          <div className="flex items-center gap-3 px-2 py-2 text-left text-sm">
+            <div className="grid flex-1 text-left leading-tight">
+              <span className="truncate font-semibold text-lg">{user?.name}</span>
+              <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+            </div>
           </div>
         </DropdownMenuLabel>
+
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/settings/profile" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Profile
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={toggleTheme}>
-          {isDark ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
-          {isDark ? 'Light Mode' : 'Dark Mode'}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-          <LogOut className="h-4 w-4 mr-2" />
-          Log out
-        </DropdownMenuItem>
+
+        {menuItems}
       </DropdownMenuContent>
     </DropdownMenu>
   );

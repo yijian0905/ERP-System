@@ -295,7 +295,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
       } as any,
       preHandler: [requireTier('L2', 'L3')],
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (_request: FastifyRequest, reply: FastifyReply) => {
       try {
         const isAvailable = await checkAIServiceHealth();
         const serviceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
@@ -337,7 +337,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
       } as any,
       preHandler: [requireTier('L2', 'L3'), requireFeature('demandForecasting')],
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (_request: FastifyRequest, reply: FastifyReply) => {
       try {
         const isAIServiceAvailable = await checkAIServiceHealth();
 

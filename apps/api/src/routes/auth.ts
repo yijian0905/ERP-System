@@ -17,6 +17,7 @@ import {
 } from '../lib/jwt.js';
 import { logger } from '../lib/logger.js';
 import { prisma } from '../lib/prisma.js';
+import { getTenantCapabilities } from '../middleware/capability.js';
 
 // Validation schemas
 const loginSchema = z.object({
@@ -717,50 +718,16 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       const permissions = getUserPermissions(user);
 
-      // Get tenant's active license for capabilities
-      const license = await prisma.license.findFirst({
-        where: {
-          tenantId: user.tenantId,
-          isActive: true,
-          expiresAt: { gt: new Date() },
-        },
-      });
+      // Get capabilities from database (capability-based model per spec.md)
+      const capabilities = await getTenantCapabilities(user.tenantId);
 
-      // Map tier to capabilities (capability-based model)
-      const tierCapabilities: Record<string, Array<{ code: string; enabled: boolean }>> = {
-        L1: [
-          { code: 'erp_core', enabled: true },
-          { code: 'forecasting', enabled: false },
-          { code: 'ai_chat', enabled: false },
-          { code: 'ai_agent', enabled: false },
-          { code: 'automation_rules', enabled: false },
-        ],
-        L2: [
-          { code: 'erp_core', enabled: true },
-          { code: 'forecasting', enabled: true },
-          { code: 'ai_chat', enabled: false },
-          { code: 'ai_agent', enabled: false },
-          { code: 'automation_rules', enabled: false },
-        ],
-        L3: [
-          { code: 'erp_core', enabled: true },
-          { code: 'forecasting', enabled: true },
-          { code: 'ai_chat', enabled: true },
-          { code: 'ai_agent', enabled: false },
-          { code: 'automation_rules', enabled: false },
-        ],
-      };
-
-      const capabilities = license
-        ? tierCapabilities[license.tier] || tierCapabilities.L1
-        : tierCapabilities.L1;
-
-      // Get auth policy (default for now, TODO: store per-tenant)
+      // Get auth policy from tenant table (per spec.md §120-144)
+      // Note: This uses the new auth policy fields added to Tenant model
       const authPolicy = {
-        primary: 'password' as const,
-        allowPasswordFallback: true,
-        mfa: 'off' as const,
-        identifier: 'email' as const,
+        primary: (user.tenant as { authPolicyPrimary?: string }).authPolicyPrimary || 'password',
+        allowPasswordFallback: (user.tenant as { authPolicyAllowFallback?: boolean }).authPolicyAllowFallback ?? true,
+        mfa: (user.tenant as { authPolicyMfa?: string }).authPolicyMfa || 'off',
+        identifier: (user.tenant as { authPolicyIdentifier?: string }).authPolicyIdentifier || 'email',
       };
 
       // Get branding (default for now, TODO: store per-tenant)
@@ -792,6 +759,206 @@ export async function authRoutes(fastify: FastifyInstance) {
           branding,
           authPolicy,
         },
+      });
+    }
+  );
+
+  /**
+   * PATCH /auth/profile
+   * Update current user's profile
+   */
+  fastify.patch<{
+    Body: { name?: string; phone?: string };
+  }>(
+    '/profile',
+    {
+      schema: {
+        description: 'Update user profile',
+        tags: ['Auth'],
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 255 },
+            phone: { type: 'string', maxLength: 50 },
+          },
+        },
+      },
+      preHandler: async (request, reply) => {
+        const authHeader = request.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+          return reply.status(401).send({
+            success: false,
+            error: {
+              code: 'UNAUTHORIZED',
+              message: 'Authentication required',
+            },
+          });
+        }
+
+        try {
+          const token = authHeader.slice(7);
+          const config = getJwtConfig();
+          const { verifyAccessToken } = await import('../lib/jwt.js');
+          request.user = verifyAccessToken(token, config);
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: {
+              code: 'INVALID_TOKEN',
+              message: 'Invalid or expired token',
+            },
+          });
+        }
+      },
+    },
+    async (request, reply) => {
+      const user = request.user;
+
+      if (!user?.sub) {
+        return reply.status(401).send({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Not authenticated',
+          },
+        });
+      }
+
+      const { name, phone } = request.body;
+
+      // Update user in database
+      const updatedUser = await prisma.user.update({
+        where: { id: user.sub },
+        data: {
+          ...(name && { name }),
+          ...(phone !== undefined && { phone }),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          avatar: true,
+        },
+      });
+
+      logger.info(`Profile updated for user: ${user.sub}`);
+
+      return reply.send({
+        success: true,
+        data: updatedUser,
+      });
+    }
+  );
+
+  /**
+   * POST /auth/change-password
+   * Change current user's password
+   */
+  fastify.post<{
+    Body: { currentPassword: string; newPassword: string };
+  }>(
+    '/change-password',
+    {
+      schema: {
+        description: 'Change user password',
+        tags: ['Auth'],
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: 'object',
+          required: ['currentPassword', 'newPassword'],
+          properties: {
+            currentPassword: { type: 'string', minLength: 1 },
+            newPassword: { type: 'string', minLength: 8 },
+          },
+        },
+      },
+      preHandler: async (request, reply) => {
+        const authHeader = request.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+          return reply.status(401).send({
+            success: false,
+            error: {
+              code: 'UNAUTHORIZED',
+              message: 'Authentication required',
+            },
+          });
+        }
+
+        try {
+          const token = authHeader.slice(7);
+          const config = getJwtConfig();
+          const { verifyAccessToken } = await import('../lib/jwt.js');
+          request.user = verifyAccessToken(token, config);
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: {
+              code: 'INVALID_TOKEN',
+              message: 'Invalid or expired token',
+            },
+          });
+        }
+      },
+    },
+    async (request, reply) => {
+      const user = request.user;
+
+      if (!user?.sub) {
+        return reply.status(401).send({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Not authenticated',
+          },
+        });
+      }
+
+      const { currentPassword, newPassword } = request.body;
+
+      // Get current user with password
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.sub },
+        select: { password: true },
+      });
+
+      if (!dbUser) {
+        return reply.status(404).send({
+          success: false,
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found',
+          },
+        });
+      }
+
+      // Verify current password
+      const isValidPassword = await bcrypt.compare(currentPassword, dbUser.password);
+      if (!isValidPassword) {
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: 'INVALID_PASSWORD',
+            message: 'Current password is incorrect',
+          },
+        });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      // Update password
+      await prisma.user.update({
+        where: { id: user.sub },
+        data: { password: hashedPassword },
+      });
+
+      logger.info(`Password changed for user: ${user.sub}`);
+
+      return reply.send({
+        success: true,
+        data: { message: 'Password changed successfully' },
       });
     }
   );
