@@ -255,8 +255,9 @@ export function InvoiceModal({
               </p>
             </div>
             <ScrollArea className="flex-1">
-              <div className="p-6">
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="p-6 flex justify-center">
+                {/* A4 Paper Container - displays full invoice at actual A4 dimensions */}
+                <div className="inline-block">
                   {/* Live Preview - for visual confirmation only (spec §7.2) */}
                   {/* NOT used as print source - PDF is generated from InvoicePrintLayout */}
                   <InvoicePreview

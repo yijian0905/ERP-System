@@ -7,12 +7,14 @@
  * - Print failures MUST NOT cause data loss
  * - System MUST NOT rely on browser/OS print headers/footers
  * - Print audit logging (Enterprise)
+ * - Print settings stored locally (Workstation-level) per spec.md §277-279
  */
 
 import { BrowserWindow, ipcMain, PrinterInfo } from 'electron';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { app } from 'electron';
+import { PrintSettingsStore, PrintSettings } from './print-settings-store';
 
 /**
  * Print Options (per spec.md Print Settings)
@@ -66,6 +68,36 @@ export interface PrintAuditEntry {
  * Setup print-related IPC handlers
  */
 export function setupPrintHandlers(mainWindow: BrowserWindow): void {
+    // Initialize print settings store (workstation-level per spec.md §277-279)
+    const printSettingsStore = new PrintSettingsStore();
+
+    // ============ Print Settings IPC Handlers ============
+
+    // Get print settings
+    ipcMain.handle('print:getSettings', (): PrintSettings => {
+        return printSettingsStore.getSettings();
+    });
+
+    // Save print settings
+    ipcMain.handle(
+        'print:saveSettings',
+        (_event, settings: Partial<PrintSettings>): PrintSettings => {
+            return printSettingsStore.saveSettings(settings);
+        }
+    );
+
+    // Reset print settings to defaults
+    ipcMain.handle('print:resetSettings', (): PrintSettings => {
+        return printSettingsStore.resetToDefaults();
+    });
+
+    // Get default print settings
+    ipcMain.handle('print:getDefaultSettings', (): PrintSettings => {
+        return printSettingsStore.getDefaults();
+    });
+
+    // ============ Printer IPC Handlers ============
+
     // Get available printers
     ipcMain.handle('print:getPrinters', async (): Promise<PrinterInfo[]> => {
         try {
@@ -202,6 +234,149 @@ export function setupPrintHandlers(mainWindow: BrowserWindow): void {
                     error: error instanceof Error ? error.message : 'PDF generation failed',
                 };
             }
+        }
+    );
+
+    // Print PDF Buffer silently (for printing specific content without dialog)
+    ipcMain.handle(
+        'print:pdfBuffer',
+        async (
+            _event,
+            pdfData: number[],
+            options: PrintOptions
+        ): Promise<{ success: boolean; error?: string }> => {
+            return new Promise(async (resolve) => {
+                try {
+                    // Convert array to Uint8Array
+                    const pdfBuffer = Buffer.from(pdfData);
+
+                    // Save to temp file
+                    const tempPath = join(app.getPath('temp'), `print-${Date.now()}.pdf`);
+                    await writeFile(tempPath, pdfBuffer);
+
+                    // Create hidden window to load and print PDF
+                    const printWindow = new BrowserWindow({
+                        show: false,
+                        width: 800,
+                        height: 600,
+                        webPreferences: {
+                            nodeIntegration: false,
+                            contextIsolation: true,
+                        },
+                    });
+
+                    // Load the PDF file
+                    await printWindow.loadFile(tempPath);
+
+                    // Wait for PDF to load then print
+                    printWindow.webContents.on('did-finish-load', () => {
+                        setTimeout(() => {
+                            printWindow.webContents.print(
+                                {
+                                    silent: options.silent ?? true,
+                                    printBackground: true,
+                                    deviceName: options.deviceName,
+                                    copies: options.copies ?? 1,
+                                    color: options.color ?? true,
+                                    landscape: options.landscape ?? false,
+                                    margins: { marginType: 'none' },
+                                    pageSize: options.pageSize ?? 'A4',
+                                },
+                                async (success, failureReason) => {
+                                    // Clean up temp file
+                                    try {
+                                        const { unlink } = await import('fs/promises');
+                                        await unlink(tempPath);
+                                    } catch (e) {
+                                        console.warn('Failed to delete temp PDF:', e);
+                                    }
+
+                                    printWindow.close();
+
+                                    if (success) {
+                                        resolve({ success: true });
+                                    } else {
+                                        resolve({
+                                            success: false,
+                                            error: failureReason || 'Print failed',
+                                        });
+                                    }
+                                }
+                            );
+                        }, 500); // Wait for PDF to render
+                    });
+                } catch (error) {
+                    console.error('Print PDF buffer error:', error);
+                    resolve({
+                        success: false,
+                        error: error instanceof Error ? error.message : 'Print failed',
+                    });
+                }
+            });
+        }
+    );
+
+    // Print HTML content silently (simpler approach - no PDF conversion)
+    ipcMain.handle(
+        'print:htmlContent',
+        async (
+            _event,
+            htmlContent: string,
+            options: PrintOptions
+        ): Promise<{ success: boolean; error?: string }> => {
+            return new Promise(async (resolve) => {
+                try {
+                    // Create hidden window to load and print HTML
+                    const printWindow = new BrowserWindow({
+                        show: false,
+                        width: 794, // A4 width in pixels at 96 DPI
+                        height: 1123, // A4 height in pixels at 96 DPI
+                        webPreferences: {
+                            nodeIntegration: false,
+                            contextIsolation: true,
+                        },
+                    });
+
+                    // Load the HTML content directly
+                    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+                    // Wait for content to render, then print
+                    printWindow.webContents.on('did-finish-load', () => {
+                        setTimeout(() => {
+                            printWindow.webContents.print(
+                                {
+                                    silent: options.silent ?? true,
+                                    printBackground: true,
+                                    deviceName: options.deviceName,
+                                    copies: options.copies ?? 1,
+                                    color: options.color ?? true,
+                                    landscape: options.landscape ?? false,
+                                    margins: { marginType: 'none' },
+                                    pageSize: options.pageSize ?? 'A4',
+                                },
+                                (success, failureReason) => {
+                                    printWindow.close();
+
+                                    if (success) {
+                                        resolve({ success: true });
+                                    } else {
+                                        resolve({
+                                            success: false,
+                                            error: failureReason || 'Print failed',
+                                        });
+                                    }
+                                }
+                            );
+                        }, 300); // Wait for CSS to apply
+                    });
+                } catch (error) {
+                    console.error('Print HTML content error:', error);
+                    resolve({
+                        success: false,
+                        error: error instanceof Error ? error.message : 'Print failed',
+                    });
+                }
+            });
         }
     );
 

@@ -1,6 +1,5 @@
 import { Link, Outlet, createRootRoute } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
-import { Home } from 'lucide-react';
 
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -15,10 +14,9 @@ function NotFoundComponent() {
         <p className="text-slate-400 mt-2 max-w-md mx-auto">
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
-        <Link to="/">
+        <Link to="/login">
           <Button className="mt-8" size="lg">
-            <Home className="mr-2 h-4 w-4" />
-            Back to Home
+            Back to Login
           </Button>
         </Link>
       </div>

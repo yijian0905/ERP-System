@@ -404,7 +404,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
           Sign out
         </DropdownMenuItem>
         {isElectron && (
-          <DropdownMenuItem onClick={handleExitApp} className="text-destructive focus:text-destructive">
+          <DropdownMenuItem onClick={handleExitApp} className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400">
             <Power className="h-4 w-4 mr-2" />
             Exit App
           </DropdownMenuItem>

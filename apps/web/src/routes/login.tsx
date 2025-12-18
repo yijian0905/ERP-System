@@ -187,8 +187,8 @@ function LoginPage() {
                             </div>
                         </div>
 
-                        {/* Remember & Forgot Password */}
-                        <div className="flex items-center justify-between text-sm">
+                        {/* Remember Me */}
+                        <div className="flex items-center text-sm">
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                     type="checkbox"
@@ -196,9 +196,6 @@ function LoginPage() {
                                 />
                                 <span className="text-slate-400">Remember me</span>
                             </label>
-                            <button type="button" className="text-primary hover:text-primary/80">
-                                Forgot password?
-                            </button>
                         </div>
 
                         {/* Submit Button */}
@@ -259,16 +256,7 @@ function LoginPage() {
                     )}
                 </div>
 
-                {/* Back to Home */}
-                <p className="text-center mt-6 text-slate-400">
-                    <button
-                        type="button"
-                        onClick={() => navigate({ to: '/' })}
-                        className="hover:text-white transition-colors"
-                    >
-                        ← Back to Home
-                    </button>
-                </p>
+
             </div>
         </div>
     );

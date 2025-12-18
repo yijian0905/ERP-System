@@ -48,6 +48,19 @@ interface PrintAuditEntry {
 }
 
 /**
+ * Print Settings (workstation-level per spec.md §277-279)
+ */
+interface PrintSettings {
+    targetPrinter: string | null;
+    paperSize: 'A4' | 'Letter' | 'Legal' | 'A3' | 'A5';
+    landscape: boolean;
+    color: boolean;
+    scale: number;
+    copies: number;
+    saveToPdfDefault: boolean;
+}
+
+/**
  * License Context
  */
 interface LicenseContext {
@@ -154,6 +167,24 @@ const electronAPI = {
         ipcRenderer.invoke('print:pdf', options),
 
     /**
+     * Print PDF buffer silently (for printing specific invoice content)
+     */
+    printPdfBuffer: (
+        pdfData: number[],
+        options: PrintOptions
+    ): Promise<{ success: boolean; error?: string }> =>
+        ipcRenderer.invoke('print:pdfBuffer', pdfData, options),
+
+    /**
+     * Print HTML content silently (direct HTML string)
+     */
+    printHtmlContent: (
+        htmlContent: string,
+        options: PrintOptions
+    ): Promise<{ success: boolean; error?: string }> =>
+        ipcRenderer.invoke('print:htmlContent', htmlContent, options),
+
+    /**
      * Get default PDF save path
      */
     getDefaultPDFPath: (filename: string): Promise<string> =>
@@ -165,6 +196,31 @@ const electronAPI = {
     logPrintAudit: (
         entry: PrintAuditEntry
     ): Promise<{ success: boolean }> => ipcRenderer.invoke('print:audit', entry),
+
+    // ============ Print Settings APIs (spec.md §277-279) ============
+    /**
+     * Get current print settings
+     */
+    getPrintSettings: (): Promise<PrintSettings> =>
+        ipcRenderer.invoke('print:getSettings'),
+
+    /**
+     * Save print settings
+     */
+    savePrintSettings: (settings: Partial<PrintSettings>): Promise<PrintSettings> =>
+        ipcRenderer.invoke('print:saveSettings', settings),
+
+    /**
+     * Reset print settings to defaults
+     */
+    resetPrintSettings: (): Promise<PrintSettings> =>
+        ipcRenderer.invoke('print:resetSettings'),
+
+    /**
+     * Get default print settings
+     */
+    getDefaultPrintSettings: (): Promise<PrintSettings> =>
+        ipcRenderer.invoke('print:getDefaultSettings'),
 
     // ============ App APIs ============
     /**

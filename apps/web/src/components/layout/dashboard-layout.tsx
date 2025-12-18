@@ -32,23 +32,7 @@ export function DashboardLayout() {
           <Outlet />
         </main>
 
-        {/* Footer */}
-        <footer className="border-t bg-muted/30 px-6 py-4">
-          <div className="flex flex-col items-center justify-between gap-2 text-sm text-muted-foreground sm:flex-row">
-            <p>© 2024 ERP System. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <a href="/docs" className="hover:text-foreground transition-colors">
-                Documentation
-              </a>
-              <a href="/support" className="hover:text-foreground transition-colors">
-                Support
-              </a>
-              <a href="/privacy" className="hover:text-foreground transition-colors">
-                Privacy
-              </a>
-            </div>
-          </div>
-        </footer>
+
       </div>
     </div>
   );

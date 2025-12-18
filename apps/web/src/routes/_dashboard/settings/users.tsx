@@ -9,6 +9,7 @@ import {
   Edit,
   Eye,
   Globe,
+  KeyRound,
   Loader2,
   Mail,
   MoreHorizontal,
@@ -113,8 +114,11 @@ function UsersSettingsPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithPermissions | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Form data
   const [formData, setFormData] = useState({
@@ -274,6 +278,39 @@ function UsersSettingsPage() {
     setExpandedCategories((prev) =>
       prev.includes(categoryKey) ? prev.filter((c) => c !== categoryKey) : [...prev, categoryKey]
     );
+  };
+
+  // Handle reset password
+  const handleResetPassword = async () => {
+    if (!selectedUser) return;
+    if (newPassword !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    if (newPassword.length < 8) {
+      alert('Password must be at least 8 characters');
+      return;
+    }
+
+    setIsSaving(true);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // In a real app, this would call an API to reset the password
+    console.log(`Password reset for user ${selectedUser.email}`);
+
+    setIsSaving(false);
+    setIsResetPasswordModalOpen(false);
+    setNewPassword('');
+    setConfirmPassword('');
+    alert(`Password reset successfully for ${selectedUser.name}`);
+  };
+
+  // Open reset password modal
+  const openResetPasswordModal = (user: UserWithPermissions) => {
+    setSelectedUser(user);
+    setNewPassword('');
+    setConfirmPassword('');
+    setIsResetPasswordModalOpen(true);
   };
 
 
@@ -466,6 +503,10 @@ function UsersSettingsPage() {
                           <DropdownMenuItem onClick={() => openPermissionsModal(user)}>
                             <Shield className="mr-2 h-4 w-4" />
                             Edit Permissions
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openResetPasswordModal(user)}>
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            Reset Password
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleSwitchToUser(user)}>
                             <Eye className="mr-2 h-4 w-4" />
@@ -685,7 +726,6 @@ function UsersSettingsPage() {
                       <div className="flex items-center gap-3">
                         <Checkbox
                           checked={allSelected}
-                          // @ts-expect-error - indeterminate is valid but not typed
                           indeterminate={someSelected}
                           onCheckedChange={() => toggleCategory(categoryKey)}
                           onClick={(e) => e.stopPropagation()}
@@ -772,6 +812,61 @@ function UsersSettingsPage() {
               </Button>
             </DialogFooter>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Modal */}
+      <Dialog open={isResetPasswordModalOpen} onOpenChange={setIsResetPasswordModalOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              Reset Password - {selectedUser?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Set a new password for this user. They will be required to change it on next login.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="new-password">New Password *</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password (min 8 characters)"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="confirm-password">Confirm Password *</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+              />
+            </div>
+            {newPassword && confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-sm text-destructive">Passwords do not match</p>
+            )}
+            {newPassword && newPassword.length < 8 && (
+              <p className="text-sm text-destructive">Password must be at least 8 characters</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsResetPasswordModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleResetPassword}
+              disabled={isSaving || !newPassword || !confirmPassword || newPassword !== confirmPassword || newPassword.length < 8}
+            >
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
+              {isSaving ? 'Resetting...' : 'Reset Password'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageContainer>

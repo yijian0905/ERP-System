@@ -21,15 +21,24 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
     const totals = calculateInvoiceTotals(formData.items);
     const hasItems = formData.items.length > 0;
 
+    // A4 dimensions: 210mm x 297mm
     return (
       <div
         ref={ref}
         className={cn(
-          'bg-white text-black p-8 min-h-full',
+          'bg-white text-black p-8',
+          // A4 paper size simulation
+          'w-[210mm] min-h-[297mm]',
+          // Paper appearance
+          'shadow-lg border border-gray-200',
           // Print styles
-          'print:p-0 print:shadow-none',
+          'print:p-0 print:shadow-none print:border-0',
           className
         )}
+        style={{
+          // Ensure proper box sizing for A4 dimensions
+          boxSizing: 'border-box',
+        }}
       >
         {/* Print-specific styles */}
         <style>
