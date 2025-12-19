@@ -24,6 +24,7 @@ import {
   YAxis,
 } from 'recharts';
 
+import { FilterSelect } from '@/components/ui/filter-select';
 import { ExportDropdown } from '@/components/export/export-dropdown';
 import {
   DashboardCard,
@@ -319,16 +320,18 @@ function ForecastingPage() {
         description="AI-powered demand prediction and inventory optimization"
         actions={
           <div className="flex gap-2">
-            <select
+            <FilterSelect
               value={forecastPeriod}
-              onChange={(e) => setForecastPeriod(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="2weeks">2 Weeks</option>
-              <option value="4weeks">4 Weeks</option>
-              <option value="8weeks">8 Weeks</option>
-              <option value="12weeks">12 Weeks</option>
-            </select>
+              onChange={setForecastPeriod}
+              options={[
+                { value: '2weeks', label: '2 Weeks' },
+                { value: '4weeks', label: '4 Weeks' },
+                { value: '8weeks', label: '8 Weeks' },
+                { value: '12weeks', label: '12 Weeks' },
+              ]}
+              placeholder="Select Period"
+              className="w-auto"
+            />
             <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
               <RefreshCw className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')} />
               {isRefreshing ? 'Updating...' : 'Refresh'}

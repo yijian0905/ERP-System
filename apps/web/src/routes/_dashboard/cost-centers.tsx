@@ -38,9 +38,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { FilterSelect } from '@/components/ui/filter-select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/cost-centers')({
@@ -437,26 +439,26 @@ function CostCentersPage() {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Status</option>
-              {Object.entries(statusConfig).map(([key, config]) => (
-                <option key={key} value={key}>{config.label}</option>
-              ))}
-            </select>
-            <select
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Departments</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
+            <FilterSelect
+              value={statusFilter || 'all'}
+              onChange={(val) => setStatusFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                ...Object.entries(statusConfig).map(([key, config]) => ({ value: key, label: config.label })),
+              ]}
+              placeholder="All Status"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={departmentFilter || 'all'}
+              onChange={(val) => setDepartmentFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Departments' },
+                ...departments.map((dept) => ({ value: dept, label: dept })),
+              ]}
+              placeholder="All Departments"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>
@@ -604,11 +606,10 @@ function CostCentersPage() {
 
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <textarea
+              <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
-                className="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="Brief description of this cost center"
               />
             </div>

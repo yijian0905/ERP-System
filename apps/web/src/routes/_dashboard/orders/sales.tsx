@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { FilterSelect } from '@/components/ui/filter-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
@@ -615,16 +616,16 @@ function SalesOrdersPage() {
                   className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-4 text-sm"
                 />
               </div>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <FilterSelect
+                value={categoryFilter || 'all'}
+                onChange={(val) => setCategoryFilter(val === 'all' ? '' : val)}
+                options={[
+                  { value: 'all', label: 'All Categories' },
+                  ...categories.map((c) => ({ value: c, label: c })),
+                ]}
+                placeholder="All Categories"
+                className="w-auto"
+              />
             </div>
 
             {/* Inventory list */}
@@ -742,16 +743,15 @@ function SalesOrdersPage() {
             <div className="mb-4">
               <Label className="text-sm mb-2 block">Customer</Label>
               <div className="flex gap-2">
-                <select
+                <FilterSelect
                   value={selectedCustomerId}
-                  onChange={(e) => setSelectedCustomerId(e.target.value)}
-                  className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="">Select customer...</option>
-                  {mockCustomers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                  onChange={setSelectedCustomerId}
+                  options={[
+                    ...mockCustomers.map((c) => ({ value: c.id, label: c.name })),
+                  ]}
+                  placeholder="Select customer..."
+                  className="h-9 flex-1"
+                />
                 <Button
                   variant="outline"
                   size="icon"
@@ -838,10 +838,10 @@ function SalesOrdersPage() {
             </div>
           </DashboardCard>
         </div>
-      </div>
+      </div >
 
       {/* Invoice Settings Modal */}
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+      < Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Invoice Settings</DialogTitle>
@@ -892,10 +892,10 @@ function SalesOrdersPage() {
             </div>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       {/* Invoice Print Modal */}
-      <Dialog open={isInvoiceModalOpen} onOpenChange={setIsInvoiceModalOpen}>
+      < Dialog open={isInvoiceModalOpen} onOpenChange={setIsInvoiceModalOpen} >
         <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col p-0 gap-0 [&>button]:hidden">
           <DialogHeader className="px-6 py-4 border-b">
             <div className="flex items-center justify-between">
@@ -1199,10 +1199,10 @@ function SalesOrdersPage() {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       {/* Print Settings Modal */}
-      <Dialog open={isPrintSettingsOpen} onOpenChange={setIsPrintSettingsOpen}>
+      < Dialog open={isPrintSettingsOpen} onOpenChange={setIsPrintSettingsOpen} >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Print Settings</DialogTitle>
@@ -1318,7 +1318,7 @@ function SalesOrdersPage() {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
-    </PageContainer>
+      </Dialog >
+    </PageContainer >
   );
 }

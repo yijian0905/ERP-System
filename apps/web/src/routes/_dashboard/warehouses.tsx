@@ -36,6 +36,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FilterSelect } from '@/components/ui/filter-select';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/warehouses')({
@@ -374,16 +376,18 @@ function WarehousesPage() {
             />
           </div>
           <div className="flex gap-2">
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Types</option>
-              <option value="WAREHOUSE">Warehouse</option>
-              <option value="STORE">Store</option>
-              <option value="VIRTUAL">Virtual</option>
-            </select>
+            <FilterSelect
+              value={typeFilter || 'all'}
+              onChange={(val) => setTypeFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Types' },
+                { value: 'WAREHOUSE', label: 'Warehouse' },
+                { value: 'STORE', label: 'Store' },
+                { value: 'VIRTUAL', label: 'Virtual' },
+              ]}
+              placeholder="All Types"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>
@@ -582,24 +586,24 @@ function WarehousesPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="type">Type</Label>
-              <select
-                id="type"
+              <FilterSelect
                 value={formData.type}
-                onChange={(e) => setFormData((f) => ({ ...f, type: e.target.value as WarehouseType }))}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="WAREHOUSE">Warehouse</option>
-                <option value="STORE">Store</option>
-                <option value="VIRTUAL">Virtual</option>
-              </select>
+                onChange={(val) => setFormData(f => ({ ...f, type: val as WarehouseType }))}
+                options={[
+                  { value: 'WAREHOUSE', label: 'Warehouse' },
+                  { value: 'STORE', label: 'Store' },
+                  { value: 'VIRTUAL', label: 'Virtual' },
+                ]}
+                placeholder="Select Type"
+                className="w-full"
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="address">Address</Label>
-              <textarea
+              <Textarea
                 id="address"
                 value={formData.address}
                 onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
-                className="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="Full address"
               />
             </div>

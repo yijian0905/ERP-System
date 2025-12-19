@@ -41,11 +41,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/inventory/')({
   component: InventoryPage,
 });
+
 
 // Types
 type AdjustmentType = 'STOCK_IN' | 'STOCK_OUT' | 'TRANSFER';
@@ -1087,36 +1089,38 @@ function InventoryPage() {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Categories</option>
-              {uniqueCategories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <select
-              value={warehouseFilter}
-              onChange={(e) => setWarehouseFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Warehouses</option>
-              {uniqueWarehouses.map((w) => (
-                <option key={w} value={w}>{w}</option>
-              ))}
-            </select>
-            <select
-              value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Stock Levels</option>
-              <option value="low">Low Stock</option>
-              <option value="out">Out of Stock</option>
-              <option value="overstock">Overstock</option>
-            </select>
+            <FilterSelect
+              value={categoryFilter || 'all'}
+              onChange={(val) => setCategoryFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Categories' },
+                ...uniqueCategories.map((c) => ({ value: c, label: c })),
+              ]}
+              placeholder="All Categories"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={warehouseFilter || 'all'}
+              onChange={(val) => setWarehouseFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Warehouses' },
+                ...uniqueWarehouses.map((w) => ({ value: w, label: w })),
+              ]}
+              placeholder="All Warehouses"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={stockFilter || 'all'}
+              onChange={(val) => setStockFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Stock Levels' },
+                { value: 'low', label: 'Low Stock' },
+                { value: 'out', label: 'Out of Stock' },
+                { value: 'overstock', label: 'Overstock' },
+              ]}
+              placeholder="All Stock Levels"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>
@@ -1671,51 +1675,43 @@ function InventoryPage() {
                 {/* Product Selection */}
                 <div className="grid gap-2">
                   <Label htmlFor="product">Product *</Label>
-                  <select
-                    id="product"
+                  <FilterSelect
                     value={adjustmentForm.productId}
-                    onChange={(e) => setAdjustmentForm(f => ({
+                    onChange={(val) => setAdjustmentForm(f => ({
                       ...f,
-                      productId: e.target.value,
+                      productId: val,
                       sourceWarehouse: '',
                       targetWarehouse: '',
                     }))}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="">Select product</option>
-                    {uniqueProducts.map((p) => (
-                      <option key={p.productId} value={p.productId}>
-                        {p.sku} - {p.productName}
-                      </option>
-                    ))}
-                  </select>
+                    options={uniqueProducts.map((p) => ({
+                      value: p.productId,
+                      label: `${p.sku} - ${p.productName}`
+                    }))}
+                    placeholder="Select product"
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Warehouse */}
                 <div className="grid gap-2">
                   <Label htmlFor="warehouse">Warehouse *</Label>
-                  <select
-                    id="warehouse"
+                  <FilterSelect
                     value={adjustmentType === 'STOCK_IN' ? adjustmentForm.targetWarehouse : adjustmentForm.sourceWarehouse}
-                    onChange={(e) => setAdjustmentForm(f => ({
+                    onChange={(val) => setAdjustmentForm(f => ({
                       ...f,
-                      [adjustmentType === 'STOCK_IN' ? 'targetWarehouse' : 'sourceWarehouse']: e.target.value
+                      [adjustmentType === 'STOCK_IN' ? 'targetWarehouse' : 'sourceWarehouse']: val
                     }))}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    disabled={adjustmentType === 'STOCK_OUT' && !adjustmentForm.productId}
-                  >
-                    <option value="">Select warehouse</option>
-                    {adjustmentType === 'STOCK_IN'
-                      ? warehouses.map((w) => (
-                        <option key={w} value={w}>{w}</option>
-                      ))
-                      : getSourceWarehouses().map((w) => (
-                        <option key={w.warehouse} value={w.warehouse}>
-                          {w.warehouse} ({w.quantity} available)
-                        </option>
-                      ))
+                    options={adjustmentType === 'STOCK_IN'
+                      ? warehouses.map((w) => ({ value: w, label: w }))
+                      : getSourceWarehouses().map((w) => ({
+                        value: w.warehouse,
+                        label: `${w.warehouse} (${w.quantity} available)`
+                      }))
                     }
-                  </select>
+                    placeholder="Select warehouse"
+                    className="w-full"
+                    disabled={adjustmentType === 'STOCK_OUT' && !adjustmentForm.productId}
+                  />
                 </div>
 
                 {/* Quantity */}
@@ -1759,60 +1755,50 @@ function InventoryPage() {
               {/* Product Selection */}
               <div className="grid gap-2">
                 <Label htmlFor="product">Product *</Label>
-                <select
-                  id="product"
+                <FilterSelect
                   value={adjustmentForm.productId}
-                  onChange={(e) => setAdjustmentForm(f => ({
+                  onChange={(val) => setAdjustmentForm(f => ({
                     ...f,
-                    productId: e.target.value,
+                    productId: val,
                     sourceWarehouse: '',
                     targetWarehouse: '',
                   }))}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="">Select product</option>
-                  {uniqueProducts.map((p) => (
-                    <option key={p.productId} value={p.productId}>
-                      {p.sku} - {p.productName}
-                    </option>
-                  ))}
-                </select>
+                  options={uniqueProducts.map((p) => ({
+                    value: p.productId,
+                    label: `${p.sku} - ${p.productName}`
+                  }))}
+                  placeholder="Select product"
+                  className="w-full"
+                />
               </div>
 
               {/* From Warehouse */}
               <div className="grid gap-2">
                 <Label htmlFor="sourceWarehouse">From Warehouse *</Label>
-                <select
-                  id="sourceWarehouse"
+                <FilterSelect
                   value={adjustmentForm.sourceWarehouse}
-                  onChange={(e) => setAdjustmentForm(f => ({ ...f, sourceWarehouse: e.target.value }))}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  onChange={(val) => setAdjustmentForm(f => ({ ...f, sourceWarehouse: val }))}
+                  options={getSourceWarehouses().map((w) => ({
+                    value: w.warehouse,
+                    label: `${w.warehouse} (${w.quantity} available)`
+                  }))}
+                  placeholder="Select warehouse"
+                  className="w-full"
                   disabled={!adjustmentForm.productId}
-                >
-                  <option value="">Select warehouse</option>
-                  {getSourceWarehouses().map((w) => (
-                    <option key={w.warehouse} value={w.warehouse}>
-                      {w.warehouse} ({w.quantity} available)
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* To Warehouse */}
               <div className="grid gap-2">
                 <Label htmlFor="targetWarehouse">To Warehouse *</Label>
-                <select
-                  id="targetWarehouse"
+                <FilterSelect
                   value={adjustmentForm.targetWarehouse}
-                  onChange={(e) => setAdjustmentForm(f => ({ ...f, targetWarehouse: e.target.value }))}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  onChange={(val) => setAdjustmentForm(f => ({ ...f, targetWarehouse: val }))}
+                  options={getTargetWarehouses().map((w) => ({ value: w, label: w }))}
+                  placeholder="Select warehouse"
+                  className="w-full"
                   disabled={!adjustmentForm.sourceWarehouse}
-                >
-                  <option value="">Select warehouse</option>
-                  {getTargetWarehouses().map((w) => (
-                    <option key={w} value={w}>{w}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* Quantity */}
@@ -1840,17 +1826,18 @@ function InventoryPage() {
               {/* Reason */}
               <div className="grid gap-2">
                 <Label htmlFor="reason">Reason</Label>
-                <select
-                  id="reason"
+                <FilterSelect
                   value={adjustmentForm.reason}
-                  onChange={(e) => setAdjustmentForm(f => ({ ...f, reason: e.target.value }))}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="RESTOCK">Restocking</option>
-                  <option value="REBALANCE">Warehouse Rebalancing</option>
-                  <option value="DEMAND">Demand-based Transfer</option>
-                  <option value="OTHER">Other</option>
-                </select>
+                  onChange={(val) => setAdjustmentForm(f => ({ ...f, reason: val }))}
+                  options={[
+                    { value: 'RESTOCK', label: 'Restocking' },
+                    { value: 'REBALANCE', label: 'Warehouse Rebalancing' },
+                    { value: 'DEMAND', label: 'Demand-based Transfer' },
+                    { value: 'OTHER', label: 'Other' },
+                  ]}
+                  placeholder="Select reason"
+                  className="w-full"
+                />
               </div>
             </div>
           )}

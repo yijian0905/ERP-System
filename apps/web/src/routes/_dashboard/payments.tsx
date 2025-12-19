@@ -34,6 +34,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FilterSelect } from '@/components/ui/filter-select';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/payments')({
@@ -300,28 +302,32 @@ function PaymentsPage() {
             />
           </div>
           <div className="flex gap-2">
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Types</option>
-              <option value="RECEIVED">Received</option>
-              <option value="REFUND">Refund</option>
-              <option value="CREDIT">Credit</option>
-              <option value="ADVANCE">Advance</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="FAILED">Failed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
+            <FilterSelect
+              value={typeFilter || 'all'}
+              onChange={(val) => setTypeFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Types' },
+                { value: 'RECEIVED', label: 'Received' },
+                { value: 'REFUND', label: 'Refund' },
+                { value: 'CREDIT', label: 'Credit' },
+                { value: 'ADVANCE', label: 'Advance' },
+              ]}
+              placeholder="All Types"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={statusFilter || 'all'}
+              onChange={(val) => setStatusFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'PENDING', label: 'Pending' },
+                { value: 'COMPLETED', label: 'Completed' },
+                { value: 'FAILED', label: 'Failed' },
+                { value: 'CANCELLED', label: 'Cancelled' },
+              ]}
+              placeholder="All Status"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>
@@ -484,19 +490,20 @@ function PaymentsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="method">Payment Method</Label>
-                <select
-                  id="method"
+                <FilterSelect
                   value={formData.method}
-                  onChange={(e) => setFormData((f) => ({ ...f, method: e.target.value as PaymentMethod }))}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="CASH">Cash</option>
-                  <option value="CHECK">Check</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="CREDIT_CARD">Credit Card</option>
-                  <option value="DEBIT_CARD">Debit Card</option>
-                  <option value="DIGITAL_WALLET">Digital Wallet</option>
-                </select>
+                  onChange={(val) => setFormData((f) => ({ ...f, method: val as PaymentMethod }))}
+                  options={[
+                    { value: 'CASH', label: 'Cash' },
+                    { value: 'CHECK', label: 'Check' },
+                    { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+                    { value: 'CREDIT_CARD', label: 'Credit Card' },
+                    { value: 'ONLINE', label: 'Online Payment' },
+                    { value: 'OTHER', label: 'Other' },
+                  ]}
+                  placeholder="Select payment method"
+                  className="w-full"
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="reference">Reference</Label>
@@ -510,11 +517,10 @@ function PaymentsPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="notes">Notes</Label>
-              <textarea
+              <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
-                className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="Any additional notes..."
               />
             </div>

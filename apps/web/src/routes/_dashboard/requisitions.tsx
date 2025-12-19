@@ -45,12 +45,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/stores/auth';
 
 export const Route = createFileRoute('/_dashboard/requisitions')({
   component: RequisitionsPage,
 });
+
+import { FilterSelect } from '@/components/ui/filter-select';
 
 // Types
 type RequisitionStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'FULFILLED' | 'CANCELLED';
@@ -607,36 +610,36 @@ function RequisitionsPage() {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Status</option>
-              {Object.entries(statusConfig).map(([key, config]) => (
-                <option key={key} value={key}>{config.label}</option>
-              ))}
-            </select>
-            <select
-              value={costCenterFilter}
-              onChange={(e) => setCostCenterFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Cost Centers</option>
-              {mockCostCenters.map((cc) => (
-                <option key={cc.id} value={cc.id}>{cc.name}</option>
-              ))}
-            </select>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Priority</option>
-              {Object.entries(priorityConfig).map(([key, config]) => (
-                <option key={key} value={key}>{config.label}</option>
-              ))}
-            </select>
+            <FilterSelect
+              value={statusFilter || 'all'}
+              onChange={(val) => setStatusFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                ...Object.entries(statusConfig).map(([key, config]) => ({ value: key, label: config.label })),
+              ]}
+              placeholder="All Status"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={costCenterFilter || 'all'}
+              onChange={(val) => setCostCenterFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Cost Centers' },
+                ...mockCostCenters.map((cc) => ({ value: cc.id, label: cc.name })),
+              ]}
+              placeholder="All Cost Centers"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={priorityFilter || 'all'}
+              onChange={(val) => setPriorityFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Priority' },
+                ...Object.entries(priorityConfig).map(([key, config]) => ({ value: key, label: config.label })),
+              ]}
+              placeholder="All Priority"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>
@@ -767,19 +770,16 @@ function RequisitionsPage() {
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="costCenter">Cost Center *</Label>
-                  <select
-                    id="costCenter"
+                  <FilterSelect
                     value={formData.costCenterId}
-                    onChange={(e) => setFormData((f) => ({ ...f, costCenterId: e.target.value }))}
-                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="">Select cost center</option>
-                    {mockCostCenters.map((cc) => (
-                      <option key={cc.id} value={cc.id}>
-                        {cc.code} - {cc.name} (Budget: {formatCurrency(cc.budget - cc.usedBudget)} remaining)
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormData((f) => ({ ...f, costCenterId: val }))}
+                    options={mockCostCenters.map((cc) => ({
+                      value: cc.id,
+                      label: `${cc.code} - ${cc.name} (Budget: ${formatCurrency(cc.budget - cc.usedBudget)} remaining)`
+                    }))}
+                    placeholder="Select cost center"
+                    className="w-full"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="projectCode">Project Code (Optional)</Label>
@@ -805,16 +805,16 @@ function RequisitionsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="priority">Priority</Label>
-                  <select
-                    id="priority"
+                  <FilterSelect
                     value={formData.priority}
-                    onChange={(e) => setFormData((f) => ({ ...f, priority: e.target.value as Priority }))}
-                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {Object.entries(priorityConfig).map(([key, config]) => (
-                      <option key={key} value={key}>{config.label}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormData((f) => ({ ...f, priority: val as Priority }))}
+                    options={Object.entries(priorityConfig).map(([key, config]) => ({
+                      value: key,
+                      label: config.label
+                    }))}
+                    placeholder="Select priority"
+                    className="w-full"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="requiredDate">Required By *</Label>
@@ -829,18 +829,19 @@ function RequisitionsPage() {
               <div className="border-t pt-4 mt-2">
                 <h4 className="font-medium mb-3">Requested Items</h4>
                 <div className="flex gap-2 mb-4">
-                  <select
-                    value={selectedProductId}
-                    onChange={(e) => setSelectedProductId(e.target.value)}
-                    className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="">Select item to add...</option>
-                    {mockInventoryItems.map((item) => (
-                      <option key={item.id} value={item.id} disabled={item.stock === 0}>
-                        {item.sku} - {item.name} ({item.stock} available) - {formatCurrency(item.unitCost)}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex-1 min-w-[200px]">
+                    <FilterSelect
+                      value={selectedProductId}
+                      onChange={(val) => setSelectedProductId(val)}
+                      options={mockInventoryItems.map((item) => ({
+                        value: item.id,
+                        label: `${item.sku} - ${item.name} (${item.stock} available) - ${formatCurrency(item.unitCost)}`,
+                        disabled: item.stock === 0
+                      }))}
+                      placeholder="Select item to add..."
+                      className="w-full"
+                    />
+                  </div>
                   <Input
                     type="number"
                     min="1"
@@ -918,11 +919,10 @@ function RequisitionsPage() {
 
               <div className="grid gap-2">
                 <Label htmlFor="notes">Notes</Label>
-                <textarea
+                <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
-                  className="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   placeholder="Additional notes or justification"
                 />
               </div>
@@ -1120,11 +1120,10 @@ function RequisitionsPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="rejectionReason">Rejection Reason *</Label>
-                <textarea
+                <Textarea
                   id="rejectionReason"
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
-                  className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   placeholder="Explain why this requisition is being rejected..."
                 />
               </div>

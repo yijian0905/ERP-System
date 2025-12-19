@@ -47,6 +47,7 @@ import {
   type ExportFormat,
 } from '@/lib/export';
 import { cn } from '@/lib/utils';
+import { FilterSelect } from '@/components/ui/filter-select';
 
 export const Route = createFileRoute('/_dashboard/reports/cost-accounting')({
   component: CostAccountingReportPage,
@@ -137,7 +138,7 @@ function CostAccountingReportPage() {
     endDate: '',
     preset: 'this_month',
   });
-  const [selectedCostCenter, setSelectedCostCenter] = useState('');
+  const [selectedCostCenter, setSelectedCostCenter] = useState('all');
   const [isExporting, setIsExporting] = useState(false);
 
   // Cost accounting report presets
@@ -170,7 +171,7 @@ function CostAccountingReportPage() {
   };
 
   // Filter data by cost center
-  const filteredSummaries = selectedCostCenter
+  const filteredSummaries = selectedCostCenter && selectedCostCenter !== 'all'
     ? mockCostCenterSummaries.filter((cc) => cc.id === selectedCostCenter)
     : mockCostCenterSummaries;
 
@@ -284,16 +285,18 @@ function CostAccountingReportPage() {
               onChange={setDateRange}
               presets={costAccountingPresets}
             />
-            <select
+            <FilterSelect
               value={selectedCostCenter}
-              onChange={(e) => setSelectedCostCenter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Cost Centers</option>
-              {mockCostCenterSummaries.map((cc) => (
-                <option key={cc.id} value={cc.id}>{cc.code} - {cc.name}</option>
-              ))}
-            </select>
+              onChange={setSelectedCostCenter}
+              options={[
+                { value: 'all', label: 'All Cost Centers' },
+                ...mockCostCenterSummaries.map((cc) => ({
+                  value: cc.id,
+                  label: `${cc.code} - ${cc.name}`,
+                })),
+              ]}
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>

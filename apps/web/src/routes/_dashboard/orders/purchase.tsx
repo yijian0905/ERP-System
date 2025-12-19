@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
 
 // Search params type
@@ -693,21 +694,20 @@ function PurchaseOrdersPage() {
                 <Warehouse className="h-4 w-4 text-blue-600" />
                 Select Supplier
               </Label>
-              <select
+              <FilterSelect
                 value={selectedSupplierId}
-                onChange={(e) => {
-                  setSelectedSupplierId(e.target.value);
+                onChange={(val) => {
+                  setSelectedSupplierId(val);
                   // Clear filters when supplier changes
                   setCategoryFilter('');
                   setProductSearch('');
                 }}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Select supplier...</option>
-                {mockSuppliers.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+                options={[
+                  ...mockSuppliers.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+                placeholder="Select supplier..."
+                className="w-full"
+              />
             </div>
 
             {/* Products Header - only show when supplier is selected */}
@@ -735,25 +735,27 @@ function PurchaseOrdersPage() {
                       className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-4 text-sm"
                     />
                   </div>
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={stockFilter}
-                    onChange={(e) => setStockFilter(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="">All Stock</option>
-                    <option value="low">Low Stock</option>
-                    <option value="normal">Normal</option>
-                  </select>
+                  <FilterSelect
+                    value={categoryFilter || 'all'}
+                    onChange={(val) => setCategoryFilter(val === 'all' ? '' : val)}
+                    options={[
+                      { value: 'all', label: 'All Categories' },
+                      ...categories.map((c) => ({ value: c, label: c })),
+                    ]}
+                    placeholder="All Categories"
+                    className="w-auto"
+                  />
+                  <FilterSelect
+                    value={stockFilter || 'all'}
+                    onChange={(val) => setStockFilter(val === 'all' ? '' : val)}
+                    options={[
+                      { value: 'all', label: 'All Stock' },
+                      { value: 'low', label: 'Low Stock' },
+                      { value: 'normal', label: 'Normal' },
+                    ]}
+                    placeholder="All Stock"
+                    className="w-auto"
+                  />
                 </div>
               </>
             )}
@@ -894,16 +896,13 @@ function PurchaseOrdersPage() {
             {/* Destination Warehouse Selection */}
             <div className="mb-4 flex-shrink-0">
               <Label className="text-sm mb-2 block">Destination Warehouse</Label>
-              <select
+              <FilterSelect
                 value={selectedWarehouse}
-                onChange={(e) => handleWarehouseChange(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Select warehouse...</option>
-                {warehouseData.map((w) => (
-                  <option key={w.name} value={w.name}>{w.name}</option>
-                ))}
-              </select>
+                onChange={handleWarehouseChange}
+                options={warehouseData.map((w) => ({ value: w.name, label: w.name }))}
+                placeholder="Select warehouse..."
+                className="w-full"
+              />
 
             </div>
 

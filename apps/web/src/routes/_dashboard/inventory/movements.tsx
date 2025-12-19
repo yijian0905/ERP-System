@@ -11,6 +11,7 @@ import { useState } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
+import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/inventory/movements')({
@@ -169,30 +170,33 @@ function InventoryMovementsPage() {
             />
           </div>
           <div className="flex gap-2">
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Types</option>
-              <option value="PURCHASE">Purchase</option>
-              <option value="SALE">Sale</option>
-              <option value="TRANSFER_IN">Transfer In</option>
-              <option value="TRANSFER_OUT">Transfer Out</option>
-              <option value="ADJUSTMENT">Adjustment</option>
-              <option value="RETURN_IN">Return In</option>
-              <option value="RETURN_OUT">Return Out</option>
-            </select>
-            <select
+            <FilterSelect
+              value={typeFilter || 'all'}
+              onChange={(val) => setTypeFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Types' },
+                { value: 'PURCHASE', label: 'Purchase' },
+                { value: 'SALE', label: 'Sale' },
+                { value: 'TRANSFER_IN', label: 'Transfer In' },
+                { value: 'TRANSFER_OUT', label: 'Transfer Out' },
+                { value: 'ADJUSTMENT', label: 'Adjustment' },
+                { value: 'RETURN_IN', label: 'Return In' },
+                { value: 'RETURN_OUT', label: 'Return Out' },
+              ]}
+              placeholder="All Types"
+              className="w-auto"
+            />
+            <FilterSelect
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="all">All time</option>
-            </select>
+              onChange={setDateRange}
+              options={[
+                { value: '7', label: 'Last 7 days' },
+                { value: '30', label: 'Last 30 days' },
+                { value: '90', label: 'Last 90 days' },
+                { value: 'all', label: 'All time' },
+              ]}
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>

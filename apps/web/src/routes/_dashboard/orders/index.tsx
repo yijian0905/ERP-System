@@ -28,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/orders/')({
@@ -218,38 +219,43 @@ function OrderManagementPage() {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Types</option>
-              <option value="SALES">Sales Orders</option>
-              <option value="PURCHASE">Purchase Orders</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="PROCESSING">Processing</option>
-              <option value="SHIPPED">Shipped</option>
-              <option value="DELIVERED">Delivered</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-            <select
+            <FilterSelect
+              value={typeFilter || 'all'}
+              onChange={(val) => setTypeFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Types' },
+                { value: 'SALES', label: 'Sales Orders' },
+                { value: 'PURCHASE', label: 'Purchase Orders' },
+              ]}
+              placeholder="All Types"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={statusFilter || 'all'}
+              onChange={(val) => setStatusFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'PENDING', label: 'Pending' },
+                { value: 'PROCESSING', label: 'Processing' },
+                { value: 'SHIPPED', label: 'Shipped' },
+                { value: 'DELIVERED', label: 'Delivered' },
+                { value: 'COMPLETED', label: 'Completed' },
+                { value: 'CANCELLED', label: 'Cancelled' },
+              ]}
+              placeholder="All Status"
+              className="w-auto"
+            />
+            <FilterSelect
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="all">All Time</option>
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-            </select>
+              onChange={setDateRange}
+              options={[
+                { value: 'all', label: 'All Time' },
+                { value: 'today', label: 'Today' },
+                { value: 'week', label: 'This Week' },
+                { value: 'month', label: 'This Month' },
+              ]}
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>

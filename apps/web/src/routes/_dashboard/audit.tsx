@@ -26,6 +26,7 @@ import { useCallback, useState } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
+import { FilterSelect } from '@/components/ui/filter-select';
 import {
   Dialog,
   DialogContent,
@@ -462,50 +463,48 @@ function AuditLogsPage() {
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            <select
-              value={actionFilter}
-              onChange={(e) => {
-                setActionFilter(e.target.value);
+            <FilterSelect
+              value={actionFilter || 'all'}
+              onChange={(val) => {
+                setActionFilter(val === 'all' ? '' : val);
                 setCurrentPage(1);
               }}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Actions</option>
-              {Object.entries(actionConfig).map(([key, config]) => (
-                <option key={key} value={key}>
-                  {config.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={entityFilter}
-              onChange={(e) => {
-                setEntityFilter(e.target.value);
+              options={[
+                { value: 'all', label: 'All Actions' },
+                ...Object.entries(actionConfig).map(([key, config]) => ({ value: key, label: config.label })),
+              ]}
+              placeholder="All Actions"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={entityFilter || 'all'}
+              onChange={(val) => {
+                setEntityFilter(val === 'all' ? '' : val);
                 setCurrentPage(1);
               }}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Entities</option>
-              {Object.entries(entityTypeLabels).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <select
+              options={[
+                { value: 'all', label: 'All Entities' },
+                ...Object.entries(entityTypeLabels).map(([key, label]) => ({ value: key, label: label })),
+              ]}
+              placeholder="All Entities"
+              className="w-auto"
+            />
+            <FilterSelect
               value={dateRange}
-              onChange={(e) => {
-                setDateRange(e.target.value);
+              onChange={(val) => {
+                setDateRange(val);
                 setCurrentPage(1);
               }}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="1">Last 24 hours</option>
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="all">All time</option>
-            </select>
+              options={[
+                { value: '1', label: 'Last 24 hours' },
+                { value: '7', label: 'Last 7 days' },
+                { value: '30', label: 'Last 30 days' },
+                { value: '90', label: 'Last 90 days' },
+                { value: 'all', label: 'All time' },
+              ]}
+              placeholder="Date Range"
+              className="w-auto"
+            />
             {(actionFilter || entityFilter || searchTerm) && (
               <Button
                 variant="ghost"

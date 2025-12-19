@@ -32,6 +32,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FilterSelect } from '@/components/ui/filter-select';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/customers')({
@@ -295,15 +297,17 @@ function CustomersPage() {
             />
           </div>
           <div className="flex gap-2">
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Types</option>
-              <option value="COMPANY">Company</option>
-              <option value="INDIVIDUAL">Individual</option>
-            </select>
+            <FilterSelect
+              value={typeFilter || 'all'}
+              onChange={(val) => setTypeFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Types' },
+                { value: 'COMPANY', label: 'Company' },
+                { value: 'INDIVIDUAL', label: 'Individual' },
+              ]}
+              placeholder="All Types"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>
@@ -473,17 +477,18 @@ function CustomersPage() {
             {/* Customer Type */}
             <div className="grid gap-2">
               <Label htmlFor="type">Customer Type</Label>
-              <select
-                id="type"
+              <FilterSelect
                 value={formData.type}
-                onChange={(e) =>
-                  setFormData((f) => ({ ...f, type: e.target.value as CustomerType, fax: e.target.value === 'INDIVIDUAL' ? '' : f.fax }))
+                onChange={(val) =>
+                  setFormData((f) => ({ ...f, type: val as CustomerType, fax: val === 'INDIVIDUAL' ? '' : f.fax }))
                 }
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="COMPANY">Company</option>
-                <option value="INDIVIDUAL">Individual</option>
-              </select>
+                options={[
+                  { value: 'COMPANY', label: 'Company' },
+                  { value: 'INDIVIDUAL', label: 'Individual' },
+                ]}
+                placeholder="Select type"
+                className="w-full"
+              />
             </div>
 
             {/* Customer Name */}
@@ -500,12 +505,11 @@ function CustomersPage() {
             {/* Address */}
             <div className="grid gap-2">
               <Label htmlFor="address">Address *</Label>
-              <textarea
+              <Textarea
                 id="address"
                 value={formData.address}
                 onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
                 placeholder="Enter full address"
-                className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
               />
             </div>
 

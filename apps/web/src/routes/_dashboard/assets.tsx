@@ -25,6 +25,7 @@ import { useState } from 'react';
 
 import { AssigneeSelector } from '@/components/assignee-selector';
 import { CreatableSelect } from '@/components/creatable-select';
+import { FilterSelect } from '@/components/ui/filter-select';
 import {
   DashboardCard,
   PageContainer,
@@ -51,6 +52,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/assets')({
@@ -752,46 +754,46 @@ function AssetsPage() {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            <select
-              value={assetTypeFilter}
-              onChange={(e) => setAssetTypeFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Asset Types</option>
-              {Object.entries(assetTypeConfig).map(([key, config]) => (
-                <option key={key} value={key}>{config.label}</option>
-              ))}
-            </select>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Categories</option>
-              {Object.entries(categoryConfig).map(([key, config]) => (
-                <option key={key} value={key}>{config.label}</option>
-              ))}
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Status</option>
-              {Object.entries(statusConfig).map(([key, config]) => (
-                <option key={key} value={key}>{config.label}</option>
-              ))}
-            </select>
-            <select
-              value={locationFilter}
-              onChange={(e) => setLocationFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Locations</option>
-              {usedLocations.map((loc) => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
-            </select>
+            <FilterSelect
+              value={assetTypeFilter || 'all'}
+              onChange={(val) => setAssetTypeFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Asset Types' },
+                ...Object.entries(assetTypeConfig).map(([key, config]) => ({ value: key, label: config.label })),
+              ]}
+              placeholder="All Asset Types"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={categoryFilter || 'all'}
+              onChange={(val) => setCategoryFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Categories' },
+                ...Object.entries(categoryConfig).map(([key, config]) => ({ value: key, label: config.label })),
+              ]}
+              placeholder="All Categories"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={statusFilter || 'all'}
+              onChange={(val) => setStatusFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                ...Object.entries(statusConfig).map(([key, config]) => ({ value: key, label: config.label })),
+              ]}
+              placeholder="All Status"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={locationFilter || 'all'}
+              onChange={(val) => setLocationFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Locations' },
+                ...usedLocations.map((loc) => ({ value: loc, label: loc })),
+              ]}
+              placeholder="All Locations"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>
@@ -978,11 +980,10 @@ function AssetsPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="assetType">Asset Type *</Label>
-                  <select
-                    id="assetType"
+                  <FilterSelect
                     value={formData.assetType}
-                    onChange={(e) => {
-                      const newType = e.target.value as AssetType;
+                    onChange={(val) => {
+                      const newType = val as AssetType;
                       setFormData((f) => ({
                         ...f,
                         assetType: newType,
@@ -1000,22 +1001,20 @@ function AssetsPage() {
                         salvageValue: newType === 'CURRENT' ? 0 : f.salvageValue,
                       }));
                     }}
-                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {Object.entries(assetTypeConfig).map(([key, config]) => (
-                      <option key={key} value={key}>{config.label}</option>
-                    ))}
-                  </select>
+                    options={Object.entries(assetTypeConfig).map(([key, config]) => ({
+                      value: key,
+                      label: config.label
+                    }))}
+                    placeholder="Select asset type"
+                    className="w-full"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="category">Category *</Label>
-                  <select
-                    id="category"
+                  <FilterSelect
                     value={formData.category}
-                    onChange={(e) => setFormData((f) => ({ ...f, category: e.target.value as AssetCategory }))}
-                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {Object.entries(categoryConfig)
+                    onChange={(val) => setFormData((f) => ({ ...f, category: val as AssetCategory }))}
+                    options={Object.entries(categoryConfig)
                       .filter(([key]) => {
                         // Filter categories based on asset type
                         if (formData.assetType === 'CURRENT') {
@@ -1024,33 +1023,35 @@ function AssetsPage() {
                           return ['IT_EQUIPMENT', 'FURNITURE', 'VEHICLE', 'MACHINERY', 'OFFICE_EQUIPMENT', 'OTHER'].includes(key);
                         }
                       })
-                      .map(([key, config]) => (
-                        <option key={key} value={key}>{config.label}</option>
-                      ))}
-                  </select>
+                      .map(([key, config]) => ({
+                        value: key,
+                        label: config.label
+                      }))}
+                    placeholder="Select category"
+                    className="w-full"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="status">Status *</Label>
-                  <select
-                    id="status"
+                  <FilterSelect
                     value={formData.status}
-                    onChange={(e) => setFormData((f) => ({ ...f, status: e.target.value as AssetStatus }))}
-                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {Object.entries(statusConfig).map(([key, config]) => (
-                      <option key={key} value={key}>{config.label}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormData((f) => ({ ...f, status: val as AssetStatus }))}
+                    options={Object.entries(statusConfig).map(([key, config]) => ({
+                      value: key,
+                      label: config.label
+                    }))}
+                    placeholder="Select status"
+                    className="w-full"
+                  />
                 </div>
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="description">Description</Label>
-                <textarea
+                <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
-                  className="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   placeholder="Brief description of the asset"
                 />
               </div>
@@ -1114,16 +1115,17 @@ function AssetsPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="depreciationMethod">Depreciation Method</Label>
-                    <select
-                      id="depreciationMethod"
+                    <FilterSelect
                       value={formData.depreciationMethod}
-                      onChange={(e) => setFormData((f) => ({ ...f, depreciationMethod: e.target.value as DepreciationMethod }))}
-                      className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                      <option value="STRAIGHT_LINE">Straight Line</option>
-                      <option value="DECLINING_BALANCE">Declining Balance</option>
-                      <option value="NONE">None</option>
-                    </select>
+                      onChange={(val) => setFormData((f) => ({ ...f, depreciationMethod: val as DepreciationMethod }))}
+                      options={[
+                        { value: 'STRAIGHT_LINE', label: 'Straight Line' },
+                        { value: 'DECLINING_BALANCE', label: 'Declining Balance' },
+                        { value: 'NONE', label: 'None' },
+                      ]}
+                      placeholder="Select method"
+                      className="w-full"
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="usefulLifeYears">Useful Life (Years)</Label>
@@ -1195,11 +1197,10 @@ function AssetsPage() {
 
               <div className="grid gap-2">
                 <Label htmlFor="notes">Notes</Label>
-                <textarea
+                <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
-                  className="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   placeholder="Additional notes or comments"
                 />
               </div>

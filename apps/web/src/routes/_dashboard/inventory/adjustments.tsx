@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FilterSelect } from '@/components/ui/filter-select';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/inventory/adjustments')({
@@ -249,29 +251,33 @@ function InventoryAdjustmentsPage() {
             />
           </div>
           <div className="flex gap-2">
-            <select
-              value={reasonFilter}
-              onChange={(e) => setReasonFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Reasons</option>
-              <option value="DAMAGE">Damage</option>
-              <option value="EXPIRED">Expired</option>
-              <option value="THEFT">Theft</option>
-              <option value="FOUND">Found</option>
-              <option value="COUNT_CORRECTION">Count Correction</option>
-              <option value="OTHER">Other</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="APPROVED">Approved</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
+            <FilterSelect
+              value={reasonFilter || 'all'}
+              onChange={(val) => setReasonFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Reasons' },
+                { value: 'DAMAGE', label: 'Damage' },
+                { value: 'EXPIRED', label: 'Expired' },
+                { value: 'THEFT', label: 'Theft' },
+                { value: 'FOUND', label: 'Found' },
+                { value: 'COUNT_CORRECTION', label: 'Count Correction' },
+                { value: 'OTHER', label: 'Other' },
+              ]}
+              placeholder="All Reasons"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={statusFilter || 'all'}
+              onChange={(val) => setStatusFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'PENDING', label: 'Pending' },
+                { value: 'APPROVED', label: 'Approved' },
+                { value: 'REJECTED', label: 'Rejected' },
+              ]}
+              placeholder="All Status"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>
@@ -416,19 +422,16 @@ function InventoryAdjustmentsPage() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="product">Product *</Label>
-              <select
-                id="product"
+              <FilterSelect
                 value={formData.productId}
-                onChange={(e) => setFormData((f) => ({ ...f, productId: e.target.value }))}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Select a product</option>
-                {mockProducts.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.sku}) - Current: {p.currentStock}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setFormData((f) => ({ ...f, productId: val }))}
+                options={mockProducts.map((p) => ({
+                  value: p.id,
+                  label: `${p.name} (${p.sku}) - Current: ${p.currentStock}`
+                }))}
+                placeholder="Select a product"
+                className="w-full"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
@@ -470,27 +473,27 @@ function InventoryAdjustmentsPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="reason">Reason *</Label>
-              <select
-                id="reason"
+              <FilterSelect
                 value={formData.reason}
-                onChange={(e) => setFormData((f) => ({ ...f, reason: e.target.value as AdjustmentReason }))}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="COUNT_CORRECTION">Count Correction</option>
-                <option value="DAMAGE">Damage</option>
-                <option value="EXPIRED">Expired</option>
-                <option value="THEFT">Theft</option>
-                <option value="FOUND">Found</option>
-                <option value="OTHER">Other</option>
-              </select>
+                onChange={(val) => setFormData((f) => ({ ...f, reason: val as AdjustmentReason }))}
+                options={[
+                  { value: 'COUNT_CORRECTION', label: 'Count Correction' },
+                  { value: 'DAMAGE', label: 'Damage' },
+                  { value: 'EXPIRED', label: 'Expired' },
+                  { value: 'THEFT', label: 'Theft' },
+                  { value: 'FOUND', label: 'Found' },
+                  { value: 'OTHER', label: 'Other' },
+                ]}
+                placeholder="Select reason"
+                className="w-full"
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="notes">Notes</Label>
-              <textarea
+              <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
-                className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="Enter any additional notes..."
               />
             </div>

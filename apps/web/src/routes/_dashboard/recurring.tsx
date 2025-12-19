@@ -50,6 +50,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -62,6 +63,8 @@ import { cn } from '@/lib/utils';
 export const Route = createFileRoute('/_dashboard/recurring')({
   component: RecurringRevenuePage,
 });
+
+import { FilterSelect } from '@/components/ui/filter-select';
 
 // Types
 type BillingCycle = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
@@ -630,28 +633,32 @@ function RecurringRevenuePage() {
             />
           </div>
           <div className="flex gap-2">
-            <select
-              value={cycleFilter}
-              onChange={(e) => setCycleFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Cycles</option>
-              <option value="WEEKLY">Weekly</option>
-              <option value="MONTHLY">Monthly</option>
-              <option value="QUARTERLY">Quarterly</option>
-              <option value="YEARLY">Yearly</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="PAUSED">Paused</option>
-              <option value="CANCELLED">Cancelled</option>
-              <option value="EXPIRED">Expired</option>
-            </select>
+            <FilterSelect
+              value={cycleFilter || 'all'}
+              onChange={(val) => setCycleFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Cycles' },
+                { value: 'WEEKLY', label: 'Weekly' },
+                { value: 'MONTHLY', label: 'Monthly' },
+                { value: 'QUARTERLY', label: 'Quarterly' },
+                { value: 'YEARLY', label: 'Yearly' },
+              ]}
+              placeholder="All Cycles"
+              className="w-auto"
+            />
+            <FilterSelect
+              value={statusFilter || 'all'}
+              onChange={(val) => setStatusFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'ACTIVE', label: 'Active' },
+                { value: 'PAUSED', label: 'Paused' },
+                { value: 'CANCELLED', label: 'Cancelled' },
+                { value: 'EXPIRED', label: 'Expired' },
+              ]}
+              placeholder="All Status"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>
@@ -809,25 +816,20 @@ function RecurringRevenuePage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="customer">Customer *</Label>
-              <select
-                id="customer"
+              <FilterSelect
                 value={formData.customerId}
-                onChange={(e) => setFormData((f) => ({ ...f, customerId: e.target.value }))}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Select customer</option>
-                {mockCustomers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                onChange={(val) => setFormData((f) => ({ ...f, customerId: val }))}
+                options={mockCustomers.map((c) => ({ value: c.id, label: c.name }))}
+                placeholder="Select customer"
+                className="w-full"
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <textarea
+              <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
-                className="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="Brief description of the service or item"
               />
             </div>
@@ -846,17 +848,18 @@ function RecurringRevenuePage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="billingCycle">Billing Cycle *</Label>
-                <select
-                  id="billingCycle"
+                <FilterSelect
                   value={formData.billingCycle}
-                  onChange={(e) => setFormData((f) => ({ ...f, billingCycle: e.target.value as BillingCycle }))}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="WEEKLY">Weekly</option>
-                  <option value="MONTHLY">Monthly</option>
-                  <option value="QUARTERLY">Quarterly</option>
-                  <option value="YEARLY">Yearly</option>
-                </select>
+                  onChange={(val) => setFormData((f) => ({ ...f, billingCycle: val as BillingCycle }))}
+                  options={[
+                    { value: 'WEEKLY', label: 'Weekly' },
+                    { value: 'MONTHLY', label: 'Monthly' },
+                    { value: 'QUARTERLY', label: 'Quarterly' },
+                    { value: 'YEARLY', label: 'Yearly' },
+                  ]}
+                  placeholder="Select cycle"
+                  className="w-full"
+                />
               </div>
             </div>
             <div className="grid gap-2">

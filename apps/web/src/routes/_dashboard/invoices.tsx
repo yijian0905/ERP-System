@@ -26,6 +26,8 @@ export const Route = createFileRoute('/_dashboard/invoices')({
   component: InvoicesPage,
 });
 
+import { FilterSelect } from '@/components/ui/filter-select';
+
 // Mock invoice data with e-Invoice status
 const mockInvoices = [
   {
@@ -215,17 +217,19 @@ function InvoicesPage() {
             />
           </div>
           <div className="flex gap-2">
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="pending">Pending</option>
-              <option value="paid">Paid</option>
-              <option value="overdue">Overdue</option>
-            </select>
+            <FilterSelect
+              value={filter || 'all'}
+              onChange={(val) => setFilter(val === 'all' ? '' : val)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'paid', label: 'Paid' },
+                { value: 'overdue', label: 'Overdue' },
+              ]}
+              placeholder="All Status"
+              className="w-auto"
+            />
           </div>
         </div>
       </DashboardCard>

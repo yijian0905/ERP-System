@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { DateInput } from '@/components/ui/date-input';
+import { FilterSelect } from '@/components/ui/filter-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
@@ -154,8 +155,6 @@ export function DateRangeSelector({
     showCustomDate = true,
     className,
 }: DateRangeSelectorProps) {
-    // State for preset popover
-    const [isPresetOpen, setIsPresetOpen] = useState(false);
     // State for custom date popover
     const [isCustomOpen, setIsCustomOpen] = useState(false);
     const [customStartDate, setCustomStartDate] = useState('');
@@ -172,12 +171,6 @@ export function DateRangeSelector({
         }
     }, [value]);
 
-    // Get the display label for the dropdown
-    const selectedLabel = useMemo(() => {
-        const preset = presets.find(p => p.value === (value?.preset || selectedPreset));
-        return preset?.label || 'Select Range';
-    }, [presets, selectedPreset, value?.preset]);
-
     // Check if custom dates are valid
     const isCustomValid = useMemo(() => {
         if (!customStartDate || !customEndDate) return false;
@@ -192,7 +185,6 @@ export function DateRangeSelector({
             ...range,
             preset: presetValue,
         });
-        setIsPresetOpen(false);
     }, [onChange]);
 
     // Handle custom date apply
@@ -217,37 +209,14 @@ export function DateRangeSelector({
 
     return (
         <div className={cn('flex gap-2', className)}>
-            {/* Preset Dropdown - Styled like a button */}
-            <Popover open={isPresetOpen} onOpenChange={setIsPresetOpen}>
-                <PopoverTrigger asChild>
-                    <Button
-                        variant="outline"
-                        className="flex items-center gap-2 min-w-[120px] justify-between"
-                    >
-                        <span>{selectedLabel}</span>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-1" align="start">
-                    <div className="flex flex-col">
-                        {presets.map((preset) => (
-                            <button
-                                key={preset.value}
-                                onClick={() => handlePresetChange(preset.value)}
-                                className={cn(
-                                    'flex items-center w-full px-3 py-2 text-sm rounded-md text-left',
-                                    'hover:bg-accent hover:text-accent-foreground',
-                                    'transition-colors cursor-pointer',
-                                    (value?.preset || selectedPreset) === preset.value &&
-                                    'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
-                                )}
-                            >
-                                {preset.label}
-                            </button>
-                        ))}
-                    </div>
-                </PopoverContent>
-            </Popover>
+            {/* Preset Dropdown - utilizing FilterSelect */}
+            <FilterSelect
+                value={value?.preset || selectedPreset}
+                onChange={handlePresetChange}
+                options={presets}
+                className="w-[150px]"
+                placeholder="Select Range"
+            />
 
             {/* Custom Date Button with Popover */}
             {showCustomDate && (

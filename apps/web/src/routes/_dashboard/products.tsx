@@ -16,6 +16,7 @@ import {
 import { useState } from 'react';
 
 import { CreatableSelect } from '@/components/creatable-select';
+import { FilterSelect } from '@/components/ui/filter-select';
 import { Button } from '@/components/ui/button';
 import { DashboardCard, PageContainer, PageHeader, StatsCard } from '@/components/layout/dashboard-layout';
 import {
@@ -35,6 +36,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/products')({
@@ -706,26 +708,28 @@ function ProductsPage() {
                 />
               </div>
               <div className="flex gap-2">
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="">All Categories</option>
-                  {uniqueCategories.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="">All Status</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                  <option value="DISCONTINUED">Discontinued</option>
-                </select>
+                <FilterSelect
+                  value={categoryFilter || 'all'}
+                  onChange={(val) => setCategoryFilter(val === 'all' ? '' : val)}
+                  options={[
+                    { value: 'all', label: 'All Categories' },
+                    ...uniqueCategories.map((c) => ({ value: c, label: c })),
+                  ]}
+                  placeholder="All Categories"
+                  className="w-auto"
+                />
+                <FilterSelect
+                  value={statusFilter || 'all'}
+                  onChange={(val) => setStatusFilter(val === 'all' ? '' : val)}
+                  options={[
+                    { value: 'all', label: 'All Status' },
+                    { value: 'ACTIVE', label: 'Active' },
+                    { value: 'INACTIVE', label: 'Inactive' },
+                    { value: 'DISCONTINUED', label: 'Discontinued' },
+                  ]}
+                  placeholder="All Status"
+                  className="w-auto"
+                />
               </div>
             </div>
           </DashboardCard>
@@ -909,201 +913,204 @@ function ProductsPage() {
             </p>
           </div>
         </>
-      )}
+      )
+      }
 
-      {activeTab === 'consumables' && (() => {
-        // Filter products to show only non-sellable categories (operating consumables)
-        const consumableProducts = products.filter(p => {
-          const cat = categories.find(c => c.name === p.category);
-          return cat?.isNonSellable;
-        });
-        const activeConsumables = consumableProducts.filter(p => p.status === 'ACTIVE').length;
-        const lowStockConsumables = consumableProducts.filter(p => p.stock <= p.reorderPoint && p.stock > 0).length;
-        const outOfStockConsumables = consumableProducts.filter(p => p.stock === 0).length;
+      {
+        activeTab === 'consumables' && (() => {
+          // Filter products to show only non-sellable categories (operating consumables)
+          const consumableProducts = products.filter(p => {
+            const cat = categories.find(c => c.name === p.category);
+            return cat?.isNonSellable;
+          });
+          const activeConsumables = consumableProducts.filter(p => p.status === 'ACTIVE').length;
+          const lowStockConsumables = consumableProducts.filter(p => p.stock <= p.reorderPoint && p.stock > 0).length;
+          const outOfStockConsumables = consumableProducts.filter(p => p.stock === 0).length;
 
-        return (
-          <>
-            {/* Stats */}
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <StatsCard
-                title="Total Consumables"
-                value={consumableProducts.length.toString()}
-                change={`${activeConsumables} active`}
-                changeType="neutral"
-                icon={Package}
-              />
-              <StatsCard
-                title="Low Stock"
-                value={lowStockConsumables.toString()}
-                change="Items need reorder"
-                changeType={lowStockConsumables > 0 ? 'negative' : 'neutral'}
-                icon={AlertTriangle}
-              />
-              <StatsCard
-                title="Out of Stock"
-                value={outOfStockConsumables.toString()}
-                change="Items unavailable"
-                changeType={outOfStockConsumables > 0 ? 'negative' : 'neutral'}
-                icon={Package}
-              />
-              <StatsCard
-                title="Total Value"
-                value={formatCurrency(consumableProducts.reduce((sum, p) => sum + p.cost * p.stock, 0))}
-                change="Inventory value"
-                changeType="neutral"
-                icon={TrendingUp}
-              />
-            </div>
-
-            {/* Consumables table */}
-            <DashboardCard>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b text-left text-sm text-muted-foreground">
-                      <th className="pb-3 font-medium">Item</th>
-                      <th className="pb-3 font-medium text-right">Unit Cost</th>
-                      <th className="pb-3 font-medium text-right pr-6">Stock</th>
-                      <th className="pb-3 font-medium pl-4 w-[140px]">Status</th>
-                      <th className="pb-3 font-medium"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {consumableProducts.map((product) => {
-                      const statusStyle = statusConfig[product.status];
-                      const isLowStock = product.stock <= product.reorderPoint && product.stock > 0;
-                      const isOutOfStock = product.stock === 0;
-
-                      return (
-                        <tr key={product.id} className="border-b last:border-0 table-row-hover">
-                          <td className="py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                                <Package className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">{product.name}</span>
-                                  <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
-                                    {product.sku}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground line-clamp-1 max-w-[280px]">
-                                  {product.description}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-4 text-right font-medium">{formatCurrency(product.cost)}</td>
-                          <td className="py-4 text-right pr-6">
-                            <span className={cn(
-                              'font-medium',
-                              isOutOfStock && 'text-destructive',
-                              isLowStock && 'text-warning'
-                            )}>
-                              {product.stock}
-                            </span>
-                            {isLowStock && (
-                              <span className="ml-1 text-xs text-warning">Low</span>
-                            )}
-                            {isOutOfStock && (
-                              <span className="ml-1 text-xs text-destructive">Out</span>
-                            )}
-                          </td>
-                          <td className="py-4 pl-4 w-[140px]">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button
-                                  className={cn(
-                                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity',
-                                    statusStyle.color
-                                  )}
-                                >
-                                  {statusStyle.label}
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start">
-                                {product.status !== 'ACTIVE' && (
-                                  <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'ACTIVE')}>
-                                    <Check className="mr-2 h-4 w-4 text-green-600" />
-                                    Active
-                                  </DropdownMenuItem>
-                                )}
-                                {product.status !== 'INACTIVE' && (
-                                  <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'INACTIVE')}>
-                                    <span className="mr-2 h-4 w-4 inline-flex items-center justify-center text-gray-500">○</span>
-                                    Inactive
-                                  </DropdownMenuItem>
-                                )}
-                                {product.status !== 'DISCONTINUED' && (
-                                  <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'DISCONTINUED')}>
-                                    <span className="mr-2 h-4 w-4 inline-flex items-center justify-center text-red-500">✕</span>
-                                    Discontinued
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                          <td className="py-4">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon-sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleOpenModal(product)}>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => handleDelete(product.id)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+          return (
+            <>
+              {/* Stats */}
+              <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <StatsCard
+                  title="Total Consumables"
+                  value={consumableProducts.length.toString()}
+                  change={`${activeConsumables} active`}
+                  changeType="neutral"
+                  icon={Package}
+                />
+                <StatsCard
+                  title="Low Stock"
+                  value={lowStockConsumables.toString()}
+                  change="Items need reorder"
+                  changeType={lowStockConsumables > 0 ? 'negative' : 'neutral'}
+                  icon={AlertTriangle}
+                />
+                <StatsCard
+                  title="Out of Stock"
+                  value={outOfStockConsumables.toString()}
+                  change="Items unavailable"
+                  changeType={outOfStockConsumables > 0 ? 'negative' : 'neutral'}
+                  icon={Package}
+                />
+                <StatsCard
+                  title="Total Value"
+                  value={formatCurrency(consumableProducts.reduce((sum, p) => sum + p.cost * p.stock, 0))}
+                  change="Inventory value"
+                  changeType="neutral"
+                  icon={TrendingUp}
+                />
               </div>
 
-              {consumableProducts.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Package className="h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-semibold">No consumables yet</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Get started by adding your first operating consumable
-                  </p>
-                  <Button className="mt-4" onClick={() => handleOpenModal(undefined, true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Consumable
-                  </Button>
-                </div>
-              )}
-            </DashboardCard>
+              {/* Consumables table */}
+              <DashboardCard>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b text-left text-sm text-muted-foreground">
+                        <th className="pb-3 font-medium">Item</th>
+                        <th className="pb-3 font-medium text-right">Unit Cost</th>
+                        <th className="pb-3 font-medium text-right pr-6">Stock</th>
+                        <th className="pb-3 font-medium pl-4 w-[140px]">Status</th>
+                        <th className="pb-3 font-medium"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {consumableProducts.map((product) => {
+                        const statusStyle = statusConfig[product.status];
+                        const isLowStock = product.stock <= product.reorderPoint && product.stock > 0;
+                        const isOutOfStock = product.stock === 0;
 
-            {/* Info card */}
-            <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
-              <h3 className="font-semibold text-amber-900 dark:text-amber-100">
-                🏭 Operating Consumables
-              </h3>
-              <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                Operating consumables are non-sellable items used for internal operations.
-                These items are available for <strong>Internal Requisitions</strong> but will not
-                appear in sales orders. Use this page to manage supplies like coffee, cleaning products,
-                office maintenance items, and other operational needs.
-              </p>
-            </div>
-          </>
-        );
-      })()}
+                        return (
+                          <tr key={product.id} className="border-b last:border-0 table-row-hover">
+                            <td className="py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                                  <Package className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{product.name}</span>
+                                    <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                                      {product.sku}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground line-clamp-1 max-w-[280px]">
+                                    {product.description}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 text-right font-medium">{formatCurrency(product.cost)}</td>
+                            <td className="py-4 text-right pr-6">
+                              <span className={cn(
+                                'font-medium',
+                                isOutOfStock && 'text-destructive',
+                                isLowStock && 'text-warning'
+                              )}>
+                                {product.stock}
+                              </span>
+                              {isLowStock && (
+                                <span className="ml-1 text-xs text-warning">Low</span>
+                              )}
+                              {isOutOfStock && (
+                                <span className="ml-1 text-xs text-destructive">Out</span>
+                              )}
+                            </td>
+                            <td className="py-4 pl-4 w-[140px]">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    className={cn(
+                                      'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity',
+                                      statusStyle.color
+                                    )}
+                                  >
+                                    {statusStyle.label}
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                  {product.status !== 'ACTIVE' && (
+                                    <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'ACTIVE')}>
+                                      <Check className="mr-2 h-4 w-4 text-green-600" />
+                                      Active
+                                    </DropdownMenuItem>
+                                  )}
+                                  {product.status !== 'INACTIVE' && (
+                                    <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'INACTIVE')}>
+                                      <span className="mr-2 h-4 w-4 inline-flex items-center justify-center text-gray-500">○</span>
+                                      Inactive
+                                    </DropdownMenuItem>
+                                  )}
+                                  {product.status !== 'DISCONTINUED' && (
+                                    <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'DISCONTINUED')}>
+                                      <span className="mr-2 h-4 w-4 inline-flex items-center justify-center text-red-500">✕</span>
+                                      Discontinued
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                            <td className="py-4">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleOpenModal(product)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => handleDelete(product.id)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {consumableProducts.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Package className="h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-semibold">No consumables yet</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Get started by adding your first operating consumable
+                    </p>
+                    <Button className="mt-4" onClick={() => handleOpenModal(undefined, true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Consumable
+                    </Button>
+                  </div>
+                )}
+              </DashboardCard>
+
+              {/* Info card */}
+              <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100">
+                  🏭 Operating Consumables
+                </h3>
+                <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                  Operating consumables are non-sellable items used for internal operations.
+                  These items are available for <strong>Internal Requisitions</strong> but will not
+                  appear in sales orders. Use this page to manage supplies like coffee, cleaning products,
+                  office maintenance items, and other operational needs.
+                </p>
+              </div>
+            </>
+          );
+        })()
+      }
 
       {/* Add/Edit Product Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -1129,11 +1136,10 @@ function ProductsPage() {
 
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <textarea
+              <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))}
-                className="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
                 placeholder="Brief product description"
               />
             </div>
@@ -1161,16 +1167,17 @@ function ProductsPage() {
               {editingProduct && (
                 <div className="grid gap-2">
                   <Label htmlFor="status">Status</Label>
-                  <select
-                    id="status"
+                  <FilterSelect
                     value={formData.status}
-                    onChange={(e) => setFormData(f => ({ ...f, status: e.target.value as ProductStatus }))}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                    <option value="DISCONTINUED">Discontinued</option>
-                  </select>
+                    onChange={(val) => setFormData(f => ({ ...f, status: val as ProductStatus }))}
+                    options={[
+                      { value: 'ACTIVE', label: 'Active' },
+                      { value: 'INACTIVE', label: 'Inactive' },
+                      { value: 'DISCONTINUED', label: 'Discontinued' },
+                    ]}
+                    placeholder="Select Status"
+                    className="w-full"
+                  />
                 </div>
               )}
             </div>
@@ -1325,11 +1332,10 @@ function ProductsPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="category-description">Description</Label>
-              <textarea
+              <Textarea
                 id="category-description"
                 value={categoryFormData.description}
                 onChange={(e) => setCategoryFormData((f) => ({ ...f, description: e.target.value }))}
-                className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="Enter category description (optional)"
               />
             </div>
@@ -1344,6 +1350,6 @@ function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </PageContainer>
+    </PageContainer >
   );
 }
