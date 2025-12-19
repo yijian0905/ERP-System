@@ -86,43 +86,21 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  /* Focus styles - only for keyboard navigation */
-  :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
-  }
-
-  /* Remove focus ring from interactive elements that have their own visual feedback */
-  button:focus-visible,
-  [role="menuitem"]:focus-visible,
-  [role="option"]:focus-visible,
-  [role="menu"]:focus-visible,
-  [role="dialog"]:focus-visible,
-  [role="listbox"]:focus-visible,
-  [data-radix-menu-content]:focus-visible,
-  [data-radix-popper-content-wrapper]:focus-visible,
-  [data-radix-collection-item]:focus-visible,
-  a:focus-visible {
-    @apply ring-0 ring-offset-0 outline-none;
-  }
-
-  /* Remove focus from elements on initial load */
-  :focus:not(:focus-visible) {
+  /* Remove all focus rings globally */
+  *:focus,
+  *:focus-visible,
+  *:focus-within {
     outline: none !important;
     box-shadow: none !important;
   }
 
-  /* DateInput component: Remove inner input focus borders only */
-  .date-input-field:focus-within {
-    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+  /* Ensure no ring styles are applied */
+  .ring-0,
+  [class*="ring-"] {
+    --tw-ring-offset-shadow: none !important;
+    --tw-ring-shadow: none !important;
   }
 
-  /* Remove inner input focus outline/ring for DateInput only */
-  .date-input-field input:focus,
-  .date-input-field input:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
-    border-color: transparent !important;
-  }
 
   /* Scrollbar styling - hidden but functional */
   ::-webkit-scrollbar {

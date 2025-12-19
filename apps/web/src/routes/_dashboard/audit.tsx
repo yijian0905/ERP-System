@@ -297,7 +297,7 @@ function AuditLogsPage() {
       log.ipAddress?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAction = !actionFilter || log.action === actionFilter;
     const matchesEntity = !entityFilter || log.entityType === entityFilter;
-    
+
     // Date filter
     if (dateRange !== 'all') {
       const daysAgo = parseInt(dateRange);
@@ -306,7 +306,7 @@ function AuditLogsPage() {
       const logDate = new Date(log.createdAt);
       if (logDate < cutoffDate) return false;
     }
-    
+
     return matchesSearch && matchesAction && matchesEntity;
   });
 
@@ -346,7 +346,7 @@ function AuditLogsPage() {
   const handleExport = useCallback(async () => {
     setIsExporting(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    
+
     // Create CSV content
     const headers = ['Timestamp', 'User', 'Action', 'Entity Type', 'Entity', 'IP Address'];
     const rows = filteredLogs.map((log) => [
@@ -357,7 +357,7 @@ function AuditLogsPage() {
       log.entityName || '-',
       log.ipAddress || '-',
     ]);
-    
+
     const csvContent = [headers, ...rows].map((row) => row.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -366,7 +366,7 @@ function AuditLogsPage() {
     a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     setIsExporting(false);
   }, [filteredLogs]);
 
@@ -386,7 +386,7 @@ function AuditLogsPage() {
     const logDate = new Date(l.createdAt);
     return logDate.toDateString() === today.toDateString();
   }).length;
-  
+
   const uniqueUsers = new Set(logs.filter((l) => l.userId).map((l) => l.userId)).size;
   const criticalActions = logs.filter((l) => ['delete', 'approve', 'reject'].includes(l.action)).length;
 

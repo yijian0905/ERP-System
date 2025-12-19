@@ -247,13 +247,13 @@ function WarehousesPage() {
         prev.map((wh) =>
           wh.id === editingWarehouse.id
             ? {
-                ...wh,
-                ...formData,
-                address: formData.address || null,
-                phone: formData.phone || null,
-                email: formData.email || null,
-                manager: formData.manager || null,
-              }
+              ...wh,
+              ...formData,
+              address: formData.address || null,
+              phone: formData.phone || null,
+              email: formData.email || null,
+              manager: formData.manager || null,
+            }
             : wh
         )
       );
@@ -492,8 +492,8 @@ function WarehousesPage() {
                       <span className={cn(
                         'font-medium',
                         warehouse.capacityUsed >= 80 ? 'text-destructive' :
-                        warehouse.capacityUsed >= 60 ? 'text-warning' :
-                        'text-success'
+                          warehouse.capacityUsed >= 60 ? 'text-warning' :
+                            'text-success'
                       )}>
                         {warehouse.capacityUsed}%
                       </span>
@@ -503,17 +503,17 @@ function WarehousesPage() {
                         className={cn(
                           'h-full rounded-full transition-all',
                           warehouse.capacityUsed >= 80 ? 'bg-destructive' :
-                          warehouse.capacityUsed >= 60 ? 'bg-warning' :
-                          'bg-success'
+                            warehouse.capacityUsed >= 60 ? 'bg-warning' :
+                              'bg-success'
                         )}
                         style={{ width: `${warehouse.capacityUsed}%` }}
                       />
                     </div>
                   </div>
                 )}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="w-full mt-3"
                   onClick={() => handleViewInventory(warehouse)}
                 >
@@ -756,7 +756,7 @@ function WarehousesPage() {
             <div className="border-t pt-4 mt-4">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {filteredInventory.length} product{filteredInventory.length !== 1 ? 's' : ''} • 
+                  {filteredInventory.length} product{filteredInventory.length !== 1 ? 's' : ''} •
                   {' '}{filteredInventory.reduce((sum, i) => sum + i.quantity, 0)} total units
                 </span>
                 <span className="font-semibold">

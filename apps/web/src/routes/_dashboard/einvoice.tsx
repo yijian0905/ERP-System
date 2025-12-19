@@ -1,9 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle, FileText, Info } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle, FileText, Info } from 'lucide-react';
 
 import { LhdnSettings } from '@/components/einvoice';
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
+import { Button } from '@/components/ui/button';
 import { get, post, del } from '@/lib/api-client';
 
 export const Route = createFileRoute('/_dashboard/einvoice')({
@@ -89,6 +90,12 @@ function EInvoicePage() {
         <PageHeader
           title="E-Invoice (LHDN)"
           description="Configure LHDN MyInvois integration"
+          actions={
+            <Button variant="outline" onClick={() => window.history.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Return
+            </Button>
+          }
         />
         <DashboardCard>
           <div className="flex items-center justify-center py-12">
@@ -104,6 +111,12 @@ function EInvoicePage() {
       <PageHeader
         title="E-Invoice (LHDN)"
         description="Configure LHDN MyInvois API integration for e-Invoice submission"
+        actions={
+          <Button variant="outline" onClick={() => window.history.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Return
+          </Button>
+        }
       />
 
       {/* Status Overview */}

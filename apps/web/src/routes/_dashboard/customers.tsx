@@ -224,15 +224,15 @@ function CustomersPage() {
         prev.map((c) =>
           c.id === editingCustomer.id
             ? {
-                ...c,
-                name: formData.name,
-                type: formData.type,
-                address: formData.address,
-                email: formData.email || null,
-                phone: formData.phone || null,
-                fax: formData.type === 'COMPANY' ? formData.fax || null : null,
-                creditLimit: parseFloat(formData.creditLimit) || 0,
-              }
+              ...c,
+              name: formData.name,
+              type: formData.type,
+              address: formData.address,
+              email: formData.email || null,
+              phone: formData.phone || null,
+              fax: formData.type === 'COMPANY' ? formData.fax || null : null,
+              creditLimit: parseFloat(formData.creditLimit) || 0,
+            }
             : c
         )
       );

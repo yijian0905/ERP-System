@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowLeft, FileText, MoreHorizontal, Plus, Search, Send } from 'lucide-react';
+import { ArrowLeft, FileText, MoreHorizontal, Plus, Search, Send, Settings } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { EInvoiceStatusBadge, type EInvoiceStatus } from '@/components/einvoice';
@@ -185,10 +185,14 @@ function InvoicesPage() {
         description="Manage and track your invoices"
         actions={
           <div className="flex gap-2">
-            <Link to="/orders">
+            <Button variant="outline" onClick={() => window.history.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Return
+            </Button>
+            <Link to="/einvoice">
               <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Orders
+                <Settings className="mr-2 h-4 w-4" />
+                E-Invoice Settings
               </Button>
             </Link>
             <Button onClick={() => setIsModalOpen(true)}>
@@ -384,44 +388,7 @@ function InvoicesPage() {
         mode="create"
       />
 
-      {/* Info cards about workflows */}
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {/* Print workflow */}
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
-          <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-            🖨️ Print Workflow
-          </h3>
-          <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
-            When you print an invoice, inventory is automatically deducted after the print
-            dialog is confirmed.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
-            <span>Fill form</span>
-            <span>→</span>
-            <span>Print</span>
-            <span>→</span>
-            <span className="font-medium">Inventory deducted ✓</span>
-          </div>
-        </div>
 
-        {/* E-Invoice workflow */}
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
-          <h3 className="font-semibold text-green-900 dark:text-green-100">
-            🧾 LHDN E-Invoice Workflow
-          </h3>
-          <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-            Submit invoices to LHDN MyInvois for tax compliance. Configure your API credentials
-            in Settings → E-Invoice.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-green-600 dark:text-green-400">
-            <span>Submit</span>
-            <span>→</span>
-            <span>Validation</span>
-            <span>→</span>
-            <span className="font-medium">Valid ✓</span>
-          </div>
-        </div>
-      </div>
     </PageContainer>
   );
 }

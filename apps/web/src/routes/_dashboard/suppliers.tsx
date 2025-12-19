@@ -7,7 +7,6 @@ import {
   Phone,
   Plus,
   Search,
-  Star,
   Truck,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -47,11 +46,7 @@ interface Supplier {
   phone: string | null;
   website: string | null;
   paymentTerms: number;
-  leadTime: number;
-  rating: number | null;
   isActive: boolean;
-  totalOrders: number;
-  totalSpent: number;
 }
 
 // Mock data
@@ -65,11 +60,7 @@ const mockSuppliers: Supplier[] = [
     phone: '+1 (555) 111-2222',
     website: 'https://techsupplies.com',
     paymentTerms: 30,
-    leadTime: 5,
-    rating: 5,
     isActive: true,
-    totalOrders: 45,
-    totalSpent: 125000,
   },
   {
     id: '2',
@@ -80,11 +71,7 @@ const mockSuppliers: Supplier[] = [
     phone: '+1 (555) 222-3333',
     website: 'https://officedepot.com',
     paymentTerms: 15,
-    leadTime: 3,
-    rating: 4,
     isActive: true,
-    totalOrders: 32,
-    totalSpent: 45000,
   },
   {
     id: '3',
@@ -95,11 +82,7 @@ const mockSuppliers: Supplier[] = [
     phone: '+1 (555) 333-4444',
     website: null,
     paymentTerms: 45,
-    leadTime: 7,
-    rating: 4,
     isActive: true,
-    totalOrders: 28,
-    totalSpent: 89000,
   },
   {
     id: '4',
@@ -110,11 +93,7 @@ const mockSuppliers: Supplier[] = [
     phone: '+1 (555) 444-5555',
     website: 'https://furnitureworld.com',
     paymentTerms: 30,
-    leadTime: 14,
-    rating: 3,
     isActive: true,
-    totalOrders: 15,
-    totalSpent: 67000,
   },
   {
     id: '5',
@@ -125,11 +104,7 @@ const mockSuppliers: Supplier[] = [
     phone: '+1 (555) 555-6666',
     website: 'https://globalparts.co',
     paymentTerms: 60,
-    leadTime: 10,
-    rating: 5,
     isActive: true,
-    totalOrders: 20,
-    totalSpent: 156000,
   },
 ];
 
@@ -147,7 +122,6 @@ function SuppliersPage() {
     phone: '',
     website: '',
     paymentTerms: '30',
-    leadTime: '7',
   });
 
   // Filter suppliers
@@ -169,7 +143,6 @@ function SuppliersPage() {
         phone: supplier.phone || '',
         website: supplier.website || '',
         paymentTerms: supplier.paymentTerms.toString(),
-        leadTime: supplier.leadTime.toString(),
       });
     } else {
       setEditingSupplier(null);
@@ -180,7 +153,6 @@ function SuppliersPage() {
         phone: '',
         website: '',
         paymentTerms: '30',
-        leadTime: '7',
       });
     }
     setIsModalOpen(true);
@@ -195,15 +167,14 @@ function SuppliersPage() {
         prev.map((s) =>
           s.id === editingSupplier.id
             ? {
-                ...s,
-                name: formData.name,
-                contactPerson: formData.contactPerson || null,
-                email: formData.email || null,
-                phone: formData.phone || null,
-                website: formData.website || null,
-                paymentTerms: parseInt(formData.paymentTerms),
-                leadTime: parseInt(formData.leadTime),
-              }
+              ...s,
+              name: formData.name,
+              contactPerson: formData.contactPerson || null,
+              email: formData.email || null,
+              phone: formData.phone || null,
+              website: formData.website || null,
+              paymentTerms: parseInt(formData.paymentTerms),
+            }
             : s
         )
       );
@@ -217,11 +188,7 @@ function SuppliersPage() {
         phone: formData.phone || null,
         website: formData.website || null,
         paymentTerms: parseInt(formData.paymentTerms),
-        leadTime: parseInt(formData.leadTime),
-        rating: null,
         isActive: true,
-        totalOrders: 0,
-        totalSpent: 0,
       };
       setSuppliers((prev) => [newSupplier, ...prev]);
     }
@@ -236,24 +203,7 @@ function SuppliersPage() {
     }
   };
 
-  const renderStars = (rating: number | null) => {
-    if (!rating) return <span className="text-muted-foreground text-sm">No rating</span>;
-    return (
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={cn(
-              'h-4 w-4',
-              star <= rating
-                ? 'fill-amber-400 text-amber-400'
-                : 'text-muted-foreground'
-            )}
-          />
-        ))}
-      </div>
-    );
-  };
+
 
   return (
     <PageContainer>
@@ -355,27 +305,6 @@ function SuppliersPage() {
                 </div>
               )}
             </div>
-
-            <div className="mt-4 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Rating</p>
-                  {renderStars(supplier.rating)}
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Lead Time</p>
-                  <p className="font-medium">{supplier.leadTime} days</p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {supplier.totalOrders} orders
-                </span>
-                <span className="font-medium">
-                  ${supplier.totalSpent.toLocaleString()} spent
-                </span>
-              </div>
-            </div>
           </DashboardCard>
         ))}
       </div>
@@ -464,25 +393,14 @@ function SuppliersPage() {
                 placeholder="https://example.com"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="paymentTerms">Payment Terms (days)</Label>
-                <Input
-                  id="paymentTerms"
-                  type="number"
-                  value={formData.paymentTerms}
-                  onChange={(e) => setFormData((f) => ({ ...f, paymentTerms: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="leadTime">Lead Time (days)</Label>
-                <Input
-                  id="leadTime"
-                  type="number"
-                  value={formData.leadTime}
-                  onChange={(e) => setFormData((f) => ({ ...f, leadTime: e.target.value }))}
-                />
-              </div>
+            <div className="grid gap-2">
+              <Label htmlFor="paymentTerms">Payment Terms (days)</Label>
+              <Input
+                id="paymentTerms"
+                type="number"
+                value={formData.paymentTerms}
+                onChange={(e) => setFormData((f) => ({ ...f, paymentTerms: e.target.value }))}
+              />
             </div>
           </div>
           <DialogFooter>

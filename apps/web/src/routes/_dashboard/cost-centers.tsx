@@ -337,16 +337,16 @@ function CostCentersPage() {
         prev.map((cc) =>
           cc.id === selectedCostCenter.id
             ? {
-                ...cc,
-                code: formData.code,
-                name: formData.name,
-                description: formData.description,
-                department: formData.department,
-                manager: formData.manager,
-                budget: formData.budget,
-                status: cc.usedBudget > formData.budget ? 'OVER_BUDGET' : 'ACTIVE',
-                updatedAt: new Date().toISOString(),
-              }
+              ...cc,
+              code: formData.code,
+              name: formData.name,
+              description: formData.description,
+              department: formData.department,
+              manager: formData.manager,
+              budget: formData.budget,
+              status: cc.usedBudget > formData.budget ? 'OVER_BUDGET' : 'ACTIVE',
+              updatedAt: new Date().toISOString(),
+            }
             : cc
         )
       );
@@ -369,10 +369,10 @@ function CostCentersPage() {
       prev.map((cc) =>
         cc.id === ccId
           ? {
-              ...cc,
-              status: cc.status === 'ACTIVE' ? 'INACTIVE' : cc.usedBudget > cc.budget ? 'OVER_BUDGET' : 'ACTIVE',
-              updatedAt: new Date().toISOString(),
-            }
+            ...cc,
+            status: cc.status === 'ACTIVE' ? 'INACTIVE' : cc.usedBudget > cc.budget ? 'OVER_BUDGET' : 'ACTIVE',
+            updatedAt: new Date().toISOString(),
+          }
           : cc
       )
     );

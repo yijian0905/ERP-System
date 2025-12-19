@@ -36,7 +36,7 @@ export const Route = createFileRoute('/_dashboard/orders/')({
 
 // Types
 type OrderType = 'SALES' | 'PURCHASE';
-type OrderStatus = 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'ORDERED' | 'PARTIAL' | 'RECEIVED';
+type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'ORDERED' | 'RECEIVED';
 
 interface UnifiedOrder {
   id: string;
@@ -59,30 +59,29 @@ const mockOrders: UnifiedOrder[] = [
   { id: 's3', orderNumber: 'SO-2312-00043', type: 'SALES', party: 'Global Systems', itemCount: 1, total: 3269.89, status: 'DELIVERED', orderDate: '2024-12-03', expectedDate: '2024-12-10', hasInvoice: true },
   { id: 's4', orderNumber: 'SO-2312-00042', type: 'SALES', party: 'Local Store', itemCount: 1, total: 489.96, status: 'PENDING', orderDate: '2024-12-05', expectedDate: null, hasInvoice: false },
   { id: 's5', orderNumber: 'SO-2312-00041', type: 'SALES', party: 'Smart Solutions', itemCount: 2, total: 1634.56, status: 'COMPLETED', orderDate: '2024-12-01', expectedDate: '2024-12-08', hasInvoice: true },
-  { id: 's6', orderNumber: 'SO-2312-00040', type: 'SALES', party: 'City Government', itemCount: 2, total: 3297.50, status: 'DRAFT', orderDate: '2024-12-07', expectedDate: null, hasInvoice: false },
+  { id: 's6', orderNumber: 'SO-2312-00040', type: 'SALES', party: 'City Government', itemCount: 2, total: 3297.50, status: 'PENDING', orderDate: '2024-12-07', expectedDate: null, hasInvoice: false },
   // Purchase Orders
   { id: 'p1', orderNumber: 'PO-2312-00023', type: 'PURCHASE', party: 'Tech Supplies Inc', itemCount: 2, total: 4162.50, status: 'RECEIVED', orderDate: '2024-12-05', expectedDate: '2024-12-10', hasInvoice: false },
   { id: 'p2', orderNumber: 'PO-2312-00022', type: 'PURCHASE', party: 'Office Depot', itemCount: 1, total: 2502.50, status: 'PENDING', orderDate: '2024-12-06', expectedDate: '2024-12-15', hasInvoice: false },
   { id: 'p3', orderNumber: 'PO-2312-00021', type: 'PURCHASE', party: 'Electronics Wholesale', itemCount: 1, total: 5550.00, status: 'ORDERED', orderDate: '2024-12-04', expectedDate: '2024-12-12', hasInvoice: false },
-  { id: 'p4', orderNumber: 'PO-2312-00020', type: 'PURCHASE', party: 'Furniture World', itemCount: 1, total: 3470.00, status: 'PARTIAL', orderDate: '2024-12-01', expectedDate: '2024-12-08', hasInvoice: false },
+  { id: 'p4', orderNumber: 'PO-2312-00020', type: 'PURCHASE', party: 'Furniture World', itemCount: 1, total: 3470.00, status: 'ORDERED', orderDate: '2024-12-01', expectedDate: '2024-12-08', hasInvoice: false },
   { id: 'p5', orderNumber: 'PO-2312-00019', type: 'PURCHASE', party: 'Tech Supplies Inc', itemCount: 3, total: 9687.50, status: 'COMPLETED', orderDate: '2024-11-25', expectedDate: '2024-12-02', hasInvoice: false },
-  { id: 'p6', orderNumber: 'PO-2312-00024', type: 'PURCHASE', party: 'Global Parts Ltd', itemCount: 1, total: 2512.50, status: 'DRAFT', orderDate: '2024-12-07', expectedDate: null, hasInvoice: false },
+  { id: 'p6', orderNumber: 'PO-2312-00024', type: 'PURCHASE', party: 'Global Parts Ltd', itemCount: 1, total: 2512.50, status: 'PENDING', orderDate: '2024-12-07', expectedDate: null, hasInvoice: false },
 ];
 
 const statusStyles: Record<string, string> = {
-  DRAFT: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
   PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   CONFIRMED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  APPROVED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   PROCESSING: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   ORDERED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   SHIPPED: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
-  PARTIAL: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   DELIVERED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   RECEIVED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   COMPLETED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
+
+
 
 function OrderManagementPage() {
   const [orders] = useState<UnifiedOrder[]>(mockOrders);
@@ -108,7 +107,7 @@ function OrderManagementPage() {
   const purchaseOrders = orders.filter((o) => o.type === 'PURCHASE');
   const totalSalesValue = salesOrders.reduce((sum, o) => sum + o.total, 0);
   const totalPurchaseValue = purchaseOrders.reduce((sum, o) => sum + o.total, 0);
-  const pendingOrders = orders.filter((o) => ['DRAFT', 'PENDING', 'CONFIRMED', 'APPROVED'].includes(o.status)).length;
+  const pendingOrders = orders.filter((o) => ['PENDING', 'CONFIRMED'].includes(o.status)).length;
 
   return (
     <PageContainer>
@@ -234,7 +233,6 @@ function OrderManagementPage() {
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             >
               <option value="">All Status</option>
-              <option value="DRAFT">Draft</option>
               <option value="PENDING">Pending</option>
               <option value="PROCESSING">Processing</option>
               <option value="SHIPPED">Shipped</option>
@@ -279,8 +277,8 @@ function OrderManagementPage() {
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         'flex h-10 w-10 items-center justify-center rounded-lg',
-                        order.type === 'SALES' 
-                          ? 'bg-blue-100 dark:bg-blue-900/30' 
+                        order.type === 'SALES'
+                          ? 'bg-blue-100 dark:bg-blue-900/30'
                           : 'bg-purple-100 dark:bg-purple-900/30'
                       )}>
                         {order.type === 'SALES' ? (

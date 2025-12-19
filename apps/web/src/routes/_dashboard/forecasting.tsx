@@ -142,12 +142,12 @@ function ForecastingPage() {
           const weekStart = i * 7;
           const weekEnd = Math.min(weekStart + 7, chartData.length);
           const weekData = chartData.slice(weekStart, weekEnd);
-          
+
           if (weekData.length > 0) {
             const avgForecast = weekData.reduce((sum, d) => sum + d.forecast, 0) / weekData.length;
             const avgLower = weekData.reduce((sum, d) => sum + d.lower, 0) / weekData.length;
             const avgUpper = weekData.reduce((sum, d) => sum + d.upper, 0) / weekData.length;
-            
+
             weeklyData.push({
               date: `Week ${i + 1}`,
               actual: i < 4 ? Math.round(avgForecast * (0.95 + Math.random() * 0.1)) : null,
@@ -232,7 +232,7 @@ function ForecastingPage() {
   // Export handler
   const handleExport = useCallback(async (format: ExportFormat) => {
     setIsExporting(true);
-    
+
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     try {
@@ -504,7 +504,7 @@ function ForecastingPage() {
           <div className="space-y-3">
             {productForecasts.length > 0 ? (
               productForecasts.map((product) => {
-                const recStyle = recommendationStyles[product.recommendation as keyof typeof recommendationStyles] || 
+                const recStyle = recommendationStyles[product.recommendation as keyof typeof recommendationStyles] ||
                   { label: product.recommendation, color: 'bg-gray-100 text-gray-700' };
                 return (
                   <div
@@ -634,8 +634,8 @@ function ForecastingPage() {
                     <span className={cn(
                       'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
                       insight.priority === 'high' ? 'bg-red-100 text-red-700' :
-                      insight.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
-                      'bg-gray-100 text-gray-700'
+                        insight.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
+                          'bg-gray-100 text-gray-700'
                     )}>
                       {insight.priority.charAt(0).toUpperCase() + insight.priority.slice(1)} Priority
                     </span>

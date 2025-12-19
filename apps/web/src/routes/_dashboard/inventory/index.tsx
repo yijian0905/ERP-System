@@ -5,16 +5,22 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  ChevronLeft,
   ClipboardList,
   Loader2,
   Package,
+  PackageCheck,
   Plus,
+  RotateCcw,
   Search,
   ShoppingCart,
+  Trash2,
   TrendingDown,
   TrendingUp,
   Warehouse,
 } from 'lucide-react';
+
+
 import { useState } from 'react';
 
 import {
@@ -43,6 +49,78 @@ export const Route = createFileRoute('/_dashboard/inventory/')({
 
 // Types
 type AdjustmentType = 'STOCK_IN' | 'STOCK_OUT' | 'TRANSFER';
+
+// Stock In Reasons
+type StockInReason = 'PURCHASE_ORDER' | 'CUSTOMER_RETURN' | 'LOST_RECOVERY';
+const stockInReasons: { value: StockInReason; label: string; description: string; icon: typeof PackageCheck }[] = [
+  { value: 'PURCHASE_ORDER', label: 'Purchase Order Received', description: 'Receive items from a purchase order', icon: PackageCheck },
+  { value: 'CUSTOMER_RETURN', label: 'Customer Return', description: 'Items returned by customer', icon: RotateCcw },
+  { value: 'LOST_RECOVERY', label: 'Lost Recovery', description: 'Previously lost items found', icon: Search },
+];
+
+
+// Stock Out Reasons
+type StockOutReason = 'SALES_ORDER' | 'DAMAGE' | 'EXPIRED' | 'LOST' | 'SAMPLE';
+const stockOutReasons: { value: StockOutReason; label: string; description: string; icon: typeof Trash2 }[] = [
+  { value: 'SALES_ORDER', label: 'Sales Order Fulfilled', description: 'Ship items for a sales order', icon: ShoppingCart },
+  { value: 'DAMAGE', label: 'Damaged/Defective', description: 'Items damaged or defective', icon: Trash2 },
+  { value: 'EXPIRED', label: 'Expired', description: 'Items past expiration date', icon: AlertTriangle },
+  { value: 'LOST', label: 'Lost/Missing', description: 'Items not found in inventory', icon: Search },
+  { value: 'SAMPLE', label: 'Sample/Demo', description: 'Items used for samples or demos', icon: Package },
+];
+
+
+
+// Modal step type
+type ModalStep = 'reason' | 'template' | 'confirm';
+
+// Purchase Order types for Stock In integration
+type POStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'ORDERED' | 'PARTIAL' | 'RECEIVED' | 'COMPLETED' | 'CANCELLED';
+
+interface POItem {
+  id: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  receivedQuantity: number;
+  unitCost: number;
+}
+
+interface PurchaseOrder {
+  id: string;
+  orderNumber: string;
+  supplier: string;
+  destinationWarehouse: string;
+  items: POItem[];
+  status: POStatus;
+  orderDate: string;
+  expectedDate: string | null;
+}
+
+// Sales Order types for Stock Out integration
+type SOStatus = 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
+
+interface SOItem {
+  id: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  shippedQuantity: number;
+  unitPrice: number;
+}
+
+interface SalesOrder {
+  id: string;
+  orderNumber: string;
+  customer: string;
+  sourceWarehouse: string;
+  items: SOItem[];
+  status: SOStatus;
+  orderDate: string;
+  expectedDate: string | null;
+}
 
 interface InventoryItem {
   id: string;
@@ -211,7 +289,90 @@ const warehouseData = [
   { name: 'Downtown Retail Store', address: '789 Main Street, Manhattan, NY 10013' },
 ];
 
+// Mock Purchase Orders (pending/ordered for Stock In)
+const mockPurchaseOrders: PurchaseOrder[] = [
+  {
+    id: '1',
+    orderNumber: 'PO-2312-00021',
+    supplier: 'Electronics Wholesale',
+    destinationWarehouse: 'Main Warehouse',
+    items: [
+      { id: 'i1', productId: '5', productName: 'USB-C Hub', sku: 'ELEC-003', quantity: 200, receivedQuantity: 0, unitCost: 25.00 },
+    ],
+    status: 'ORDERED',
+    orderDate: '2024-12-04',
+    expectedDate: '2024-12-12',
+  },
+  {
+    id: '2',
+    orderNumber: 'PO-2312-00022',
+    supplier: 'Office Depot',
+    destinationWarehouse: 'Secondary Warehouse',
+    items: [
+      { id: 'i2', productId: '3', productName: 'A4 Copy Paper', sku: 'OFFC-001', quantity: 500, receivedQuantity: 0, unitCost: 4.50 },
+    ],
+    status: 'ORDERED',
+    orderDate: '2024-12-06',
+    expectedDate: '2024-12-15',
+  },
+  {
+    id: '3',
+    orderNumber: 'PO-2312-00020',
+    supplier: 'Furniture World',
+    destinationWarehouse: 'Downtown Retail Store',
+    items: [
+      { id: 'i3', productId: '4', productName: 'Ergonomic Office Chair', sku: 'FURN-001', quantity: 20, receivedQuantity: 10, unitCost: 150.00 },
+    ],
+    status: 'PARTIAL',
+    orderDate: '2024-12-01',
+    expectedDate: '2024-12-08',
+  },
+];
+
+// Mock Sales Orders (processing status for Stock Out)
+const mockSalesOrders: SalesOrder[] = [
+  {
+    id: '1',
+    orderNumber: 'SO-2312-00045',
+    customer: 'Acme Corporation',
+    sourceWarehouse: 'Main Warehouse',
+    items: [
+      { id: 's1', productId: '1', productName: 'Wireless Mouse', sku: 'ELEC-001', quantity: 10, shippedQuantity: 0, unitPrice: 29.99 },
+      { id: 's2', productId: '2', productName: 'Mechanical Keyboard', sku: 'ELEC-002', quantity: 5, shippedQuantity: 0, unitPrice: 89.99 },
+    ],
+    status: 'PROCESSING',
+    orderDate: '2024-12-07',
+    expectedDate: '2024-12-14',
+  },
+  {
+    id: '2',
+    orderNumber: 'SO-2312-00046',
+    customer: 'TechStart Inc.',
+    sourceWarehouse: 'Main Warehouse',
+    items: [
+      { id: 's3', productId: '5', productName: 'USB-C Hub', sku: 'ELEC-003', quantity: 20, shippedQuantity: 0, unitPrice: 49.99 },
+    ],
+    status: 'PROCESSING',
+    orderDate: '2024-12-08',
+    expectedDate: '2024-12-15',
+  },
+  {
+    id: '3',
+    orderNumber: 'SO-2312-00044',
+    customer: 'Global Systems',
+    sourceWarehouse: 'Secondary Warehouse',
+    items: [
+      { id: 's4', productId: '4', productName: 'Ergonomic Office Chair', sku: 'FURN-001', quantity: 5, shippedQuantity: 2, unitPrice: 299.99 },
+    ],
+    status: 'PROCESSING',
+    orderDate: '2024-12-06',
+    expectedDate: '2024-12-12',
+  },
+];
+
 const warehouses = warehouseData.map(w => w.name);
+
+
 
 const adjustmentTypeConfig: Record<AdjustmentType, { label: string; icon: typeof ArrowDown; color: string }> = {
   STOCK_IN: { label: 'Stock In', icon: ArrowDown, color: 'text-green-600' },
@@ -226,7 +387,7 @@ function InventoryPage() {
   const [warehouseFilter, setWarehouseFilter] = useState<string>('');
   const [stockFilter, setStockFilter] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
-  
+
   // Adjustment Modal
   const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('STOCK_IN');
@@ -240,9 +401,26 @@ function InventoryPage() {
     reference: '',
   });
 
+  // New: Multi-step modal state for Stock In/Out redesign
+  const [modalStep, setModalStep] = useState<ModalStep>('reason');
+  const [selectedStockInReason, setSelectedStockInReason] = useState<StockInReason | ''>('');
+  const [selectedStockOutReason, setSelectedStockOutReason] = useState<StockOutReason | ''>('');
+
+  // PO Selection state for "Purchase Order Received" reason
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(mockPurchaseOrders);
+  const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
+  const [receivingItems, setReceivingItems] = useState<{ itemId: string; quantity: number }[]>([]);
+
+  // SO Selection state for "Sales Order Fulfilled" reason
+  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>(mockSalesOrders);
+  const [selectedSO, setSelectedSO] = useState<SalesOrder | null>(null);
+  const [shippingItems, setShippingItems] = useState<{ itemId: string; quantity: number }[]>([]);
+
+
   // Low Stock Alert Modal
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<WarehouseLowStockAlert | null>(null);
+
 
   // Calculate stats
   const totalItems = inventory.reduce((sum, item) => sum + item.quantity, 0);
@@ -253,7 +431,7 @@ function InventoryPage() {
   // Calculate warehouse-specific low stock alerts
   const getWarehouseLowStockAlerts = (): WarehouseLowStockAlert[] => {
     const alerts: WarehouseLowStockAlert[] = [];
-    
+
     // Group inventory by product
     const productGroups = inventory.reduce((acc, item) => {
       if (!acc[item.productId]) {
@@ -266,16 +444,16 @@ function InventoryPage() {
     // Check each product in each warehouse
     Object.entries(productGroups).forEach(([_, items]) => {
       const totalStock = items.reduce((sum, i) => sum + i.quantity, 0);
-      
+
       items.forEach(item => {
         // If this warehouse is low but total stock is sufficient
         if (item.quantity < item.minStock && totalStock >= item.minStock) {
           const otherWarehouses = items
             .filter(i => i.warehouse !== item.warehouse && i.availableQty > 0)
             .map(i => ({ warehouse: i.warehouse, available: i.availableQty }));
-          
+
           const warehouseInfo = warehouseData.find(w => w.name === item.warehouse);
-          
+
           alerts.push({
             warehouse: item.warehouse,
             warehouseAddress: warehouseInfo?.address || '',
@@ -303,7 +481,7 @@ function InventoryPage() {
       item.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesWarehouse = !warehouseFilter || item.warehouse === warehouseFilter;
     const matchesCategory = !categoryFilter || item.category === categoryFilter;
-    
+
     let matchesStock = true;
     if (stockFilter === 'low') {
       matchesStock = item.quantity <= item.reorderPoint && item.quantity > 0;
@@ -312,7 +490,7 @@ function InventoryPage() {
     } else if (stockFilter === 'overstock') {
       matchesStock = item.quantity > item.maxStock * 0.9;
     }
-    
+
     return matchesSearch && matchesWarehouse && matchesStock && matchesCategory;
   });
 
@@ -364,13 +542,119 @@ function InventoryPage() {
       reason: type === 'TRANSFER' ? 'RESTOCK' : '',
       reference: '',
     });
+    // Reset multi-step modal state
+    // For Transfer, skip reason selection and go directly to template
+    setModalStep(type === 'TRANSFER' ? 'template' : 'reason');
+    setSelectedStockInReason('');
+    setSelectedStockOutReason('');
+    setSelectedPO(null);
+    setReceivingItems([]);
+    setSelectedSO(null);
+    setShippingItems([]);
     setIsAdjustmentOpen(true);
   };
+
+
+  // Handle reason selection for Stock In/Out
+  const handleReasonSelect = (reason: StockInReason | StockOutReason) => {
+    if (adjustmentType === 'STOCK_IN') {
+      setSelectedStockInReason(reason as StockInReason);
+      if (reason === 'PURCHASE_ORDER') {
+        // Go to PO selection step
+        setModalStep('template');
+      } else {
+        // Go to manual entry with reason set
+        setAdjustmentForm(f => ({ ...f, reason }));
+        setModalStep('template');
+      }
+    } else if (adjustmentType === 'STOCK_OUT') {
+      setSelectedStockOutReason(reason as StockOutReason);
+      if (reason === 'SALES_ORDER') {
+        // Go to SO selection step
+        setModalStep('template');
+      } else {
+        // Go to manual entry with reason set
+        setAdjustmentForm(f => ({ ...f, reason }));
+        setModalStep('template');
+      }
+    }
+  };
+
+
+  // Handle PO selection
+  const handlePOSelect = (po: PurchaseOrder) => {
+    setSelectedPO(po);
+    // Initialize receiving items with remaining quantities
+    const items = po.items.map(item => ({
+      itemId: item.id,
+      quantity: item.quantity - item.receivedQuantity,
+    }));
+    setReceivingItems(items);
+    setAdjustmentForm(f => ({ ...f, targetWarehouse: po.destinationWarehouse }));
+  };
+
+  // Update receiving item quantity with validation
+  const updateReceivingQuantity = (itemId: string, quantity: number) => {
+    if (!selectedPO) return;
+
+    // Find the PO item to get the max allowed quantity
+    const poItem = selectedPO.items.find(i => i.id === itemId);
+    if (!poItem) return;
+
+    const remaining = poItem.quantity - poItem.receivedQuantity;
+    // Clamp quantity between 0 and remaining
+    const validQuantity = Math.min(Math.max(0, quantity), remaining);
+
+    setReceivingItems(prev =>
+      prev.map(item => item.itemId === itemId ? { ...item, quantity: validQuantity } : item)
+    );
+  };
+
+
+  // Get pending purchase orders for Stock In
+  const getPendingPOs = () => {
+    return purchaseOrders.filter(po => po.status === 'ORDERED' || po.status === 'PARTIAL');
+  };
+
+  // Handle SO selection
+  const handleSOSelect = (so: SalesOrder) => {
+    setSelectedSO(so);
+    // Initialize shipping items with remaining quantities
+    const items = so.items.map(item => ({
+      itemId: item.id,
+      quantity: item.quantity - item.shippedQuantity,
+    }));
+    setShippingItems(items);
+    setAdjustmentForm(f => ({ ...f, sourceWarehouse: so.sourceWarehouse }));
+  };
+
+  // Update shipping item quantity with validation
+  const updateShippingQuantity = (itemId: string, quantity: number) => {
+    if (!selectedSO) return;
+
+    // Find the SO item to get the max allowed quantity
+    const soItem = selectedSO.items.find(i => i.id === itemId);
+    if (!soItem) return;
+
+    const remaining = soItem.quantity - soItem.shippedQuantity;
+    // Clamp quantity between 0 and remaining
+    const validQuantity = Math.min(Math.max(0, quantity), remaining);
+
+    setShippingItems(prev =>
+      prev.map(item => item.itemId === itemId ? { ...item, quantity: validQuantity } : item)
+    );
+  };
+
+  // Get processing sales orders for Stock Out
+  const getProcessingSOs = () => {
+    return salesOrders.filter(so => so.status === 'PROCESSING');
+  };
+
 
   // Handle alert action
   const handleAlertAction = (alert: WarehouseLowStockAlert, action: 'transfer' | 'purchase') => {
     setIsAlertModalOpen(false);
-    
+
     if (action === 'transfer' && alert.canTransferFrom.length > 0) {
       // Open transfer modal with pre-filled data
       openAdjustmentModal(
@@ -398,30 +682,167 @@ function InventoryPage() {
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    // PO-based Stock In
+    if (adjustmentType === 'STOCK_IN' && selectedStockInReason === 'PURCHASE_ORDER' && selectedPO) {
+      // Process each receiving item
+      for (const receiving of receivingItems) {
+        if (receiving.quantity <= 0) continue;
+
+        const poItem = selectedPO.items.find(i => i.id === receiving.itemId);
+        if (!poItem) continue;
+
+        // Find or create inventory entry
+        const existingItem = inventory.find(
+          i => i.productId === poItem.productId && i.warehouse === selectedPO.destinationWarehouse
+        );
+
+        if (existingItem) {
+          setInventory(prev => prev.map(item =>
+            item.id === existingItem.id
+              ? {
+                ...item,
+                quantity: item.quantity + receiving.quantity,
+                availableQty: item.availableQty + receiving.quantity,
+                lastUpdated: new Date().toISOString(),
+              }
+              : item
+          ));
+        } else {
+          // Create new inventory entry
+          const newItem: InventoryItem = {
+            id: `inv-${Date.now()}-${poItem.productId}`,
+            productId: poItem.productId,
+            productName: poItem.productName,
+            sku: poItem.sku,
+            category: 'General', // Default category
+            warehouse: selectedPO.destinationWarehouse,
+            quantity: receiving.quantity,
+            reservedQty: 0,
+            availableQty: receiving.quantity,
+            minStock: 10,
+            maxStock: 500,
+            reorderPoint: 20,
+            unitCost: poItem.unitCost,
+            lastUpdated: new Date().toISOString(),
+          };
+          setInventory(prev => [...prev, newItem]);
+        }
+      }
+
+      // Update PO received quantities and status
+      setPurchaseOrders(prev => prev.map(po => {
+        if (po.id !== selectedPO.id) return po;
+
+        const updatedItems = po.items.map(item => {
+          const receiving = receivingItems.find(r => r.itemId === item.id);
+          if (!receiving) return item;
+          return {
+            ...item,
+            receivedQuantity: item.receivedQuantity + receiving.quantity,
+          };
+        });
+
+        // Check if all items are fully received
+        const allReceived = updatedItems.every(item => item.receivedQuantity >= item.quantity);
+        const anyReceived = updatedItems.some(item => item.receivedQuantity > 0);
+
+        return {
+          ...po,
+          items: updatedItems,
+          status: allReceived ? 'RECEIVED' : (anyReceived ? 'PARTIAL' : po.status),
+        };
+      }));
+
+      setIsSaving(false);
+      setIsAdjustmentOpen(false);
+      return;
+    }
+
+    // SO-based Stock Out
+    if (adjustmentType === 'STOCK_OUT' && selectedStockOutReason === 'SALES_ORDER' && selectedSO) {
+      // Process each shipping item
+      for (const shipping of shippingItems) {
+        if (shipping.quantity <= 0) continue;
+
+        const soItem = selectedSO.items.find(i => i.id === shipping.itemId);
+        if (!soItem) continue;
+
+        // Find and update inventory entry
+        const existingItem = inventory.find(
+          i => i.productId === soItem.productId && i.warehouse === selectedSO.sourceWarehouse
+        );
+
+        if (existingItem) {
+          setInventory(prev => prev.map(item =>
+            item.id === existingItem.id
+              ? {
+                ...item,
+                quantity: Math.max(0, item.quantity - shipping.quantity),
+                availableQty: Math.max(0, item.availableQty - shipping.quantity),
+                lastUpdated: new Date().toISOString(),
+              }
+              : item
+          ));
+        }
+      }
+
+      // Update SO shipped quantities and status
+      setSalesOrders(prev => prev.map(so => {
+        if (so.id !== selectedSO.id) return so;
+
+        const updatedItems = so.items.map(item => {
+          const shipping = shippingItems.find(s => s.itemId === item.id);
+          if (!shipping) return item;
+          return {
+            ...item,
+            shippedQuantity: item.shippedQuantity + shipping.quantity,
+          };
+        });
+
+        // Check if all items are fully shipped
+        const allShipped = updatedItems.every(item => item.shippedQuantity >= item.quantity);
+
+        return {
+          ...so,
+          items: updatedItems,
+          status: allShipped ? 'SHIPPED' : so.status,
+        };
+      }));
+
+      setIsSaving(false);
+      setIsAdjustmentOpen(false);
+      return;
+    }
+
+    // Manual Stock In (non-PO) or Stock Out (non-SO)
     const product = uniqueProducts.find(p => p.productId === adjustmentForm.productId);
-    if (!product) return;
+    if (!product && adjustmentType !== 'STOCK_OUT') {
+      setIsSaving(false);
+      return;
+    }
+
 
     if (adjustmentType === 'STOCK_IN') {
       // Stock In - add to target warehouse
       const existingItem = inventory.find(
         i => i.productId === adjustmentForm.productId && i.warehouse === adjustmentForm.targetWarehouse
       );
-      
+
       if (existingItem) {
         setInventory(prev => prev.map(item =>
           item.id === existingItem.id
             ? {
-                ...item,
-                quantity: item.quantity + adjustmentForm.quantity,
-                availableQty: item.availableQty + adjustmentForm.quantity,
-                lastUpdated: new Date().toISOString(),
-              }
+              ...item,
+              quantity: item.quantity + adjustmentForm.quantity,
+              availableQty: item.availableQty + adjustmentForm.quantity,
+              lastUpdated: new Date().toISOString(),
+            }
             : item
         ));
       } else {
         // Create new inventory entry for this warehouse
         const sourceItem = inventory.find(i => i.productId === adjustmentForm.productId);
-        if (sourceItem) {
+        if (sourceItem && product) {
           const newItem: InventoryItem = {
             id: String(inventory.length + 1),
             productId: adjustmentForm.productId,
@@ -446,11 +867,11 @@ function InventoryPage() {
       setInventory(prev => prev.map(item =>
         item.productId === adjustmentForm.productId && item.warehouse === adjustmentForm.sourceWarehouse
           ? {
-              ...item,
-              quantity: Math.max(0, item.quantity - adjustmentForm.quantity),
-              availableQty: Math.max(0, item.availableQty - adjustmentForm.quantity),
-              lastUpdated: new Date().toISOString(),
-            }
+            ...item,
+            quantity: Math.max(0, item.quantity - adjustmentForm.quantity),
+            availableQty: Math.max(0, item.availableQty - adjustmentForm.quantity),
+            lastUpdated: new Date().toISOString(),
+          }
           : item
       ));
     } else if (adjustmentType === 'TRANSFER') {
@@ -460,11 +881,11 @@ function InventoryPage() {
         const updated = prev.map(item =>
           item.productId === adjustmentForm.productId && item.warehouse === adjustmentForm.sourceWarehouse
             ? {
-                ...item,
-                quantity: Math.max(0, item.quantity - adjustmentForm.quantity),
-                availableQty: Math.max(0, item.availableQty - adjustmentForm.quantity),
-                lastUpdated: new Date().toISOString(),
-              }
+              ...item,
+              quantity: Math.max(0, item.quantity - adjustmentForm.quantity),
+              availableQty: Math.max(0, item.availableQty - adjustmentForm.quantity),
+              lastUpdated: new Date().toISOString(),
+            }
             : item
         );
 
@@ -477,17 +898,17 @@ function InventoryPage() {
           return updated.map(item =>
             item.id === targetItem.id
               ? {
-                  ...item,
-                  quantity: item.quantity + adjustmentForm.quantity,
-                  availableQty: item.availableQty + adjustmentForm.quantity,
-                  lastUpdated: new Date().toISOString(),
-                }
+                ...item,
+                quantity: item.quantity + adjustmentForm.quantity,
+                availableQty: item.availableQty + adjustmentForm.quantity,
+                lastUpdated: new Date().toISOString(),
+              }
               : item
           );
         } else {
           // Create new entry in target warehouse
           const sourceItem = prev.find(i => i.productId === adjustmentForm.productId);
-          if (sourceItem) {
+          if (sourceItem && product) {
             const newItem: InventoryItem = {
               id: String(prev.length + 1),
               productId: adjustmentForm.productId,
@@ -514,6 +935,7 @@ function InventoryPage() {
     setIsSaving(false);
     setIsAdjustmentOpen(false);
   };
+
 
   // Get max quantity for stock out/transfer
   const getMaxQuantity = () => {
@@ -719,7 +1141,7 @@ function InventoryPage() {
               {filteredInventory.map((item) => {
                 const status = getStockStatus(item);
                 const stockPercentage = (item.quantity / item.maxStock) * 100;
-                
+
                 return (
                   <tr key={item.id} className="border-b last:border-0 table-row-hover">
                     <td className="py-4">
@@ -769,8 +1191,8 @@ function InventoryPage() {
                             className={cn(
                               'h-full rounded-full transition-all',
                               stockPercentage <= 25 ? 'bg-destructive' :
-                              stockPercentage <= 50 ? 'bg-warning' :
-                              'bg-success'
+                                stockPercentage <= 50 ? 'bg-warning' :
+                                  'bg-success'
                             )}
                             style={{ width: `${Math.min(stockPercentage, 100)}%` }}
                           />
@@ -825,7 +1247,7 @@ function InventoryPage() {
             ⚠️ Low Stock Alert
           </h3>
           <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-            {lowStockCount} item{lowStockCount !== 1 ? 's' : ''} below reorder point. 
+            {lowStockCount} item{lowStockCount !== 1 ? 's' : ''} below reorder point.
             Consider placing purchase orders to replenish stock.
           </p>
           <Link to="/orders/purchase">
@@ -848,7 +1270,7 @@ function InventoryPage() {
               Choose how to replenish stock at {selectedAlert?.warehouse}
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedAlert && (
             <div className="py-4 space-y-4">
               <div className="rounded-lg bg-muted/50 p-4">
@@ -914,52 +1336,452 @@ function InventoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Adjustment Modal */}
+      {/* Adjustment Modal - Multi-step for Stock In/Out, direct for Transfer */}
       <Dialog open={isAdjustmentOpen} onOpenChange={setIsAdjustmentOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
+              {modalStep !== 'reason' && adjustmentType !== 'TRANSFER' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 mr-1"
+                  onClick={() => {
+                    if (modalStep === 'template' && selectedStockInReason === 'PURCHASE_ORDER' && selectedPO) {
+                      setSelectedPO(null);
+                    } else if (modalStep === 'template' && selectedStockOutReason === 'SALES_ORDER' && selectedSO) {
+                      setSelectedSO(null);
+                    } else {
+                      setModalStep('reason');
+                      setSelectedStockInReason('');
+                      setSelectedStockOutReason('');
+                      setSelectedPO(null);
+                      setSelectedSO(null);
+                    }
+                  }}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              )}
               {adjustmentType === 'STOCK_IN' && <ArrowDown className="h-5 w-5 text-green-600" />}
               {adjustmentType === 'STOCK_OUT' && <ArrowUp className="h-5 w-5 text-red-600" />}
               {adjustmentType === 'TRANSFER' && <ArrowLeftRight className="h-5 w-5 text-blue-600" />}
               {adjustmentTypeConfig[adjustmentType].label}
             </DialogTitle>
             <DialogDescription>
-              {adjustmentType === 'STOCK_IN' && 'Add inventory to a warehouse'}
-              {adjustmentType === 'STOCK_OUT' && 'Remove inventory from a warehouse'}
               {adjustmentType === 'TRANSFER' && 'Transfer inventory between warehouses'}
+              {adjustmentType === 'STOCK_IN' && modalStep === 'reason' && 'Select the reason for adding inventory'}
+              {adjustmentType === 'STOCK_IN' && modalStep === 'template' && selectedStockInReason === 'PURCHASE_ORDER' && !selectedPO && 'Select a purchase order to receive'}
+              {adjustmentType === 'STOCK_IN' && modalStep === 'template' && selectedStockInReason === 'PURCHASE_ORDER' && selectedPO && `Receiving ${selectedPO.orderNumber}`}
+              {adjustmentType === 'STOCK_IN' && modalStep === 'template' && selectedStockInReason !== 'PURCHASE_ORDER' && 'Enter inventory details'}
+              {adjustmentType === 'STOCK_OUT' && modalStep === 'reason' && 'Select the reason for removing inventory'}
+              {adjustmentType === 'STOCK_OUT' && modalStep === 'template' && selectedStockOutReason === 'SALES_ORDER' && !selectedSO && 'Select a sales order to fulfill'}
+              {adjustmentType === 'STOCK_OUT' && modalStep === 'template' && selectedStockOutReason === 'SALES_ORDER' && selectedSO && `Fulfilling ${selectedSO.orderNumber}`}
+              {adjustmentType === 'STOCK_OUT' && modalStep === 'template' && selectedStockOutReason !== 'SALES_ORDER' && 'Enter inventory details'}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {/* Product Selection */}
-            <div className="grid gap-2">
-              <Label htmlFor="product">Product *</Label>
-              <select
-                id="product"
-                value={adjustmentForm.productId}
-                onChange={(e) => setAdjustmentForm(f => ({ 
-                  ...f, 
-                  productId: e.target.value,
-                  sourceWarehouse: '',
-                  targetWarehouse: '',
-                }))}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Select product</option>
-                {uniqueProducts.map((p) => (
-                  <option key={p.productId} value={p.productId}>
-                    {p.sku} - {p.productName}
-                  </option>
-                ))}
-              </select>
-            </div>
 
-            {/* Source Warehouse (for Stock Out and Transfer) */}
-            {(adjustmentType === 'STOCK_OUT' || adjustmentType === 'TRANSFER') && (
+
+          {/* Step 1: Reason Selection (for Stock In/Out only) */}
+          {(adjustmentType === 'STOCK_IN' || adjustmentType === 'STOCK_OUT') && modalStep === 'reason' && (
+            <div className="py-4">
+              <ScrollArea className="max-h-[500px]">
+                <div className="space-y-2">
+                  {(adjustmentType === 'STOCK_IN' ? stockInReasons : stockOutReasons).map((reason) => {
+                    const Icon = reason.icon;
+                    return (
+                      <div
+                        key={reason.value}
+                        className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                        onClick={() => handleReasonSelect(reason.value)}
+                      >
+                        <div className={cn(
+                          "flex h-10 w-10 items-center justify-center rounded-full",
+                          adjustmentType === 'STOCK_IN' ? "bg-green-100 dark:bg-green-900" : "bg-red-100 dark:bg-red-900"
+                        )}>
+                          <Icon className={cn("h-5 w-5", adjustmentType === 'STOCK_IN' ? "text-green-600" : "text-red-600")} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">{reason.label}</p>
+                          <p className="text-sm text-muted-foreground">{reason.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+
+          {/* Step 2: PO Selection (for Stock In - Purchase Order Received) */}
+          {adjustmentType === 'STOCK_IN' && modalStep === 'template' && selectedStockInReason === 'PURCHASE_ORDER' && !selectedPO && (
+            <div className="py-4">
+              <ScrollArea className="max-h-[400px]">
+                {getPendingPOs().length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Package className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                    <p className="font-medium">No pending purchase orders</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      All purchase orders have been received
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {getPendingPOs().map((po) => (
+                      <div
+                        key={po.id}
+                        className="rounded-lg border p-4 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                        onClick={() => handlePOSelect(po)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">{po.orderNumber}</span>
+                          <span className={cn(
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                            po.status === 'ORDERED' && "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+                            po.status === 'PARTIAL' && "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                          )}>
+                            {po.status === 'PARTIAL' ? 'Partial' : 'Ordered'}
+                          </span>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>Supplier: {po.supplier}</p>
+                          <p>Warehouse: {po.destinationWarehouse}</p>
+                          <p>Items: {po.items.length} • Expected: {po.expectedDate || 'Not set'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          )}
+
+          {/* Step 2b: PO Items to Receive */}
+          {adjustmentType === 'STOCK_IN' && modalStep === 'template' && selectedStockInReason === 'PURCHASE_ORDER' && selectedPO && (
+            <div className="py-4 space-y-4">
+              <div className="rounded-lg bg-muted/50 p-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">{selectedPO.orderNumber}</p>
+                    <p className="text-sm text-muted-foreground">{selectedPO.supplier}</p>
+                  </div>
+                  <div className="text-right text-sm">
+                    <p>To: {selectedPO.destinationWarehouse}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label>Items to Receive</Label>
+                {selectedPO.items.map((item) => {
+                  const receiving = receivingItems.find(r => r.itemId === item.id);
+                  const remaining = item.quantity - item.receivedQuantity;
+                  return (
+                    <div key={item.id} className="rounded-lg border p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium">{item.productName}</p>
+                          <p className="text-xs text-muted-foreground">{item.sku}</p>
+                        </div>
+                        <div className="text-right text-sm">
+                          <p className="text-muted-foreground">
+                            Ordered: {item.quantity} | Received: {item.receivedQuantity}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm whitespace-nowrap">Receive:</Label>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={!receiving || receiving.quantity <= 0}
+                            onClick={() => updateReceivingQuantity(item.id, (receiving?.quantity || 0) - 1)}
+                          >
+                            <span className="text-lg">−</span>
+                          </Button>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={remaining}
+                            value={receiving?.quantity ?? 0}
+                            onChange={(e) => updateReceivingQuantity(item.id, parseInt(e.target.value) || 0)}
+                            onBlur={(e) => {
+                              // Re-validate on blur to ensure value is within bounds
+                              const val = parseInt(e.target.value) || 0;
+                              if (val < 0 || val > remaining) {
+                                updateReceivingQuantity(item.id, Math.min(Math.max(0, val), remaining));
+                              }
+                            }}
+                            className="h-8 w-20 text-center"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={!receiving || receiving.quantity >= remaining}
+                            onClick={() => updateReceivingQuantity(item.id, (receiving?.quantity || 0) + 1)}
+                          >
+                            <span className="text-lg">+</span>
+                          </Button>
+                        </div>
+                        <span className="text-sm text-muted-foreground">/ {remaining}</span>
+                        {remaining === 0 && (
+                          <span className="text-xs text-green-600 ml-1">✓ Fully received</span>
+                        )}
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: SO Selection (for Stock Out - Sales Order Fulfilled) */}
+          {adjustmentType === 'STOCK_OUT' && modalStep === 'template' && selectedStockOutReason === 'SALES_ORDER' && !selectedSO && (
+            <div className="py-4">
+              <ScrollArea className="max-h-[500px]">
+
+                {getProcessingSOs().length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <ShoppingCart className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                    <p className="font-medium">No processing sales orders</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      All sales orders have been fulfilled
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {getProcessingSOs().map((so) => (
+                      <div
+                        key={so.id}
+                        className="rounded-lg border p-4 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                        onClick={() => handleSOSelect(so)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">{so.orderNumber}</span>
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                            Processing
+                          </span>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>Customer: {so.customer}</p>
+                          <p>From: {so.sourceWarehouse}</p>
+                          <p>Items: {so.items.length} • Expected: {so.expectedDate || 'Not set'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          )}
+
+          {/* Step 2b: SO Items to Ship */}
+          {adjustmentType === 'STOCK_OUT' && modalStep === 'template' && selectedStockOutReason === 'SALES_ORDER' && selectedSO && (
+            <div className="py-4 space-y-4">
+              <div className="rounded-lg bg-muted/50 p-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">{selectedSO.orderNumber}</p>
+                    <p className="text-sm text-muted-foreground">{selectedSO.customer}</p>
+                  </div>
+                  <div className="text-right text-sm">
+                    <p>From: {selectedSO.sourceWarehouse}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label>Items to Ship</Label>
+                {selectedSO.items.map((item) => {
+                  const shipping = shippingItems.find(s => s.itemId === item.id);
+                  const remaining = item.quantity - item.shippedQuantity;
+                  return (
+                    <div key={item.id} className="rounded-lg border p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium">{item.productName}</p>
+                          <p className="text-xs text-muted-foreground">{item.sku}</p>
+                        </div>
+                        <div className="text-right text-sm">
+                          <p className="text-muted-foreground">
+                            Ordered: {item.quantity} | Shipped: {item.shippedQuantity}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm whitespace-nowrap">Ship:</Label>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={!shipping || shipping.quantity <= 0}
+                            onClick={() => updateShippingQuantity(item.id, (shipping?.quantity || 0) - 1)}
+                          >
+                            <span className="text-lg">−</span>
+                          </Button>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={remaining}
+                            value={shipping?.quantity ?? 0}
+                            onChange={(e) => updateShippingQuantity(item.id, parseInt(e.target.value) || 0)}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value) || 0;
+                              if (val < 0 || val > remaining) {
+                                updateShippingQuantity(item.id, Math.min(Math.max(0, val), remaining));
+                              }
+                            }}
+                            className="h-8 w-20 text-center"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={!shipping || shipping.quantity >= remaining}
+                            onClick={() => updateShippingQuantity(item.id, (shipping?.quantity || 0) + 1)}
+                          >
+                            <span className="text-lg">+</span>
+                          </Button>
+                        </div>
+                        <span className="text-sm text-muted-foreground">/ {remaining}</span>
+                        {remaining === 0 && (
+                          <span className="text-xs text-green-600 ml-1">✓ Fully shipped</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2c: Manual Entry Form (for non-PO Stock In and non-SO Stock Out) */}
+          {((adjustmentType === 'STOCK_IN' && modalStep === 'template' && selectedStockInReason !== 'PURCHASE_ORDER') ||
+            (adjustmentType === 'STOCK_OUT' && modalStep === 'template' && selectedStockOutReason !== 'SALES_ORDER')) && (
+              <div className="grid gap-4 py-4">
+                {/* Product Selection */}
+                <div className="grid gap-2">
+                  <Label htmlFor="product">Product *</Label>
+                  <select
+                    id="product"
+                    value={adjustmentForm.productId}
+                    onChange={(e) => setAdjustmentForm(f => ({
+                      ...f,
+                      productId: e.target.value,
+                      sourceWarehouse: '',
+                      targetWarehouse: '',
+                    }))}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="">Select product</option>
+                    {uniqueProducts.map((p) => (
+                      <option key={p.productId} value={p.productId}>
+                        {p.sku} - {p.productName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Warehouse */}
+                <div className="grid gap-2">
+                  <Label htmlFor="warehouse">Warehouse *</Label>
+                  <select
+                    id="warehouse"
+                    value={adjustmentType === 'STOCK_IN' ? adjustmentForm.targetWarehouse : adjustmentForm.sourceWarehouse}
+                    onChange={(e) => setAdjustmentForm(f => ({
+                      ...f,
+                      [adjustmentType === 'STOCK_IN' ? 'targetWarehouse' : 'sourceWarehouse']: e.target.value
+                    }))}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    disabled={adjustmentType === 'STOCK_OUT' && !adjustmentForm.productId}
+                  >
+                    <option value="">Select warehouse</option>
+                    {adjustmentType === 'STOCK_IN'
+                      ? warehouses.map((w) => (
+                        <option key={w} value={w}>{w}</option>
+                      ))
+                      : getSourceWarehouses().map((w) => (
+                        <option key={w.warehouse} value={w.warehouse}>
+                          {w.warehouse} ({w.quantity} available)
+                        </option>
+                      ))
+                    }
+                  </select>
+                </div>
+
+                {/* Quantity */}
+                <div className="grid gap-2">
+                  <Label htmlFor="quantity">
+                    Quantity *
+                    {adjustmentType === 'STOCK_OUT' && adjustmentForm.sourceWarehouse && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (Max: {getMaxQuantity()})
+                      </span>
+                    )}
+                  </Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    max={adjustmentType === 'STOCK_OUT' ? getMaxQuantity() : undefined}
+                    value={adjustmentForm.quantity || ''}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setAdjustmentForm(f => ({ ...f, quantity: parseInt(e.target.value) || 0 }))}
+                    placeholder="Enter quantity"
+                  />
+                </div>
+
+                {/* Reference */}
+                <div className="grid gap-2">
+                  <Label htmlFor="reference">Reference (Optional)</Label>
+                  <Input
+                    id="reference"
+                    value={adjustmentForm.reference}
+                    onChange={(e) => setAdjustmentForm(f => ({ ...f, reference: e.target.value }))}
+                    placeholder="e.g., RMA-123, INV-001"
+                  />
+                </div>
+              </div>
+            )}
+
+          {/* Transfer Mode - Keep existing behavior */}
+          {adjustmentType === 'TRANSFER' && (
+            <div className="grid gap-4 py-4">
+              {/* Product Selection */}
               <div className="grid gap-2">
-                <Label htmlFor="sourceWarehouse">
-                  {adjustmentType === 'TRANSFER' ? 'From Warehouse *' : 'Warehouse *'}
-                </Label>
+                <Label htmlFor="product">Product *</Label>
+                <select
+                  id="product"
+                  value={adjustmentForm.productId}
+                  onChange={(e) => setAdjustmentForm(f => ({
+                    ...f,
+                    productId: e.target.value,
+                    sourceWarehouse: '',
+                    targetWarehouse: '',
+                  }))}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Select product</option>
+                  {uniqueProducts.map((p) => (
+                    <option key={p.productId} value={p.productId}>
+                      {p.sku} - {p.productName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* From Warehouse */}
+              <div className="grid gap-2">
+                <Label htmlFor="sourceWarehouse">From Warehouse *</Label>
                 <select
                   id="sourceWarehouse"
                   value={adjustmentForm.sourceWarehouse}
@@ -975,126 +1797,97 @@ function InventoryPage() {
                   ))}
                 </select>
               </div>
-            )}
 
-            {/* Target Warehouse (for Stock In and Transfer) */}
-            {(adjustmentType === 'STOCK_IN' || adjustmentType === 'TRANSFER') && (
+              {/* To Warehouse */}
               <div className="grid gap-2">
-                <Label htmlFor="targetWarehouse">
-                  {adjustmentType === 'TRANSFER' ? 'To Warehouse *' : 'Warehouse *'}
-                </Label>
+                <Label htmlFor="targetWarehouse">To Warehouse *</Label>
                 <select
                   id="targetWarehouse"
                   value={adjustmentForm.targetWarehouse}
                   onChange={(e) => setAdjustmentForm(f => ({ ...f, targetWarehouse: e.target.value }))}
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  disabled={adjustmentType === 'TRANSFER' && !adjustmentForm.sourceWarehouse}
+                  disabled={!adjustmentForm.sourceWarehouse}
                 >
                   <option value="">Select warehouse</option>
-                  {(adjustmentType === 'STOCK_IN' ? warehouses : getTargetWarehouses()).map((w) => (
+                  {getTargetWarehouses().map((w) => (
                     <option key={w} value={w}>{w}</option>
                   ))}
                 </select>
               </div>
-            )}
 
-            {/* Quantity */}
-            <div className="grid gap-2">
-              <Label htmlFor="quantity">
-                Quantity *
-                {(adjustmentType === 'STOCK_OUT' || adjustmentType === 'TRANSFER') && adjustmentForm.sourceWarehouse && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    (Max: {getMaxQuantity()})
-                  </span>
-                )}
-              </Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                max={(adjustmentType === 'STOCK_OUT' || adjustmentType === 'TRANSFER') ? getMaxQuantity() : undefined}
-                value={adjustmentForm.quantity || ''}
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => setAdjustmentForm(f => ({ ...f, quantity: parseInt(e.target.value) || 0 }))}
-                placeholder="Enter quantity"
-              />
-            </div>
+              {/* Quantity */}
+              <div className="grid gap-2">
+                <Label htmlFor="quantity">
+                  Quantity *
+                  {adjustmentForm.sourceWarehouse && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      (Max: {getMaxQuantity()})
+                    </span>
+                  )}
+                </Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  min="1"
+                  max={getMaxQuantity()}
+                  value={adjustmentForm.quantity || ''}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setAdjustmentForm(f => ({ ...f, quantity: parseInt(e.target.value) || 0 }))}
+                  placeholder="Enter quantity"
+                />
+              </div>
 
-            {/* Reason */}
-            <div className="grid gap-2">
-              <Label htmlFor="reason">Reason</Label>
-              <select
-                id="reason"
-                value={adjustmentForm.reason}
-                onChange={(e) => setAdjustmentForm(f => ({ ...f, reason: e.target.value }))}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Select reason</option>
-                {adjustmentType === 'STOCK_IN' && (
-                  <>
-                    <option value="PURCHASE">Purchase Order Received</option>
-                    <option value="RETURN">Customer Return</option>
-                    <option value="ADJUSTMENT">Inventory Adjustment</option>
-                    <option value="INITIAL">Initial Stock</option>
-                  </>
-                )}
-                {adjustmentType === 'STOCK_OUT' && (
-                  <>
-                    <option value="DAMAGE">Damaged/Defective</option>
-                    <option value="EXPIRED">Expired</option>
-                    <option value="LOST">Lost/Missing</option>
-                    <option value="SAMPLE">Sample/Demo</option>
-                    <option value="ADJUSTMENT">Inventory Adjustment</option>
-                  </>
-                )}
-                {adjustmentType === 'TRANSFER' && (
-                  <>
-                    <option value="RESTOCK">Restocking</option>
-                    <option value="REBALANCE">Warehouse Rebalancing</option>
-                    <option value="DEMAND">Demand-based Transfer</option>
-                    <option value="OTHER">Other</option>
-                  </>
-                )}
-              </select>
+              {/* Reason */}
+              <div className="grid gap-2">
+                <Label htmlFor="reason">Reason</Label>
+                <select
+                  id="reason"
+                  value={adjustmentForm.reason}
+                  onChange={(e) => setAdjustmentForm(f => ({ ...f, reason: e.target.value }))}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="RESTOCK">Restocking</option>
+                  <option value="REBALANCE">Warehouse Rebalancing</option>
+                  <option value="DEMAND">Demand-based Transfer</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
             </div>
+          )}
 
-            {/* Reference */}
-            <div className="grid gap-2">
-              <Label htmlFor="reference">Reference (Optional)</Label>
-              <Input
-                id="reference"
-                value={adjustmentForm.reference}
-                onChange={(e) => setAdjustmentForm(f => ({ ...f, reference: e.target.value }))}
-                placeholder="e.g., PO-2024-001, RMA-123"
-              />
-            </div>
-          </div>
+          {/* Footer */}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAdjustmentOpen(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleAdjustment}
-              disabled={
-                isSaving || 
-                !adjustmentForm.productId || 
-                !adjustmentForm.quantity ||
-                (adjustmentType === 'STOCK_IN' && !adjustmentForm.targetWarehouse) ||
-                (adjustmentType === 'STOCK_OUT' && !adjustmentForm.sourceWarehouse) ||
-                (adjustmentType === 'TRANSFER' && (!adjustmentForm.sourceWarehouse || !adjustmentForm.targetWarehouse)) ||
-                ((adjustmentType === 'STOCK_OUT' || adjustmentType === 'TRANSFER') && adjustmentForm.quantity > getMaxQuantity())
-              }
-            >
-              {isSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Check className="mr-2 h-4 w-4" />
-              )}
-              {isSaving ? 'Processing...' : 'Confirm'}
-            </Button>
+            {/* Show Confirm button except on reason selection step */}
+            {(adjustmentType === 'TRANSFER' || modalStep === 'template') && (
+              <Button
+                onClick={handleAdjustment}
+                disabled={
+                  isSaving ||
+                  (adjustmentType === 'STOCK_IN' && selectedStockInReason === 'PURCHASE_ORDER' && !selectedPO) ||
+                  (adjustmentType === 'STOCK_IN' && selectedStockInReason === 'PURCHASE_ORDER' && selectedPO && receivingItems.every(i => i.quantity === 0)) ||
+                  (adjustmentType === 'STOCK_IN' && selectedStockInReason !== 'PURCHASE_ORDER' && (!adjustmentForm.productId || !adjustmentForm.quantity || !adjustmentForm.targetWarehouse)) ||
+                  (adjustmentType === 'STOCK_OUT' && selectedStockOutReason === 'SALES_ORDER' && !selectedSO) ||
+                  (adjustmentType === 'STOCK_OUT' && selectedStockOutReason === 'SALES_ORDER' && selectedSO && shippingItems.every(i => i.quantity === 0)) ||
+                  (adjustmentType === 'STOCK_OUT' && selectedStockOutReason !== 'SALES_ORDER' && (!adjustmentForm.productId || !adjustmentForm.quantity || !adjustmentForm.sourceWarehouse || adjustmentForm.quantity > getMaxQuantity())) ||
+                  (adjustmentType === 'TRANSFER' && (!adjustmentForm.productId || !adjustmentForm.quantity || !adjustmentForm.sourceWarehouse || !adjustmentForm.targetWarehouse || adjustmentForm.quantity > getMaxQuantity()))
+                }
+              >
+
+                {isSaving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="mr-2 h-4 w-4" />
+                )}
+                {isSaving ? 'Processing...' : 'Confirm'}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </PageContainer>
   );
 }

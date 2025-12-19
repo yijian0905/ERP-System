@@ -168,8 +168,8 @@ function InventoryAdjustmentsPage() {
     const selectedProduct = mockProducts.find((p) => p.id === formData.productId);
     if (!selectedProduct) return;
 
-    const quantityChange = formData.adjustmentType === 'increase' 
-      ? parseInt(formData.quantity) 
+    const quantityChange = formData.adjustmentType === 'increase'
+      ? parseInt(formData.quantity)
       : -parseInt(formData.quantity);
 
     const newAdjustment: Adjustment = {

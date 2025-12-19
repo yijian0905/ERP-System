@@ -465,7 +465,7 @@ function AssetsPage() {
   const totalDepreciation = totalPurchaseCost - totalValue;
   const activeAssets = assets.filter((a) => a.status === 'ACTIVE').length;
   const maintenanceAssets = assets.filter((a) => a.status === 'MAINTENANCE').length;
-  
+
   // Asset type stats
   const currentAssets = assets.filter((a) => a.assetType === 'CURRENT');
   const fixedAssets = assets.filter((a) => a.assetType === 'FIXED');
@@ -493,13 +493,13 @@ function AssetsPage() {
   ): number => {
     // Current assets don't depreciate - they maintain their purchase cost value
     if (assetType === 'CURRENT' || method === 'NONE') return purchaseCost;
-    
+
     const now = new Date();
     const purchase = new Date(purchaseDate);
     const yearsElapsed = (now.getTime() - purchase.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-    
+
     if (yearsElapsed >= usefulLifeYears) return salvageValue;
-    
+
     if (method === 'STRAIGHT_LINE') {
       const annualDepreciation = (purchaseCost - salvageValue) / usefulLifeYears;
       return Math.max(salvageValue, purchaseCost - (annualDepreciation * yearsElapsed));
@@ -608,27 +608,27 @@ function AssetsPage() {
         prev.map((a) =>
           a.id === selectedAsset.id
             ? {
-                ...a,
-                name: formData.name,
-                description: formData.description,
-                assetType: formData.assetType,
-                category: formData.category,
-                status: formData.status,
-                location: formData.location,
-                assignedTo: formData.assignedTo || null,
-                purchaseDate: formData.purchaseDate,
-                purchaseCost: formData.purchaseCost,
-                currentValue,
-                depreciationMethod: formData.depreciationMethod,
-                usefulLifeYears: formData.usefulLifeYears,
-                salvageValue: formData.salvageValue,
-                warrantyExpiry: formData.warrantyExpiry || null,
-                serialNumber: formData.serialNumber || null,
-                manufacturer: formData.manufacturer || null,
-                model: formData.model || null,
-                notes: formData.notes,
-                updatedAt: new Date().toISOString(),
-              }
+              ...a,
+              name: formData.name,
+              description: formData.description,
+              assetType: formData.assetType,
+              category: formData.category,
+              status: formData.status,
+              location: formData.location,
+              assignedTo: formData.assignedTo || null,
+              purchaseDate: formData.purchaseDate,
+              purchaseCost: formData.purchaseCost,
+              currentValue,
+              depreciationMethod: formData.depreciationMethod,
+              usefulLifeYears: formData.usefulLifeYears,
+              salvageValue: formData.salvageValue,
+              warrantyExpiry: formData.warrantyExpiry || null,
+              serialNumber: formData.serialNumber || null,
+              manufacturer: formData.manufacturer || null,
+              model: formData.model || null,
+              notes: formData.notes,
+              updatedAt: new Date().toISOString(),
+            }
             : a
         )
       );
@@ -712,7 +712,7 @@ function AssetsPage() {
           icon={DollarSign}
         />
       </div>
-      
+
       {/* Additional Stats */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatsCard
@@ -836,7 +836,7 @@ function AssetsPage() {
                         Mark as Disposed
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="text-destructive"
                       onClick={() => handleDelete(asset.id)}
                     >
@@ -904,8 +904,8 @@ function AssetsPage() {
                           className={cn(
                             'h-full rounded-full transition-all',
                             depreciationPercent >= 80 ? 'bg-destructive' :
-                            depreciationPercent >= 50 ? 'bg-amber-500' :
-                            'bg-primary'
+                              depreciationPercent >= 50 ? 'bg-amber-500' :
+                                'bg-primary'
                           )}
                           style={{ width: `${100 - depreciationPercent}%` }}
                         />
@@ -983,17 +983,17 @@ function AssetsPage() {
                     value={formData.assetType}
                     onChange={(e) => {
                       const newType = e.target.value as AssetType;
-                      setFormData((f) => ({ 
-                        ...f, 
+                      setFormData((f) => ({
+                        ...f,
                         assetType: newType,
                         // Auto-adjust category based on asset type
-                        category: newType === 'CURRENT' 
-                          ? (f.category === 'IT_EQUIPMENT' || f.category === 'FURNITURE' || f.category === 'VEHICLE' || f.category === 'MACHINERY' || f.category === 'OFFICE_EQUIPMENT' 
-                              ? 'CASH' 
-                              : f.category)
+                        category: newType === 'CURRENT'
+                          ? (f.category === 'IT_EQUIPMENT' || f.category === 'FURNITURE' || f.category === 'VEHICLE' || f.category === 'MACHINERY' || f.category === 'OFFICE_EQUIPMENT'
+                            ? 'CASH'
+                            : f.category)
                           : (f.category === 'CASH' || f.category === 'ACCOUNTS_RECEIVABLE' || f.category === 'INVENTORY' || f.category === 'INVESTMENTS'
-                              ? 'IT_EQUIPMENT'
-                              : f.category),
+                            ? 'IT_EQUIPMENT'
+                            : f.category),
                         // Current assets don't depreciate
                         depreciationMethod: newType === 'CURRENT' ? 'NONE' as DepreciationMethod : f.depreciationMethod,
                         usefulLifeYears: newType === 'CURRENT' ? 0 : f.usefulLifeYears,
@@ -1060,7 +1060,7 @@ function AssetsPage() {
                 <CreatableSelect
                   label="Location *"
                   options={locations}
-                    value={formData.location}
+                  value={formData.location}
                   onChange={(value) => setFormData((f) => ({ ...f, location: value }))}
                   onCreate={(newLocation) => {
                     setLocations((prev) => [...prev, newLocation]);

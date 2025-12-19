@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
+  AlertTriangle,
   Check,
   ChevronRight,
   Edit,
@@ -10,6 +11,7 @@ import {
   Plus,
   Search,
   Trash2,
+  TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -63,6 +65,7 @@ interface Category {
   id: string;
   name: string;
   prefix: string;
+  isNonSellable?: boolean; // Non-sellable items don't appear in sales orders
 }
 
 // Category type - full for category management
@@ -79,12 +82,20 @@ interface CategoryFull {
 }
 
 // Initial categories - can be expanded by admin/manager
+// Products categories (sellable items)
 const initialCategories: Category[] = [
+  // Product categories (sellable)
   { id: 'elec', name: 'Electronics', prefix: 'ELEC' },
   { id: 'offc', name: 'Office Supplies', prefix: 'OFFC' },
   { id: 'furn', name: 'Furniture', prefix: 'FURN' },
   { id: 'pack', name: 'Packaging', prefix: 'PACK' },
   { id: 'misc', name: 'Miscellaneous', prefix: 'MISC' },
+  // Operating Consumables categories (non-sellable, internal use only)
+  { id: 'clen', name: 'Cleaning Supplies', prefix: 'CLEN', isNonSellable: true },
+  { id: 'bvrg', name: 'Coffee & Beverages', prefix: 'BVRG', isNonSellable: true },
+  { id: 'mant', name: 'Maintenance', prefix: 'MANT', isNonSellable: true },
+  { id: 'safe', name: 'Safety Equipment', prefix: 'SAFE', isNonSellable: true },
+  { id: 'stat', name: 'Stationery', prefix: 'STAT', isNonSellable: true },
 ];
 
 // Mock full categories for category management
@@ -207,6 +218,17 @@ const mockFullCategories: CategoryFull[] = [
       },
     ],
   },
+  {
+    id: '4',
+    name: 'Operating Consumables',
+    slug: 'operating-consumables',
+    description: 'Non-sellable consumables for internal operations (not displayed in sales orders)',
+    parentId: null,
+    productCount: 0,
+    isActive: true,
+    sortOrder: 4,
+    children: [],
+  },
 ];
 
 const statusConfig: Record<ProductStatus, { label: string; color: string }> = {
@@ -226,7 +248,7 @@ const mockProducts: Product[] = [
   { id: '7', sku: 'ELEC-004', name: 'Webcam HD 1080p', description: 'USB webcam with built-in microphone', category: 'Electronics', price: 79.99, cost: 40.00, stock: 0, minStock: 10, maxStock: 150, reorderPoint: 20, status: 'INACTIVE', createdAt: '2024-07-15' },
 ];
 
-type TabType = 'products' | 'categories';
+type TabType = 'products' | 'consumables';
 
 function ProductsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('products');
@@ -270,22 +292,29 @@ function ProductsPage() {
 
   // Filter products
   const filteredProducts = products.filter((product) => {
+    // Exclude non-sellable categories (consumables) from Products tab
+    const productCategory = categories.find(c => c.name === product.category);
+    const isConsumable = productCategory?.isNonSellable ?? false;
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !categoryFilter || product.category === categoryFilter;
     const matchesStatus = !statusFilter || product.status === statusFilter;
-    return matchesSearch && matchesCategory && matchesStatus;
+    return !isConsumable && matchesSearch && matchesCategory && matchesStatus;
   });
 
-  // Calculate stats
-  const totalProducts = products.length;
-  const activeProducts = products.filter(p => p.status === 'ACTIVE').length;
-  const lowStockProducts = products.filter(p => p.stock <= p.reorderPoint && p.stock > 0).length;
-  const outOfStockProducts = products.filter(p => p.stock === 0).length;
+  // Calculate stats (excluding non-sellable categories)
+  const sellableProducts = products.filter(p => {
+    const cat = categories.find(c => c.name === p.category);
+    return !cat?.isNonSellable;
+  });
+  const totalProducts = sellableProducts.length;
+  const activeProducts = sellableProducts.filter(p => p.status === 'ACTIVE').length;
+  const lowStockProducts = sellableProducts.filter(p => p.stock <= p.reorderPoint && p.stock > 0).length;
+  const outOfStockProducts = sellableProducts.filter(p => p.stock === 0).length;
 
-  // Get unique categories from products
-  const uniqueCategories = [...new Set(products.map(p => p.category))];
+  // Get unique categories from products (excluding non-sellable categories)
+  const uniqueCategories = [...new Set(sellableProducts.map(p => p.category))];
 
   // Generate SKU
   const generateSKU = (categoryId: string) => {
@@ -322,7 +351,7 @@ function ProductsPage() {
   };
 
   // Open modal
-  const handleOpenModal = (product?: Product) => {
+  const handleOpenModal = (product?: Product, isConsumable?: boolean) => {
     if (product) {
       setEditingProduct(product);
       const categoryId = categories.find(c => c.name === product.category)?.id || '';
@@ -339,10 +368,12 @@ function ProductsPage() {
       });
     } else {
       setEditingProduct(null);
+      // If adding a consumable, auto-select the Operating Consumables category
+      const consumableCategory = isConsumable ? categories.find(c => c.name === 'Operating Consumables')?.id || '' : '';
       setFormData({
         name: '',
         description: '',
-        category: '',
+        category: consumableCategory,
         price: 0,
         cost: 0,
         minStock: 10,
@@ -360,6 +391,8 @@ function ProductsPage() {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     const category = categories.find(c => c.id === formData.category);
+    // For non-sellable categories, price should always be 0
+    const finalPrice = category?.isNonSellable ? 0 : formData.price;
 
     if (editingProduct) {
       // Update existing product
@@ -370,7 +403,7 @@ function ProductsPage() {
             name: formData.name,
             description: formData.description,
             category: category?.name || p.category,
-            price: formData.price,
+            price: finalPrice,
             cost: formData.cost,
             minStock: formData.minStock,
             maxStock: formData.maxStock,
@@ -387,7 +420,7 @@ function ProductsPage() {
         name: formData.name,
         description: formData.description,
         category: category?.name || '',
-        price: formData.price,
+        price: finalPrice,
         cost: formData.cost,
         stock: 0, // New products start with 0 stock
         minStock: formData.minStock,
@@ -410,11 +443,11 @@ function ProductsPage() {
     }
   };
 
-  // Toggle status
-  const handleToggleStatus = (id: string) => {
+  // Set product status
+  const handleSetStatus = (id: string, newStatus: ProductStatus) => {
     setProducts(prev => prev.map(p =>
       p.id === id
-        ? { ...p, status: p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' }
+        ? { ...p, status: newStatus }
         : p
     ));
   };
@@ -578,7 +611,7 @@ function ProductsPage() {
     <PageContainer>
       <PageHeader
         title="Products"
-        description="Manage your product catalog and categories"
+        description="Manage your product catalog and operating consumables"
         actions={
           activeTab === 'products' ? (
             <Button onClick={() => handleOpenModal()}>
@@ -586,9 +619,9 @@ function ProductsPage() {
               Add Product
             </Button>
           ) : (
-            <Button onClick={() => handleOpenCategoryModal()}>
+            <Button onClick={() => handleOpenModal(undefined, true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Category
+              Add Consumable
             </Button>
           )
         }
@@ -610,16 +643,16 @@ function ProductsPage() {
             Products
           </button>
           <button
-            onClick={() => setActiveTab('categories')}
+            onClick={() => setActiveTab('consumables')}
             className={cn(
               'px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px',
-              activeTab === 'categories'
+              activeTab === 'consumables'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             )}
           >
-            <FolderTree className="mr-2 h-4 w-4 inline" />
-            Categories
+            <Package className="mr-2 h-4 w-4 inline" />
+            Operating Consumables
           </button>
         </div>
       </div>
@@ -704,12 +737,11 @@ function ProductsPage() {
                 <thead>
                   <tr className="border-b text-left text-sm text-muted-foreground">
                     <th className="pb-3 font-medium">Product</th>
-                    <th className="pb-3 font-medium">SKU</th>
                     <th className="pb-3 font-medium">Category</th>
                     <th className="pb-3 font-medium text-right">Price</th>
                     <th className="pb-3 font-medium text-right">Cost</th>
-                    <th className="pb-3 font-medium text-right">Stock</th>
-                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium text-right pr-6">Stock</th>
+                    <th className="pb-3 font-medium pl-4 w-[140px]">Status</th>
                     <th className="pb-3 font-medium"></th>
                   </tr>
                 </thead>
@@ -728,14 +760,18 @@ function ProductsPage() {
                               <Package className="h-5 w-5 text-muted-foreground" />
                             </div>
                             <div>
-                              <span className="font-medium">{product.name}</span>
-                              <p className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{product.name}</span>
+                                <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                                  {product.sku}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-1 max-w-[280px]">
                                 {product.description}
                               </p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 text-muted-foreground font-mono text-sm">{product.sku}</td>
                         <td className="py-4">
                           <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
                             {product.category}
@@ -746,7 +782,7 @@ function ProductsPage() {
                           {formatCurrency(product.cost)}
                           <span className="ml-1 text-xs text-muted-foreground">({margin}%)</span>
                         </td>
-                        <td className="py-4 text-right">
+                        <td className="py-4 text-right pr-6">
                           <span className={cn(
                             'font-medium',
                             isOutOfStock && 'text-destructive',
@@ -761,13 +797,39 @@ function ProductsPage() {
                             <span className="ml-1 text-xs text-destructive">Out</span>
                           )}
                         </td>
-                        <td className="py-4">
-                          <span className={cn(
-                            'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                            statusStyle.color
-                          )}>
-                            {statusStyle.label}
-                          </span>
+                        <td className="py-4 pl-4 w-[140px]">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                className={cn(
+                                  'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity',
+                                  statusStyle.color
+                                )}
+                              >
+                                {statusStyle.label}
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              {product.status !== 'ACTIVE' && (
+                                <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'ACTIVE')}>
+                                  <Check className="mr-2 h-4 w-4 text-green-600" />
+                                  Active
+                                </DropdownMenuItem>
+                              )}
+                              {product.status !== 'INACTIVE' && (
+                                <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'INACTIVE')}>
+                                  <span className="mr-2 h-4 w-4 inline-flex items-center justify-center text-gray-500">○</span>
+                                  Inactive
+                                </DropdownMenuItem>
+                              )}
+                              {product.status !== 'DISCONTINUED' && (
+                                <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'DISCONTINUED')}>
+                                  <span className="mr-2 h-4 w-4 inline-flex items-center justify-center text-red-500">✕</span>
+                                  Discontinued
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
                         <td className="py-4">
                           <DropdownMenu>
@@ -780,9 +842,6 @@ function ProductsPage() {
                               <DropdownMenuItem onClick={() => handleOpenModal(product)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleToggleStatus(product.id)}>
-                                {product.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -852,48 +911,199 @@ function ProductsPage() {
         </>
       )}
 
-      {activeTab === 'categories' && (
-        <>
-          {/* Summary */}
-          <div className="mb-6 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border bg-card p-4">
-              <p className="text-sm text-muted-foreground">Total Categories</p>
-              <p className="text-2xl font-bold">{totalCategories}</p>
+      {activeTab === 'consumables' && (() => {
+        // Filter products to show only non-sellable categories (operating consumables)
+        const consumableProducts = products.filter(p => {
+          const cat = categories.find(c => c.name === p.category);
+          return cat?.isNonSellable;
+        });
+        const activeConsumables = consumableProducts.filter(p => p.status === 'ACTIVE').length;
+        const lowStockConsumables = consumableProducts.filter(p => p.stock <= p.reorderPoint && p.stock > 0).length;
+        const outOfStockConsumables = consumableProducts.filter(p => p.stock === 0).length;
+
+        return (
+          <>
+            {/* Stats */}
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatsCard
+                title="Total Consumables"
+                value={consumableProducts.length.toString()}
+                change={`${activeConsumables} active`}
+                changeType="neutral"
+                icon={Package}
+              />
+              <StatsCard
+                title="Low Stock"
+                value={lowStockConsumables.toString()}
+                change="Items need reorder"
+                changeType={lowStockConsumables > 0 ? 'negative' : 'neutral'}
+                icon={AlertTriangle}
+              />
+              <StatsCard
+                title="Out of Stock"
+                value={outOfStockConsumables.toString()}
+                change="Items unavailable"
+                changeType={outOfStockConsumables > 0 ? 'negative' : 'neutral'}
+                icon={Package}
+              />
+              <StatsCard
+                title="Total Value"
+                value={formatCurrency(consumableProducts.reduce((sum, p) => sum + p.cost * p.stock, 0))}
+                change="Inventory value"
+                changeType="neutral"
+                icon={TrendingUp}
+              />
             </div>
-            <div className="rounded-lg border bg-card p-4">
-              <p className="text-sm text-muted-foreground">Root Categories</p>
-              <p className="text-2xl font-bold">{fullCategories.length}</p>
-            </div>
-            <div className="rounded-lg border bg-card p-4">
-              <p className="text-sm text-muted-foreground">Total Products</p>
-              <p className="text-2xl font-bold">
-                {fullCategories.reduce((sum, c) => sum + c.productCount, 0)}
+
+            {/* Consumables table */}
+            <DashboardCard>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b text-left text-sm text-muted-foreground">
+                      <th className="pb-3 font-medium">Item</th>
+                      <th className="pb-3 font-medium text-right">Unit Cost</th>
+                      <th className="pb-3 font-medium text-right pr-6">Stock</th>
+                      <th className="pb-3 font-medium pl-4 w-[140px]">Status</th>
+                      <th className="pb-3 font-medium"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {consumableProducts.map((product) => {
+                      const statusStyle = statusConfig[product.status];
+                      const isLowStock = product.stock <= product.reorderPoint && product.stock > 0;
+                      const isOutOfStock = product.stock === 0;
+
+                      return (
+                        <tr key={product.id} className="border-b last:border-0 table-row-hover">
+                          <td className="py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                                <Package className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{product.name}</span>
+                                  <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                                    {product.sku}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-1 max-w-[280px]">
+                                  {product.description}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 text-right font-medium">{formatCurrency(product.cost)}</td>
+                          <td className="py-4 text-right pr-6">
+                            <span className={cn(
+                              'font-medium',
+                              isOutOfStock && 'text-destructive',
+                              isLowStock && 'text-warning'
+                            )}>
+                              {product.stock}
+                            </span>
+                            {isLowStock && (
+                              <span className="ml-1 text-xs text-warning">Low</span>
+                            )}
+                            {isOutOfStock && (
+                              <span className="ml-1 text-xs text-destructive">Out</span>
+                            )}
+                          </td>
+                          <td className="py-4 pl-4 w-[140px]">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  className={cn(
+                                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity',
+                                    statusStyle.color
+                                  )}
+                                >
+                                  {statusStyle.label}
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                {product.status !== 'ACTIVE' && (
+                                  <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'ACTIVE')}>
+                                    <Check className="mr-2 h-4 w-4 text-green-600" />
+                                    Active
+                                  </DropdownMenuItem>
+                                )}
+                                {product.status !== 'INACTIVE' && (
+                                  <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'INACTIVE')}>
+                                    <span className="mr-2 h-4 w-4 inline-flex items-center justify-center text-gray-500">○</span>
+                                    Inactive
+                                  </DropdownMenuItem>
+                                )}
+                                {product.status !== 'DISCONTINUED' && (
+                                  <DropdownMenuItem onClick={() => handleSetStatus(product.id, 'DISCONTINUED')}>
+                                    <span className="mr-2 h-4 w-4 inline-flex items-center justify-center text-red-500">✕</span>
+                                    Discontinued
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                          <td className="py-4">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon-sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenModal(product)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDelete(product.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {consumableProducts.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Package className="h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-semibold">No consumables yet</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Get started by adding your first operating consumable
+                  </p>
+                  <Button className="mt-4" onClick={() => handleOpenModal(undefined, true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Consumable
+                  </Button>
+                </div>
+              )}
+            </DashboardCard>
+
+            {/* Info card */}
+            <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+              <h3 className="font-semibold text-amber-900 dark:text-amber-100">
+                🏭 Operating Consumables
+              </h3>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                Operating consumables are non-sellable items used for internal operations.
+                These items are available for <strong>Internal Requisitions</strong> but will not
+                appear in sales orders. Use this page to manage supplies like coffee, cleaning products,
+                office maintenance items, and other operational needs.
               </p>
             </div>
-          </div>
-
-          {/* Categories tree */}
-          <DashboardCard>
-            <div className="space-y-2">
-              {fullCategories.map((category) => renderCategory(category))}
-            </div>
-
-            {fullCategories.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <FolderTree className="h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">No categories yet</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Get started by creating your first category
-                </p>
-                <Button className="mt-4" onClick={() => handleOpenCategoryModal()}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Category
-                </Button>
-              </div>
-            )}
-          </DashboardCard>
-        </>
-      )}
+          </>
+        );
+      })()}
 
       {/* Add/Edit Product Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -931,7 +1141,12 @@ function ProductsPage() {
             <div className="grid grid-cols-2 gap-4">
               <CreatableSelect
                 label="Category *"
-                options={categories.map((c) => c.name)}
+                options={
+                  // Filter categories based on current tab
+                  activeTab === 'consumables'
+                    ? categories.filter(c => c.isNonSellable).map(c => c.name)
+                    : categories.filter(c => !c.isNonSellable).map(c => c.name)
+                }
                 value={categories.find((c) => c.id === formData.category)?.name || ''}
                 onChange={(categoryName) => {
                   const category = categories.find((c) => c.name === categoryName);
@@ -942,60 +1157,76 @@ function ProductsPage() {
                 onCreate={handleCreateCategory}
                 placeholder="Select category"
               />
-              <div className="grid gap-2">
-                <Label htmlFor="status">Status</Label>
-                <select
-                  id="status"
-                  value={formData.status}
-                  onChange={(e) => setFormData(f => ({ ...f, status: e.target.value as ProductStatus }))}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                  <option value="DISCONTINUED">Discontinued</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="price">Selling Price ($) *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.price || ''}
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => setFormData(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="cost">Unit Cost ($) *</Label>
-                <Input
-                  id="cost"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.cost || ''}
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => setFormData(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            {formData.price > 0 && formData.cost > 0 && (
-              <div className="rounded-lg bg-muted/50 p-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Profit Margin</span>
-                  <span className="font-medium">
-                    {((formData.price - formData.cost) / formData.price * 100).toFixed(1)}%
-                  </span>
+              {/* Status dropdown only shown when editing existing product */}
+              {editingProduct && (
+                <div className="grid gap-2">
+                  <Label htmlFor="status">Status</Label>
+                  <select
+                    id="status"
+                    value={formData.status}
+                    onChange={(e) => setFormData(f => ({ ...f, status: e.target.value as ProductStatus }))}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
+                    <option value="DISCONTINUED">Discontinued</option>
+                  </select>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Check if selected category is non-sellable or if we're on consumables tab */}
+            {(() => {
+              const selectedCategory = categories.find((c) => c.id === formData.category);
+              // Hide selling price if: on consumables tab OR selected category is non-sellable
+              const isNonSellable = activeTab === 'consumables' || (selectedCategory?.isNonSellable ?? false);
+
+              return (
+                <>
+                  <div className={isNonSellable ? '' : 'grid grid-cols-2 gap-4'}>
+                    {!isNonSellable && (
+                      <div className="grid gap-2">
+                        <Label htmlFor="price">Selling Price ($) *</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.price || ''}
+                          onFocus={(e) => e.target.select()}
+                          onChange={(e) => setFormData(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    )}
+                    <div className="grid gap-2">
+                      <Label htmlFor="cost">Unit Cost ($) *</Label>
+                      <Input
+                        id="cost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.cost || ''}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => setFormData(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  {!isNonSellable && formData.price > 0 && formData.cost > 0 && (
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Profit Margin</span>
+                        <span className="font-medium">
+                          {((formData.price - formData.cost) / formData.price * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             <div className="grid grid-cols-3 gap-4">
               <div className="grid gap-2">

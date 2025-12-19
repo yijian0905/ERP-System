@@ -150,6 +150,12 @@ const mockInventoryItems: InventoryItem[] = [
   { id: 'inv10', sku: 'SAF-002', name: 'Work Gloves (Pair)', category: 'Safety Equipment', stock: 75, unitCost: 12.00 },
   { id: 'inv11', sku: 'RAW-001', name: 'Steel Rod (per meter)', category: 'Raw Materials', stock: 500, unitCost: 15.00 },
   { id: 'inv12', sku: 'RAW-002', name: 'Aluminum Sheet', category: 'Raw Materials', stock: 200, unitCost: 35.00 },
+  // Operating Consumables - Non-sellable items for internal use only
+  { id: 'inv13', sku: 'OPCS-001', name: 'Coffee Beans (1kg)', category: 'Operating Consumables', stock: 20, unitCost: 25.00 },
+  { id: 'inv14', sku: 'OPCS-002', name: 'Printer Toner (HP)', category: 'Operating Consumables', stock: 15, unitCost: 85.00 },
+  { id: 'inv15', sku: 'OPCS-003', name: 'Air Freshener Refill', category: 'Operating Consumables', stock: 30, unitCost: 8.50 },
+  { id: 'inv16', sku: 'OPCS-004', name: 'Paper Towels (Pack of 6)', category: 'Operating Consumables', stock: 50, unitCost: 12.00 },
+  { id: 'inv17', sku: 'OPCS-005', name: 'Trash Bags (Box of 100)', category: 'Operating Consumables', stock: 25, unitCost: 18.00 },
 ];
 
 const mockRequisitions: Requisition[] = [
@@ -755,10 +761,10 @@ function RequisitionsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 pr-4">
-            <div className="grid gap-4 py-4">
+          <ScrollArea className="flex-1 px-1">
+            <div className="grid gap-4 py-4 px-1">
               {/* Basic Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="costCenter">Cost Center *</Label>
                   <select

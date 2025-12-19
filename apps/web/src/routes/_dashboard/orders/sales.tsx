@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -47,7 +47,7 @@ export const Route = createFileRoute('/_dashboard/orders/sales')({
 });
 
 // Types
-type OrderStatus = 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
+type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
 
 interface OrderItem {
   id: string;
@@ -246,17 +246,23 @@ function SalesOrdersPage() {
     { id: 'pdf', name: 'Save as PDF' },
   ];
 
-  // Filter inventory
+  // Non-sellable categories should not appear in sales orders
+  const nonSellableCategories = ['Operating Consumables'];
+
+  // Filter inventory - exclude non-sellable categories
   const filteredInventory = mockInventoryItems.filter((item) => {
+    const isNonSellable = nonSellableCategories.includes(item.category);
     const matchesSearch =
       item.name.toLowerCase().includes(inventorySearch.toLowerCase()) ||
       item.sku.toLowerCase().includes(inventorySearch.toLowerCase());
     const matchesCategory = !categoryFilter || item.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    return matchesSearch && matchesCategory && !isNonSellable;
   });
 
-  // Get unique categories
-  const categories = [...new Set(mockInventoryItems.map((i) => i.category))];
+  // Get unique categories - exclude non-sellable categories
+  const categories = [...new Set(mockInventoryItems.map((i) => i.category))].filter(
+    (c) => !nonSellableCategories.includes(c)
+  );
 
   // Calculate draft totals
   const draftSubtotal = draftItems.reduce((sum, item) => sum + item.total, 0);
@@ -348,7 +354,7 @@ function SalesOrdersPage() {
       subtotal: draftSubtotal,
       tax: draftTax,
       total: draftTotal,
-      status: 'DRAFT',
+      status: 'PENDING',
       orderDate: new Date().toISOString().split('T')[0],
       expectedDate: expectedDate || null,
       shippedDate: null,
@@ -377,7 +383,7 @@ function SalesOrdersPage() {
       setOrders((prev) =>
         prev.map((o) =>
           o.id === selectedOrder.id
-            ? { ...o, status: o.status === 'DRAFT' ? 'PENDING' : o.status }
+            ? { ...o, status: o.status }
             : o
         )
       );
@@ -575,12 +581,10 @@ function SalesOrdersPage() {
         title="Sales Orders"
         description="Select inventory items to create sales orders"
         actions={
-          <Link to="/orders">
-            <Button variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Orders
-            </Button>
-          </Link>
+          <Button variant="outline" onClick={() => window.history.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Return
+          </Button>
         }
       />
 

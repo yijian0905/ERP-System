@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   ArrowLeft,
   Check,
@@ -59,7 +59,7 @@ export const Route = createFileRoute('/_dashboard/orders/purchase')({
 });
 
 // Types
-type POStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'ORDERED' | 'PARTIAL' | 'RECEIVED' | 'COMPLETED' | 'CANCELLED';
+type POStatus = 'PENDING' | 'ORDERED' | 'RECEIVED' | 'COMPLETED';
 
 interface POItem {
   id: string;
@@ -277,10 +277,26 @@ function PurchaseOrdersPage() {
       }
     }
 
-    // If a specific product SKU is requested, highlight or filter it
+    // If a specific product SKU is requested, auto-add it to draft
     if (searchParams.productSku) {
+      const product = mockProductTypes.find(p => p.sku === searchParams.productSku);
+      if (product) {
+        // Auto-select supplier
+        setSelectedSupplierId(product.supplierId);
+        // Auto-add product to draft
+        const suggestedQty = Math.max(50, product.reorderPoint * 2 - product.currentStock);
+        const newItem: POItem = {
+          id: `draft-${Date.now()}`,
+          productId: product.id,
+          productName: product.name,
+          sku: product.sku,
+          quantity: suggestedQty,
+          unitCost: product.cost,
+          total: suggestedQty * product.cost,
+        };
+        setDraftItems([newItem]);
+      }
       setProductSearch(searchParams.productSku);
-      setStockFilter('low');
     }
   }, [searchParams]);
 
@@ -413,7 +429,7 @@ function PurchaseOrdersPage() {
       tax: 0,
       shipping: 0,
       total: draftTotal,
-      status: 'DRAFT',
+      status: 'PENDING',
       orderDate: new Date().toISOString().split('T')[0],
       expectedDate: expectedDate || null,
       receivedDate: null,
@@ -438,7 +454,7 @@ function PurchaseOrdersPage() {
       setOrders((prev) =>
         prev.map((o) =>
           o.id === selectedOrder.id
-            ? { ...o, status: o.status === 'DRAFT' ? 'PENDING' : o.status }
+            ? { ...o, status: o.status }
             : o
         )
       );
@@ -639,12 +655,10 @@ function PurchaseOrdersPage() {
         title="Purchase Orders"
         description="Select products to create purchase orders"
         actions={
-          <Link to="/orders">
-            <Button variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Orders
-            </Button>
-          </Link>
+          <Button variant="outline" onClick={() => window.history.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Return
+          </Button>
         }
       />
 

@@ -1,0 +1,14 @@
+﻿src/routes/_dashboard/forecasting.tsx(119,20): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Record<"2weeks" | "4weeks" | "8weeks" | "12weeks", number>'.
+  No index signature with a parameter of type 'string' was found on type 'Record<"2weeks" | "4weeks" | "8weeks" | "12weeks", number>'.
+src/routes/_dashboard/forecasting.tsx(199,61): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ProductForecast' is not assignable to type '{ id: string; name: string; sku: string; currentStock: number; forecastDemand: number; daysOfStock: number; recommendation: string; reorderPoint: number; orderQuantity: number; }'.
+    Types of property 'reorderPoint' are incompatible.
+      Type 'number | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+src/routes/_dashboard/forecasting.tsx(200,27): error TS2345: Argument of type '({ id: string; name: string; sku: string; currentStock: number; forecastDemand: number; daysOfStock: number; recommendation: string; reorderPoint: number; orderQuantity: number; } | null)[]' is not assignable to parameter of type 'SetStateAction<ProductForecast[]>'.
+  Type '({ id: string; name: string; sku: string; currentStock: number; forecastDemand: number; daysOfStock: number; recommendation: string; reorderPoint: number; orderQuantity: number; } | null)[]' is not assignable to type 'ProductForecast[]'.
+    Type '{ id: string; name: string; sku: string; currentStock: number; forecastDemand: number; daysOfStock: number; recommendation: string; reorderPoint: number; orderQuantity: number; } | null' is not assignable to type 'ProductForecast'.
+      Type 'null' is not assignable to type 'ProductForecast'.
+src/routes/_dashboard/orders/purchase.tsx(239,10): error TS6133: 'shippingCost' is declared but its value is never read.
+src/routes/_dashboard/orders/purchase.tsx(452,9): error TS6133: 'handlePrint' is declared but its value is never read.
+src/routes/_dashboard/orders/sales.tsx(391,9): error TS6133: 'handlePrint' is declared but its value is never read.
