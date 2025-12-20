@@ -1,49 +1,35 @@
-import {
-  createLicenseValidator,
-  FeatureAccessError,
-  LicenseLimitError,
-  TierAccessError,
-  type ValidatedLicense,
-} from '@erp/license';
-import type { ApiResponse, LicenseFeatures, LicenseTier } from '@erp/shared-types';
+/**
+ * License Middleware - Organization Account Authorization Model
+ * 
+ * This middleware validates tenant subscription status using database records.
+ * No client-side license keys required - authorization is tied to Organization.
+ * 
+ * @see license-system-guide.md
+ */
+
+import type { LicenseFeatures, LicenseTier } from '@erp/shared-types';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { logger } from '../lib/logger.js';
 import { prisma } from '../lib/prisma.js';
+import { getTenantCapabilities } from './capability.js';
 
 /**
- * Minimum key length for security
+ * Validated license information from database
  */
-const MIN_KEY_LENGTH = 32;
-
-/**
- * Get license encryption key with validation
- */
-function getLicenseEncryptionKey(): string {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const key = process.env.LICENSE_ENCRYPTION_KEY;
-
-  if (isProduction) {
-    if (!key || key.length < MIN_KEY_LENGTH) {
-      throw new Error(
-        `LICENSE_ENCRYPTION_KEY environment variable must be set with at least ${MIN_KEY_LENGTH} characters in production`
-      );
-    }
-    return key;
-  }
-
-  // In development, use default but log a warning
-  if (!key) {
-    console.warn(
-      '⚠️  WARNING: Using default license encryption key. Set LICENSE_ENCRYPTION_KEY environment variable for security.'
-    );
-  }
-
-  return key || 'dev-only-license-key-not-for-production-use';
+export interface ValidatedLicense {
+  id: string;
+  tenantId: string;
+  tier: LicenseTier;
+  features: LicenseFeatures;
+  maxUsers: number;
+  maxProducts?: number;
+  startsAt: Date;
+  expiresAt: Date;
+  daysRemaining: number;
+  isExpired: boolean;
+  isExpiringSoon: boolean;
 }
-
-// Create a singleton license validator
-const licenseValidator = createLicenseValidator(getLicenseEncryptionKey());
 
 // Cache for validated licenses per tenant
 const licenseCache = new Map<string, { license: ValidatedLicense; expiresAt: number }>();
@@ -60,47 +46,11 @@ declare module 'fastify' {
 }
 
 /**
- * Get license from database for a tenant
+ * Get tier-based default features
  */
-async function getLicenseKeyFromDatabase(tenantId: string): Promise<string | null> {
-  try {
-    const license = await prisma.license.findFirst({
-      where: {
-        tenantId,
-        isActive: true,
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (license) {
-      logger.debug(`Found active license for tenant: ${tenantId}`);
-      return license.licenseKey;
-    }
-
-    logger.debug(`No active license found for tenant: ${tenantId}`);
-    return null;
-  } catch (error) {
-    logger.error('Error fetching license from database', { tenantId, error });
-    return null;
-  }
-}
-
-/**
- * Generate a demo license for development/testing
- */
-function generateDemoLicense(tenantId: string, tier: LicenseTier = 'L2'): ValidatedLicense {
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
-
-  return {
-    id: 'demo-license',
-    tenantId,
-    tier,
-    features: {
-      // L1 features
+function getTierFeatures(tier: LicenseTier): LicenseFeatures {
+  const features: Record<LicenseTier, LicenseFeatures> = {
+    L1: {
       inventory: true,
       basicReports: true,
       invoicing: true,
@@ -108,33 +58,121 @@ function generateDemoLicense(tenantId: string, tier: LicenseTier = 'L2'): Valida
       products: true,
       orders: true,
       warehouses: true,
-      // L2 features (if tier is L2 or L3)
-      predictiveAnalytics: tier !== 'L1',
-      demandForecasting: tier !== 'L1',
-      advancedReports: tier !== 'L1',
-      multiWarehouse: tier !== 'L1',
-      batchTracking: tier !== 'L1',
-      // L3 features (if tier is L3)
-      aiChatAssistant: tier === 'L3',
-      schemaIsolation: tier === 'L3',
-      customIntegrations: tier === 'L3',
-      auditLogs: tier === 'L3',
-      multiCurrency: tier === 'L3',
-      advancedPermissions: tier === 'L3',
-      apiAccess: tier === 'L3',
+      predictiveAnalytics: false,
+      demandForecasting: false,
+      advancedReports: false,
+      multiWarehouse: false,
+      batchTracking: false,
+      aiChatAssistant: false,
+      schemaIsolation: false,
+      customIntegrations: false,
+      auditLogs: false,
+      multiCurrency: false,
+      advancedPermissions: false,
+      apiAccess: false,
     },
-    maxUsers: tier === 'L3' ? 100 : tier === 'L2' ? 25 : 5,
-    maxProducts: tier === 'L3' ? undefined : tier === 'L2' ? 10000 : 500,
-    startsAt: now,
-    expiresAt,
-    daysRemaining: 365,
-    isExpired: false,
-    isExpiringSoon: false,
+    L2: {
+      inventory: true,
+      basicReports: true,
+      invoicing: true,
+      customers: true,
+      products: true,
+      orders: true,
+      warehouses: true,
+      predictiveAnalytics: true,
+      demandForecasting: true,
+      advancedReports: true,
+      multiWarehouse: true,
+      batchTracking: true,
+      aiChatAssistant: false,
+      schemaIsolation: false,
+      customIntegrations: false,
+      auditLogs: false,
+      multiCurrency: false,
+      advancedPermissions: false,
+      apiAccess: false,
+    },
+    L3: {
+      inventory: true,
+      basicReports: true,
+      invoicing: true,
+      customers: true,
+      products: true,
+      orders: true,
+      warehouses: true,
+      predictiveAnalytics: true,
+      demandForecasting: true,
+      advancedReports: true,
+      multiWarehouse: true,
+      batchTracking: true,
+      aiChatAssistant: true,
+      schemaIsolation: true,
+      customIntegrations: true,
+      auditLogs: true,
+      multiCurrency: true,
+      advancedPermissions: true,
+      apiAccess: true,
+    },
+  };
+  return features[tier];
+}
+
+/**
+ * Generate validated license from database record
+ */
+function createValidatedLicense(
+  license: {
+    id: string;
+    tenantId: string;
+    tier: string;
+    maxUsers: number;
+    maxProducts: number | null;
+    startsAt: Date;
+    expiresAt: Date;
+  },
+  capabilities: Array<{ code: string; enabled: boolean }>
+): ValidatedLicense {
+  const tier = license.tier as LicenseTier;
+  const now = new Date();
+  const daysRemaining = Math.ceil((license.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Merge tier features with capability-based features
+  const tierFeatures = getTierFeatures(tier);
+  const features: LicenseFeatures = { ...tierFeatures };
+
+  // Override with capabilities from TenantCapability table if present
+  const hasCapability = (code: string) =>
+    capabilities.some(c => c.code === code && c.enabled);
+
+  if (hasCapability('forecasting')) {
+    features.demandForecasting = true;
+    features.predictiveAnalytics = true;
+  }
+  if (hasCapability('ai_chat')) {
+    features.aiChatAssistant = true;
+  }
+  if (hasCapability('audit')) {
+    features.auditLogs = true;
+  }
+
+  return {
+    id: license.id,
+    tenantId: license.tenantId,
+    tier,
+    features,
+    maxUsers: license.maxUsers,
+    maxProducts: license.maxProducts ?? undefined,
+    startsAt: license.startsAt,
+    expiresAt: license.expiresAt,
+    daysRemaining,
+    isExpired: daysRemaining <= 0,
+    isExpiringSoon: daysRemaining > 0 && daysRemaining <= 30,
   };
 }
 
 /**
  * Middleware to load and validate license for the current tenant
+ * Uses database-based validation (Organization Account Authorization model)
  */
 export async function licenseMiddleware(
   request: FastifyRequest,
@@ -155,54 +193,49 @@ export async function licenseMiddleware(
       return;
     }
 
-    // Get license from database
-    const licenseKey = await getLicenseKeyFromDatabase(tenantId);
+    // Query database for active license
+    const license = await prisma.license.findFirst({
+      where: {
+        tenantId,
+        isActive: true,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    let license: ValidatedLicense;
-
-    if (licenseKey) {
-      // Validate the license key
-      const result = licenseValidator.validate(licenseKey, tenantId);
-
-      if (!result.valid || !result.license) {
-        logger.warn(`Invalid license for tenant ${tenantId}: ${result.error}`);
-        
-        const response: ApiResponse = {
-          success: false,
-          error: {
-            code: 'LICENSE_INVALID',
-            message: 'Your license is invalid or has expired. Please contact support.',
-          },
-        };
-        return reply.status(403).send(response);
-      }
-
-      license = result.license;
-    } else {
-      // No license found, use demo license based on tier from JWT
-      const tier = request.tier || 'L1';
-      license = generateDemoLicense(tenantId, tier);
-      logger.debug(`Using demo license for tenant ${tenantId} with tier ${tier}`);
+    if (!license) {
+      logger.warn(`No active license found for tenant: ${tenantId}`);
+      return reply.status(403).send({
+        success: false,
+        error: {
+          code: 'NO_ACTIVE_LICENSE',
+          message: 'Your organization does not have an active subscription. Please contact your billing administrator.',
+        },
+      });
     }
+
+    // Get capabilities from TenantCapability table
+    const capabilities = await getTenantCapabilities(tenantId);
+
+    // Create validated license
+    const validatedLicense = createValidatedLicense(license, capabilities);
 
     // Cache the license
     licenseCache.set(tenantId, {
-      license,
+      license: validatedLicense,
       expiresAt: Date.now() + CACHE_TTL,
     });
 
-    request.license = license;
+    request.license = validatedLicense;
   } catch (error) {
     logger.error('License validation error', { tenantId, error });
-    
-    const response: ApiResponse = {
+    return reply.status(500).send({
       success: false,
       error: {
         code: 'LICENSE_ERROR',
-        message: 'Unable to verify license. Please try again later.',
+        message: 'Unable to verify subscription status. Please try again later.',
       },
-    };
-    return reply.status(500).send(response);
+    });
   }
 }
 
@@ -215,14 +248,13 @@ export function requireTier(...requiredTiers: LicenseTier[]) {
     const license = request.license;
 
     if (!license) {
-      const response: ApiResponse = {
+      return reply.status(403).send({
         success: false,
         error: {
           code: 'LICENSE_REQUIRED',
-          message: 'A valid license is required to access this feature',
+          message: 'A valid subscription is required to access this feature',
         },
-      };
-      return reply.status(403).send(response);
+      });
     }
 
     // Check if the license tier is sufficient
@@ -235,7 +267,7 @@ export function requireTier(...requiredTiers: LicenseTier[]) {
         (t) => tierHierarchy[t] === requiredTierLevel
       );
 
-      const response: ApiResponse = {
+      return reply.status(403).send({
         success: false,
         error: {
           code: 'TIER_INSUFFICIENT',
@@ -245,8 +277,7 @@ export function requireTier(...requiredTiers: LicenseTier[]) {
             currentTier: license.tier,
           },
         },
-      };
-      return reply.status(403).send(response);
+      });
     }
   };
 }
@@ -260,32 +291,30 @@ export function requireFeature(...features: (keyof LicenseFeatures)[]) {
     const license = request.license;
 
     if (!license) {
-      const response: ApiResponse = {
+      return reply.status(403).send({
         success: false,
         error: {
           code: 'LICENSE_REQUIRED',
-          message: 'A valid license is required to access this feature',
+          message: 'A valid subscription is required to access this feature',
         },
-      };
-      return reply.status(403).send(response);
+      });
     }
 
     // Check all required features
     const missingFeatures = features.filter((f) => !license.features[f]);
 
     if (missingFeatures.length > 0) {
-      const response: ApiResponse = {
+      return reply.status(403).send({
         success: false,
         error: {
           code: 'FEATURE_NOT_AVAILABLE',
-          message: `This feature requires: ${missingFeatures.join(', ')}. Please upgrade your license.`,
+          message: `This feature requires: ${missingFeatures.join(', ')}. Please upgrade your subscription.`,
           details: {
             missingFeatures,
             currentTier: license.tier,
           },
         },
-      };
-      return reply.status(403).send(response);
+      });
     }
   };
 }
@@ -302,66 +331,9 @@ export function hasFeature(request: FastifyRequest, feature: keyof LicenseFeatur
  */
 export function hasTier(request: FastifyRequest, requiredTier: LicenseTier): boolean {
   if (!request.license) return false;
-  
+
   const tierHierarchy: Record<LicenseTier, number> = { L1: 1, L2: 2, L3: 3 };
   return tierHierarchy[request.license.tier] >= tierHierarchy[requiredTier];
-}
-
-/**
- * Error handler for license-related errors
- */
-export function handleLicenseError(
-  error: unknown,
-  reply: FastifyReply
-): FastifyReply {
-  if (error instanceof TierAccessError) {
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        code: 'TIER_ACCESS_DENIED',
-        message: error.message,
-        details: {
-          requiredTier: error.requiredTier,
-          currentTier: error.currentTier,
-        },
-      },
-    };
-    return reply.status(403).send(response);
-  }
-
-  if (error instanceof FeatureAccessError) {
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        code: 'FEATURE_ACCESS_DENIED',
-        message: error.message,
-        details: {
-          feature: error.feature,
-          requiredTier: error.requiredTier,
-        },
-      },
-    };
-    return reply.status(403).send(response);
-  }
-
-  if (error instanceof LicenseLimitError) {
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        code: 'LICENSE_LIMIT_EXCEEDED',
-        message: error.message,
-        details: {
-          limitType: error.limitType,
-          currentCount: error.currentCount,
-          maxAllowed: error.maxAllowed,
-        },
-      },
-    };
-    return reply.status(403).send(response);
-  }
-
-  // Re-throw unknown errors
-  throw error;
 }
 
 /**
@@ -382,3 +354,93 @@ export function getLicenseInfo(request: FastifyRequest): ValidatedLicense | null
   return request.license || null;
 }
 
+/**
+ * Custom error classes for license-related errors
+ */
+export class TierAccessError extends Error {
+  constructor(
+    message: string,
+    public readonly requiredTier: LicenseTier,
+    public readonly currentTier: LicenseTier
+  ) {
+    super(message);
+    this.name = 'TierAccessError';
+  }
+}
+
+export class FeatureAccessError extends Error {
+  constructor(
+    message: string,
+    public readonly feature: string,
+    public readonly requiredTier?: LicenseTier
+  ) {
+    super(message);
+    this.name = 'FeatureAccessError';
+  }
+}
+
+export class LicenseLimitError extends Error {
+  constructor(
+    message: string,
+    public readonly limitType: string,
+    public readonly currentCount: number,
+    public readonly maxAllowed: number
+  ) {
+    super(message);
+    this.name = 'LicenseLimitError';
+  }
+}
+
+/**
+ * Error handler for license-related errors
+ */
+export function handleLicenseError(
+  error: unknown,
+  reply: FastifyReply
+): FastifyReply {
+  if (error instanceof TierAccessError) {
+    return reply.status(403).send({
+      success: false,
+      error: {
+        code: 'TIER_ACCESS_DENIED',
+        message: error.message,
+        details: {
+          requiredTier: error.requiredTier,
+          currentTier: error.currentTier,
+        },
+      },
+    });
+  }
+
+  if (error instanceof FeatureAccessError) {
+    return reply.status(403).send({
+      success: false,
+      error: {
+        code: 'FEATURE_ACCESS_DENIED',
+        message: error.message,
+        details: {
+          feature: error.feature,
+          requiredTier: error.requiredTier,
+        },
+      },
+    });
+  }
+
+  if (error instanceof LicenseLimitError) {
+    return reply.status(403).send({
+      success: false,
+      error: {
+        code: 'LICENSE_LIMIT_EXCEEDED',
+        message: error.message,
+        details: {
+          limitType: error.limitType,
+          currentCount: error.currentCount,
+          maxAllowed: error.maxAllowed,
+        },
+      },
+    });
+  }
+
+  // Re-throw unknown errors
+  throw error;
+}

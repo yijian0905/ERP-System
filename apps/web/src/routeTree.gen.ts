@@ -9,9 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SetupIndexRouteImport } from './routes/setup/index'
+import { Route as SetupLicenseRouteImport } from './routes/setup/license'
 import { Route as DashboardWarehousesRouteImport } from './routes/_dashboard/warehouses'
 import { Route as DashboardSuppliersRouteImport } from './routes/_dashboard/suppliers'
 import { Route as DashboardRequisitionsRouteImport } from './routes/_dashboard/requisitions'
@@ -50,6 +53,11 @@ import { Route as DashboardInventoryMovementsRouteImport } from './routes/_dashb
 import { Route as DashboardInventoryAdjustmentsRouteImport } from './routes/_dashboard/inventory/adjustments'
 import { Route as DashboardAiChatRouteImport } from './routes/_dashboard/ai/chat'
 
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -63,6 +71,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SetupIndexRoute = SetupIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SetupRoute,
+} as any)
+const SetupLicenseRoute = SetupLicenseRouteImport.update({
+  id: '/license',
+  path: '/license',
+  getParentRoute: () => SetupRoute,
 } as any)
 const DashboardWarehousesRoute = DashboardWarehousesRouteImport.update({
   id: '/warehouses',
@@ -265,6 +283,7 @@ const DashboardAiChatRoute = DashboardAiChatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRouteWithChildren
   '/assets': typeof DashboardAssetsRoute
   '/audit': typeof DashboardAuditRoute
   '/cost-centers': typeof DashboardCostCentersRoute
@@ -280,6 +299,8 @@ export interface FileRoutesByFullPath {
   '/requisitions': typeof DashboardRequisitionsRoute
   '/suppliers': typeof DashboardSuppliersRoute
   '/warehouses': typeof DashboardWarehousesRoute
+  '/setup/license': typeof SetupLicenseRoute
+  '/setup/': typeof SetupIndexRoute
   '/ai/chat': typeof DashboardAiChatRoute
   '/inventory/adjustments': typeof DashboardInventoryAdjustmentsRoute
   '/inventory/movements': typeof DashboardInventoryMovementsRoute
@@ -321,6 +342,8 @@ export interface FileRoutesByTo {
   '/requisitions': typeof DashboardRequisitionsRoute
   '/suppliers': typeof DashboardSuppliersRoute
   '/warehouses': typeof DashboardWarehousesRoute
+  '/setup/license': typeof SetupLicenseRoute
+  '/setup': typeof SetupIndexRoute
   '/ai/chat': typeof DashboardAiChatRoute
   '/inventory/adjustments': typeof DashboardInventoryAdjustmentsRoute
   '/inventory/movements': typeof DashboardInventoryMovementsRoute
@@ -349,6 +372,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRouteWithChildren
   '/_dashboard/assets': typeof DashboardAssetsRoute
   '/_dashboard/audit': typeof DashboardAuditRoute
   '/_dashboard/cost-centers': typeof DashboardCostCentersRoute
@@ -364,6 +388,8 @@ export interface FileRoutesById {
   '/_dashboard/requisitions': typeof DashboardRequisitionsRoute
   '/_dashboard/suppliers': typeof DashboardSuppliersRoute
   '/_dashboard/warehouses': typeof DashboardWarehousesRoute
+  '/setup/license': typeof SetupLicenseRoute
+  '/setup/': typeof SetupIndexRoute
   '/_dashboard/ai/chat': typeof DashboardAiChatRoute
   '/_dashboard/inventory/adjustments': typeof DashboardInventoryAdjustmentsRoute
   '/_dashboard/inventory/movements': typeof DashboardInventoryMovementsRoute
@@ -392,6 +418,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/setup'
     | '/assets'
     | '/audit'
     | '/cost-centers'
@@ -407,6 +434,8 @@ export interface FileRouteTypes {
     | '/requisitions'
     | '/suppliers'
     | '/warehouses'
+    | '/setup/license'
+    | '/setup/'
     | '/ai/chat'
     | '/inventory/adjustments'
     | '/inventory/movements'
@@ -448,6 +477,8 @@ export interface FileRouteTypes {
     | '/requisitions'
     | '/suppliers'
     | '/warehouses'
+    | '/setup/license'
+    | '/setup'
     | '/ai/chat'
     | '/inventory/adjustments'
     | '/inventory/movements'
@@ -475,6 +506,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_dashboard'
     | '/login'
+    | '/setup'
     | '/_dashboard/assets'
     | '/_dashboard/audit'
     | '/_dashboard/cost-centers'
@@ -490,6 +522,8 @@ export interface FileRouteTypes {
     | '/_dashboard/requisitions'
     | '/_dashboard/suppliers'
     | '/_dashboard/warehouses'
+    | '/setup/license'
+    | '/setup/'
     | '/_dashboard/ai/chat'
     | '/_dashboard/inventory/adjustments'
     | '/_dashboard/inventory/movements'
@@ -518,10 +552,18 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SetupRoute: typeof SetupRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -542,6 +584,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/setup/': {
+      id: '/setup/'
+      path: '/'
+      fullPath: '/setup/'
+      preLoaderRoute: typeof SetupIndexRouteImport
+      parentRoute: typeof SetupRoute
+    }
+    '/setup/license': {
+      id: '/setup/license'
+      path: '/license'
+      fullPath: '/setup/license'
+      preLoaderRoute: typeof SetupLicenseRouteImport
+      parentRoute: typeof SetupRoute
     }
     '/_dashboard/warehouses': {
       id: '/_dashboard/warehouses'
@@ -898,10 +954,23 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
   DashboardRouteChildren,
 )
 
+interface SetupRouteChildren {
+  SetupLicenseRoute: typeof SetupLicenseRoute
+  SetupIndexRoute: typeof SetupIndexRoute
+}
+
+const SetupRouteChildren: SetupRouteChildren = {
+  SetupLicenseRoute: SetupLicenseRoute,
+  SetupIndexRoute: SetupIndexRoute,
+}
+
+const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
+  SetupRoute: SetupRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

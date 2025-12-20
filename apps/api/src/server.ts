@@ -11,7 +11,9 @@ import { logger } from './lib/logger.js';
 import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
 import { licenseRoutes } from './routes/license.js';
+import { subscriptionRoutes } from './routes/subscription.js';
 import { v1Routes } from './routes/v1/index.js';
+
 
 /**
  * Parse and validate CORS origins from environment variable
@@ -178,6 +180,7 @@ export async function buildServer() {
   await server.register(healthRoutes);
   await server.register(authRoutes, { prefix: '/auth' });
   await server.register(licenseRoutes, { prefix: '/license' });
+  await server.register(subscriptionRoutes, { prefix: '/subscription' });
   await server.register(v1Routes, { prefix: '/api/v1' });
 
   // 404 handler

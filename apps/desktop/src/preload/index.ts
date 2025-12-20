@@ -2,7 +2,11 @@
  * @file Preload Script - Secure Context Bridge
  * @description Exposes limited, whitelisted APIs to renderer process
  *
- * Per spec.md:
+ * Per license-system-guide.md:
+ * - No license key input on client
+ * - Authorization happens via backend during login
+ *
+ * Security:
  * - IPC: preload + contextBridge (whitelist only)
  * - contextIsolation: true
  * - nodeIntegration: false
@@ -48,7 +52,7 @@ interface PrintAuditEntry {
 }
 
 /**
- * Print Settings (workstation-level per spec.md §277-279)
+ * Print Settings (workstation-level)
  */
 interface PrintSettings {
     targetPrinter: string | null;
@@ -61,32 +65,10 @@ interface PrintSettings {
 }
 
 /**
- * License Context
- */
-interface LicenseContext {
-    tenantId: string;
-    authPolicy: {
-        primary: 'password' | 'sso';
-        allowPasswordFallback: boolean;
-        mfa: 'off' | 'optional' | 'required';
-        identifier: 'email' | 'username';
-    };
-    capabilities: string[];
-    branding: {
-        logo?: string;
-        primaryColor?: string;
-        companyName?: string;
-    };
-    activatedAt: string;
-    serverUrl: string;
-    expiresAt?: string;
-}
-
-/**
  * Electron API exposed to renderer (whitelist only)
  */
 const electronAPI = {
-    // ============ API Bridge (per spec.md IPC Architecture) ============
+    // ============ API Bridge (IPC Architecture) ============
     /**
      * API bridge for making HTTP requests through main process
      * This allows renderer to call backend API without direct HTTP access
@@ -164,50 +146,6 @@ const electronAPI = {
         getBaseUrl: (): Promise<string> => ipcRenderer.invoke('api:getBaseUrl'),
     },
 
-    // ============ License APIs ============
-    /**
-     * Get stored license context
-     */
-    getLicense: (): Promise<{ success: boolean; context?: LicenseContext; error?: string }> =>
-        ipcRenderer.invoke('license:get'),
-
-    /**
-     * Check if license exists
-     */
-    hasLicense: (): Promise<boolean> => ipcRenderer.invoke('license:exists'),
-
-    /**
-     * Activate license with server
-     */
-    activateLicense: (
-        licenseKey: string,
-        serverUrl?: string
-    ): Promise<{ success: boolean; context?: LicenseContext; error?: string }> =>
-        ipcRenderer.invoke('license:activate', licenseKey, serverUrl),
-
-    /**
-     * Validate license with server (refresh capabilities & branding)
-     */
-    validateLicense: (): Promise<{
-        success: boolean;
-        context?: LicenseContext;
-        cached?: boolean;
-        error?: string;
-    }> => ipcRenderer.invoke('license:validate'),
-
-    /**
-     * Clear stored license
-     */
-    clearLicense: (): Promise<{ success: boolean }> =>
-        ipcRenderer.invoke('license:clear'),
-
-    // ============ Branding APIs ============
-    /**
-     * Get cached branding for immediate startup
-     */
-    getBranding: (): Promise<LicenseContext['branding'] | null> =>
-        ipcRenderer.invoke('branding:get'),
-
     // ============ Print APIs ============
     /**
      * Get available printers
@@ -275,7 +213,7 @@ const electronAPI = {
         entry: PrintAuditEntry
     ): Promise<{ success: boolean }> => ipcRenderer.invoke('print:audit', entry),
 
-    // ============ Print Settings APIs (spec.md §277-279) ============
+    // ============ Print Settings APIs ============
     /**
      * Get current print settings
      */

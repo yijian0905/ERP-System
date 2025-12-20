@@ -9,6 +9,24 @@ directories:
 files:
   - dist/**/*
   - resources/**/*
+  - node_modules/**/*
+
+# ESM support: set asar to false as ESM modules can have issues inside asar
+asar: true
+asarUnpack:
+  - node_modules/electron-store/**/*
+  - node_modules/conf/**/*
+  - node_modules/env-paths/**/*
+  - node_modules/atomically/**/*
+  - node_modules/type-fest/**/*
+  - node_modules/dot-prop/**/*
+  - node_modules/debounce-fn/**/*
+  - node_modules/pkg-up/**/*
+  - node_modules/uint8array-extras/**/*
+  - node_modules/find-up-simple/**/*
+  - node_modules/mimic-function/**/*
+  - node_modules/stubborn-fs/**/*
+  - node_modules/when-exit/**/*
 
 # Windows 配置
 win:

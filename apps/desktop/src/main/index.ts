@@ -2,25 +2,27 @@
  * @file Electron Main Process Entry Point
  * @description ERP System Desktop Application - Main Process
  *
- * Security Configuration (per spec.md):
+ * Per license-system-guide.md:
+ * - No license key input on client
+ * - All authorization validation happens on backend during login
+ *
+ * Security Configuration:
  * - contextIsolation: true
  * - nodeIntegration: false
  * - sandbox: true
  */
 
-import { app, BrowserWindow, ipcMain, shell, session } from 'electron';
-import { autoUpdater } from 'electron-updater';
+import { app, BrowserWindow, ipcMain, shell, session, globalShortcut } from 'electron';
+import electronUpdater from 'electron-updater';
+const { autoUpdater } = electronUpdater;
 import { join } from 'path';
-import { LicenseStore } from './license-store';
 import { setupPrintHandlers } from './print-handler';
-import { setupLicenseHandlers } from './license-handler';
 import { setupApiHandlers } from './api-handler';
 
 // 禁用 HTTP 緩存
 app.commandLine.appendSwitch('disable-http-cache');
 
 let mainWindow: BrowserWindow | null = null;
-const licenseStore = new LicenseStore();
 
 // 開發模式 URL
 const DEV_URL = 'http://localhost:5173';
@@ -36,8 +38,8 @@ function createWindow(): void {
         transparent: false,
         webPreferences: {
             preload: join(__dirname, '../preload/index.js'),
-            contextIsolation: true, // 必須為 true (spec.md 安全要求)
-            nodeIntegration: false, // 必須為 false (spec.md 安全要求)
+            contextIsolation: true, // 必須為 true (安全要求)
+            nodeIntegration: false, // 必須為 false (安全要求)
             sandbox: true,
             webSecurity: true,
         },
@@ -64,39 +66,26 @@ function createWindow(): void {
     // 載入應用
     if (process.env.NODE_ENV === 'development') {
         mainWindow.loadURL(DEV_URL);
-        // 開發模式可選擇是否打開 DevTools
-        // mainWindow.webContents.openDevTools();
     } else {
         const rendererPath = join(__dirname, '../renderer/index.html');
-        console.log('[Main] Production mode - loading renderer from:', rendererPath);
-        console.log('[Main] __dirname:', __dirname);
-        console.log('[Main] app.isPackaged:', app.isPackaged);
-
-        // Debug: check if file exists
-        import('fs').then(fs => {
-            console.log('[Main] File exists:', fs.existsSync(rendererPath));
-        });
-
-        mainWindow.loadFile(rendererPath).catch(err => {
-            console.error('[Main] Failed to load renderer:', err);
-        });
+        mainWindow.loadFile(rendererPath);
     }
 
-    // Debug: capture renderer errors
-    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
-        console.error('[Main] Renderer failed to load:', errorCode, errorDescription);
+    // 註冊 F12 快捷鍵打開 DevTools（用於調試）
+    globalShortcut.register('F12', () => {
+        mainWindow?.webContents.toggleDevTools();
     });
-
-    mainWindow.webContents.on('did-finish-load', () => {
-        console.log('[Main] Renderer finished loading');
+    globalShortcut.register('CommandOrControl+Shift+I', () => {
+        mainWindow?.webContents.toggleDevTools();
     });
 
     // 設置 IPC 處理器
     setupPrintHandlers(mainWindow);
-    setupLicenseHandlers(licenseStore);
 
     mainWindow.on('closed', () => {
         mainWindow = null;
+        // 取消註冊快捷鍵
+        globalShortcut.unregisterAll();
     });
 }
 
@@ -120,7 +109,7 @@ app.whenReady().then(() => {
 
     createWindow();
 
-    // 設置 API IPC 處理器（per spec.md IPC Architecture）
+    // 設置 API IPC 處理器
     setupApiHandlers();
 
     // 檢查更新（僅生產環境）
