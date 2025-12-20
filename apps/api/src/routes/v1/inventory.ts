@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { getTenantId } from '../../middleware/auth.js';
+import { authRouteOptions } from '../../types/fastify-schema.js';
 import {
   mockInventory as globalMockInventory,
   mockWarehouses,
@@ -169,13 +170,7 @@ export async function inventoryRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<InventoryItem[]>;
   }>(
     '/',
-    {
-      schema: {
-        description: 'List inventory items with pagination',
-        tags: ['Inventory'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('List inventory items with pagination', ['Inventory']),
     async (request, reply) => {
       const params = paginationSchema.parse(request.query);
       const tenantId = getTenantId(request);
@@ -227,13 +222,7 @@ export async function inventoryRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<InventoryMovement[]>;
   }>(
     '/movements',
-    {
-      schema: {
-        description: 'List inventory movements',
-        tags: ['Inventory'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('List inventory movements', ['Inventory']),
     async (request, reply) => {
       const params = paginationSchema.parse(request.query);
       const tenantId = getTenantId(request);
@@ -272,13 +261,7 @@ export async function inventoryRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<InventoryMovement>;
   }>(
     '/adjust',
-    {
-      schema: {
-        description: 'Create inventory adjustment',
-        tags: ['Inventory'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Create inventory adjustment', ['Inventory']),
     async (request, reply) => {
       const validation = adjustmentSchema.safeParse(request.body);
       if (!validation.success) {
@@ -330,13 +313,7 @@ export async function inventoryRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<InventoryMovement[]>;
   }>(
     '/transfer',
-    {
-      schema: {
-        description: 'Transfer inventory between warehouses',
-        tags: ['Inventory'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Transfer inventory between warehouses', ['Inventory']),
     async (request, reply) => {
       const validation = transferSchema.safeParse(request.body);
       if (!validation.success) {
@@ -407,13 +384,7 @@ export async function inventoryRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<InventoryItem[]>;
   }>(
     '/low-stock',
-    {
-      schema: {
-        description: 'Get items below reorder point',
-        tags: ['Inventory'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Get items below reorder point', ['Inventory']),
     async (request, reply) => {
       const tenantId = getTenantId(request);
 

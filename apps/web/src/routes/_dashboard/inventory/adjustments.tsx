@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { FilterSelect } from '@/components/ui/filter-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useCanSkipApproval } from '@/stores/auth';
 
 export const Route = createFileRoute('/_dashboard/inventory/adjustments')({
   component: InventoryAdjustmentsPage,
@@ -163,6 +164,9 @@ function InventoryAdjustmentsPage() {
     return matchesSearch && matchesReason && matchesStatus;
   });
 
+  // Check if user can skip approval workflow
+  const canSkipApproval = useCanSkipApproval();
+
   const handleCreateAdjustment = async () => {
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -187,7 +191,7 @@ function InventoryAdjustmentsPage() {
       notes: formData.notes || null,
       createdBy: 'Current User',
       createdAt: new Date().toISOString(),
-      status: 'PENDING',
+      status: canSkipApproval ? 'APPROVED' : 'PENDING',
     };
 
     setAdjustments([newAdjustment, ...adjustments]);

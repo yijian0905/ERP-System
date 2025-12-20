@@ -3,7 +3,23 @@
  * @description Extends Window interface with electronAPI for Electron desktop app
  */
 
+import type { ApiResponse } from '@erp/shared-types';
+
 interface ElectronAPI {
+    // ============ API Bridge (per spec.md IPC Architecture) ============
+    api: {
+        get: <T>(url: string, params?: Record<string, string | number | boolean>) => Promise<ApiResponse<T>>;
+        post: <T>(url: string, data?: unknown) => Promise<ApiResponse<T>>;
+        put: <T>(url: string, data?: unknown) => Promise<ApiResponse<T>>;
+        patch: <T>(url: string, data?: unknown) => Promise<ApiResponse<T>>;
+        delete: <T>(url: string) => Promise<ApiResponse<T>>;
+        setTokens: (tokens: { accessToken: string; refreshToken?: string }) => Promise<{ success: boolean }>;
+        clearTokens: () => Promise<{ success: boolean }>;
+        isAuthenticated: () => Promise<boolean>;
+        setBaseUrl: (url: string) => Promise<{ success: boolean }>;
+        getBaseUrl: () => Promise<string>;
+    };
+
     // License APIs
     getLicense: () => Promise<{ success: boolean; context?: unknown; error?: string }>;
     hasLicense: () => Promise<boolean>;

@@ -93,7 +93,7 @@ class FrontendLogger {
   constructor(config: Partial<LoggerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.sessionId = this.generateSessionId();
-    
+
     // Flush on page unload
     if (typeof window !== 'undefined') {
       window.addEventListener('beforeunload', () => this.flush());
@@ -179,7 +179,7 @@ class FrontendLogger {
     error?: string
   ): void {
     const level: LogLevel = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'debug';
-    
+
     this.log(level, `API ${method} ${endpoint}`, {
       method,
       endpoint,
@@ -246,12 +246,12 @@ class FrontendLogger {
    */
   track(operation: string): { end: (metadata?: Record<string, unknown>) => void } {
     const startTime = performance.now();
-    
+
     return {
       end: (metadata?: Record<string, unknown>) => {
         const duration = Math.round(performance.now() - startTime);
         this.performance(operation, duration, 'ms');
-        
+
         if (metadata) {
           this.debug(`${operation} completed`, {
             ...metadata,
@@ -308,9 +308,9 @@ class FrontendLogger {
 
     const timestamp = new Date(entry.timestamp).toLocaleTimeString();
     const prefix = `%c[${timestamp}] [${entry.level.toUpperCase()}]`;
-    
+
     const args: unknown[] = [prefix, colors[entry.level], entry.message];
-    
+
     if (Object.keys(entry.context).length > 0) {
       args.push(entry.context);
     }
@@ -419,16 +419,34 @@ export function logErrorBoundary(error: Error, errorInfo: { componentStack: stri
 // API CLIENT INTEGRATION
 // ============================================
 
+// Axios-compatible config and response types for interceptors
+interface AxiosLikeConfig {
+  url?: string;
+  method?: string;
+  metadata?: { startTime: number };
+}
+
+interface AxiosLikeResponse {
+  config: AxiosLikeConfig;
+  status: number;
+}
+
+interface AxiosLikeError {
+  config?: AxiosLikeConfig;
+  response?: { status: number };
+  message: string;
+}
+
 /**
  * Create axios interceptor for logging
  */
 export function createApiLoggerInterceptor() {
   return {
-    request: (config: any) => {
+    request: (config: AxiosLikeConfig) => {
       config.metadata = { startTime: performance.now() };
       return config;
     },
-    response: (response: any) => {
+    response: (response: AxiosLikeResponse) => {
       const duration = Math.round(
         performance.now() - (response.config.metadata?.startTime || 0)
       );
@@ -440,7 +458,7 @@ export function createApiLoggerInterceptor() {
       );
       return response;
     },
-    error: (error: any) => {
+    error: (error: AxiosLikeError) => {
       const duration = Math.round(
         performance.now() - (error.config?.metadata?.startTime || 0)
       );

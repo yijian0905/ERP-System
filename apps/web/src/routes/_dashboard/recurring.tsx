@@ -22,7 +22,7 @@ import {
   TrendingUp,
   Trash2,
 } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   DashboardCard,
@@ -249,13 +249,13 @@ function RecurringRevenuePage() {
   });
 
   // Mock printers list
-  const availablePrinters = [
+  const availablePrinters = useMemo(() => [
     { id: 'default', name: 'System Default Printer' },
     { id: 'hp-office', name: 'HP OfficeJet Pro 9015' },
     { id: 'canon-lbp', name: 'Canon LBP6230' },
     { id: 'epson-wf', name: 'Epson WorkForce WF-2860' },
     { id: 'pdf', name: 'Save as PDF' },
-  ];
+  ], []);
 
   // Filter items
   const filteredItems = items.filter((item) => {

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { RouterProvider, createRouter, createHashHistory } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -7,8 +7,15 @@ import { routeTree } from './routeTree.gen';
 
 import './styles/globals.css';
 
-// Create a new router instance
-const router = createRouter({ routeTree });
+// Detect if running in Electron with file:// protocol (production build)
+const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+
+// Create router with hash history for file:// protocol (Electron production)
+// Use default browser history for development and web deployment
+const router = createRouter({
+  routeTree,
+  history: isFileProtocol ? createHashHistory() : undefined,
+});
 
 // Register the router instance for type safety
 declare module '@tanstack/react-router' {
@@ -39,4 +46,3 @@ if (!rootElement.innerHTML) {
     </StrictMode>
   );
 }
-

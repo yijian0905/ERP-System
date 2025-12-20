@@ -14,6 +14,7 @@ import { join } from 'path';
 import { LicenseStore } from './license-store';
 import { setupPrintHandlers } from './print-handler';
 import { setupLicenseHandlers } from './license-handler';
+import { setupApiHandlers } from './api-handler';
 
 // 禁用 HTTP 緩存
 app.commandLine.appendSwitch('disable-http-cache');
@@ -66,8 +67,29 @@ function createWindow(): void {
         // 開發模式可選擇是否打開 DevTools
         // mainWindow.webContents.openDevTools();
     } else {
-        mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+        const rendererPath = join(__dirname, '../renderer/index.html');
+        console.log('[Main] Production mode - loading renderer from:', rendererPath);
+        console.log('[Main] __dirname:', __dirname);
+        console.log('[Main] app.isPackaged:', app.isPackaged);
+
+        // Debug: check if file exists
+        import('fs').then(fs => {
+            console.log('[Main] File exists:', fs.existsSync(rendererPath));
+        });
+
+        mainWindow.loadFile(rendererPath).catch(err => {
+            console.error('[Main] Failed to load renderer:', err);
+        });
     }
+
+    // Debug: capture renderer errors
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+        console.error('[Main] Renderer failed to load:', errorCode, errorDescription);
+    });
+
+    mainWindow.webContents.on('did-finish-load', () => {
+        console.log('[Main] Renderer finished loading');
+    });
 
     // 設置 IPC 處理器
     setupPrintHandlers(mainWindow);
@@ -82,6 +104,8 @@ function createWindow(): void {
 app.whenReady().then(() => {
     // 設置 Content-Security-Policy
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        // For IPC-based API calls, we don't need to allow external connections in CSP
+        // The main process handles all HTTP requests via IPC
         const csp = process.env.NODE_ENV === 'development'
             ? "default-src 'self' http://localhost:*; script-src 'self' 'unsafe-inline' http://localhost:*; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: http://localhost:*; connect-src 'self' http://localhost:* ws://localhost:*;"
             : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self';";
@@ -95,6 +119,9 @@ app.whenReady().then(() => {
     });
 
     createWindow();
+
+    // 設置 API IPC 處理器（per spec.md IPC Architecture）
+    setupApiHandlers();
 
     // 檢查更新（僅生產環境）
     if (process.env.NODE_ENV !== 'development') {

@@ -36,6 +36,8 @@
     "check:env": "bash scripts/utils/validate-env.sh",
     "desktop:dev": "pnpm --filter @erp/desktop dev",
     "desktop:build": "pnpm --filter @erp/desktop build",
+    "desktop:build:production": "pnpm --filter @erp/desktop build:production",
+    "desktop:build:package": "pnpm --filter @erp/desktop build:package",
     "desktop:package": "pnpm --filter @erp/desktop package",
     "desktop:package:win": "pnpm --filter @erp/desktop package:win",
     "desktop:package:mac": "pnpm --filter @erp/desktop package:mac",

@@ -138,8 +138,8 @@ export class EInvoiceService {
     const result = await builder.build(
       eInvoice.invoiceId,
       eInvoice.invoiceType as EInvoiceType,
-      eInvoice.originalEInvoiceId ? 
-        (await this.getOriginalUuid(eInvoice.originalEInvoiceId)) : 
+      eInvoice.originalEInvoiceId ?
+        (await this.getOriginalUuid(eInvoice.originalEInvoiceId)) :
         undefined
     );
 
@@ -236,7 +236,7 @@ export class EInvoiceService {
       // Process response
       if (response.acceptedDocuments.length > 0) {
         const accepted = response.acceptedDocuments[0];
-        
+
         await prisma.eInvoice.update({
           where: { id: eInvoiceId },
           data: {
@@ -273,7 +273,7 @@ export class EInvoiceService {
         };
       } else if (response.rejectedDocuments.length > 0) {
         const rejected = response.rejectedDocuments[0];
-        
+
         await prisma.eInvoice.update({
           where: { id: eInvoiceId },
           data: {
@@ -310,7 +310,7 @@ export class EInvoiceService {
       throw new Error('Unexpected response from LHDN');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       // Update retry count and status
       const updatedEInvoice = await prisma.eInvoice.update({
         where: { id: eInvoiceId },
@@ -379,7 +379,7 @@ export class EInvoiceService {
 
     // Map LHDN status to our status
     let newStatus: EInvoiceStatus = eInvoice.status as EInvoiceStatus;
-    
+
     switch (details.status) {
       case 'Valid':
         newStatus = 'VALID';
@@ -402,7 +402,7 @@ export class EInvoiceService {
         lhdnLongId: details.longId,
         validatedAt: details.dateTimeValidated ? new Date(details.dateTimeValidated) : undefined,
         responseJson: details as object,
-        validationErrors: details.validationResults?.errors as any,
+        validationErrors: details.validationResults?.errors as Array<{ code: string; message: string }> | undefined,
       },
       include: {
         items: true,
@@ -717,13 +717,38 @@ export class EInvoiceService {
     });
   }
 
-  private mapToEInvoice(data: any): EInvoice {
+  private mapToEInvoice(data: {
+    id: string;
+    tenantId: string;
+    invoiceId: string;
+    invoiceType: string;
+    status: string;
+    lhdnUuid: string | null;
+    lhdnLongId: string | null;
+    lhdnSubmissionUid: string | null;
+    submittedAt: Date | null;
+    validatedAt: Date | null;
+    cancelledAt: Date | null;
+    rejectedAt: Date | null;
+    requestJson: unknown;
+    responseJson: unknown;
+    documentHash: string | null;
+    rejectReason: string | null;
+    validationErrors: unknown;
+    retryCount: number;
+    lastRetryAt: Date | null;
+    originalEInvoiceId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    items?: Array<Record<string, unknown>>;
+    logs?: Array<Record<string, unknown>>;
+  }): EInvoice {
     return {
       id: data.id,
       tenantId: data.tenantId,
       invoiceId: data.invoiceId,
-      invoiceType: data.invoiceType,
-      status: data.status,
+      invoiceType: data.invoiceType as EInvoiceType,
+      status: data.status as EInvoiceStatus,
       lhdnUuid: data.lhdnUuid,
       lhdnLongId: data.lhdnLongId,
       lhdnSubmissionUid: data.lhdnSubmissionUid,
@@ -731,50 +756,50 @@ export class EInvoiceService {
       validatedAt: data.validatedAt?.toISOString(),
       cancelledAt: data.cancelledAt?.toISOString(),
       rejectedAt: data.rejectedAt?.toISOString(),
-      requestJson: data.requestJson,
-      responseJson: data.responseJson,
+      requestJson: data.requestJson as Record<string, unknown> | null | undefined,
+      responseJson: data.responseJson as Record<string, unknown> | null | undefined,
       documentHash: data.documentHash,
       rejectReason: data.rejectReason,
-      validationErrors: data.validationErrors,
+      validationErrors: data.validationErrors as Array<{ code: string; message: string }> | null | undefined,
       retryCount: data.retryCount,
       lastRetryAt: data.lastRetryAt?.toISOString(),
       originalEInvoiceId: data.originalEInvoiceId,
       createdAt: data.createdAt.toISOString(),
       updatedAt: data.updatedAt.toISOString(),
-      items: data.items?.map((item: any) => ({
-        id: item.id,
-        eInvoiceId: item.eInvoiceId,
-        invoiceItemId: item.invoiceItemId,
-        classificationCode: item.classificationCode,
-        description: item.description,
+      items: data.items?.map((item: Record<string, unknown>) => ({
+        id: item.id as string,
+        eInvoiceId: item.eInvoiceId as string,
+        invoiceItemId: item.invoiceItemId as string,
+        classificationCode: item.classificationCode as string,
+        description: item.description as string,
         quantity: Number(item.quantity),
-        unitCode: item.unitCode,
+        unitCode: item.unitCode as string,
         unitPrice: Number(item.unitPrice),
-        taxType: item.taxType,
+        taxType: item.taxType as string,
         taxRate: Number(item.taxRate),
         taxAmount: Number(item.taxAmount),
-        taxExemptReason: item.taxExemptReason,
+        taxExemptReason: item.taxExemptReason as string | undefined,
         subtotal: Number(item.subtotal),
         discountAmount: Number(item.discountAmount),
         discountRate: Number(item.discountRate),
         totalAmount: Number(item.totalAmount),
-        sortOrder: item.sortOrder,
-        createdAt: item.createdAt.toISOString(),
-        updatedAt: item.updatedAt.toISOString(),
+        sortOrder: item.sortOrder as number,
+        createdAt: (item.createdAt as Date).toISOString(),
+        updatedAt: (item.updatedAt as Date).toISOString(),
       })),
-      logs: data.logs?.map((log: any) => ({
-        id: log.id,
-        eInvoiceId: log.eInvoiceId,
-        action: log.action,
-        status: log.status,
-        message: log.message,
-        requestData: log.requestData,
-        responseData: log.responseData,
-        errorCode: log.errorCode,
-        errorMessage: log.errorMessage,
-        ipAddress: log.ipAddress,
-        userAgent: log.userAgent,
-        createdAt: log.createdAt.toISOString(),
+      logs: data.logs?.map((log: Record<string, unknown>) => ({
+        id: log.id as string,
+        eInvoiceId: log.eInvoiceId as string,
+        action: log.action as string,
+        status: log.status as EInvoiceStatus,
+        message: log.message as string | undefined,
+        requestData: log.requestData as Record<string, unknown> | null | undefined,
+        responseData: log.responseData as Record<string, unknown> | null | undefined,
+        errorCode: log.errorCode as string | undefined,
+        errorMessage: log.errorMessage as string | undefined,
+        ipAddress: log.ipAddress as string | undefined,
+        userAgent: log.userAgent as string | undefined,
+        createdAt: (log.createdAt as Date).toISOString(),
       })),
     };
   }

@@ -61,3 +61,7 @@ docker-compose.override.yml
 *.tsbuildinfo
 .cache/
 
+
+# Electron Builder
+release/
+release-build/

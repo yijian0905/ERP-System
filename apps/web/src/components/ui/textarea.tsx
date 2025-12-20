@@ -32,13 +32,12 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className
         )}
         ref={(node) => {
-          // @ts-ignore
+          // @ts-expect-error - ForwardedRef can be both function and object
           innerRef.current = node;
           if (typeof ref === 'function') {
             ref(node);
           } else if (ref) {
-            // @ts-ignore
-            ref.current = node;
+            (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = node;
           }
         }}
         onChange={handleInput}

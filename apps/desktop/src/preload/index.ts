@@ -86,6 +86,84 @@ interface LicenseContext {
  * Electron API exposed to renderer (whitelist only)
  */
 const electronAPI = {
+    // ============ API Bridge (per spec.md IPC Architecture) ============
+    /**
+     * API bridge for making HTTP requests through main process
+     * This allows renderer to call backend API without direct HTTP access
+     */
+    api: {
+        /**
+         * GET request
+         */
+        get: <T>(url: string, params?: Record<string, string | number | boolean>): Promise<{
+            success: boolean;
+            data?: T;
+            error?: { code: string; message: string };
+        }> => ipcRenderer.invoke('api:get', url, params),
+
+        /**
+         * POST request
+         */
+        post: <T>(url: string, data?: unknown): Promise<{
+            success: boolean;
+            data?: T;
+            error?: { code: string; message: string };
+        }> => ipcRenderer.invoke('api:post', url, data),
+
+        /**
+         * PUT request
+         */
+        put: <T>(url: string, data?: unknown): Promise<{
+            success: boolean;
+            data?: T;
+            error?: { code: string; message: string };
+        }> => ipcRenderer.invoke('api:put', url, data),
+
+        /**
+         * PATCH request
+         */
+        patch: <T>(url: string, data?: unknown): Promise<{
+            success: boolean;
+            data?: T;
+            error?: { code: string; message: string };
+        }> => ipcRenderer.invoke('api:patch', url, data),
+
+        /**
+         * DELETE request
+         */
+        delete: <T>(url: string): Promise<{
+            success: boolean;
+            data?: T;
+            error?: { code: string; message: string };
+        }> => ipcRenderer.invoke('api:delete', url),
+
+        /**
+         * Set auth tokens (call after login)
+         */
+        setTokens: (tokens: { accessToken: string; refreshToken?: string }): Promise<{ success: boolean }> =>
+            ipcRenderer.invoke('api:setTokens', tokens),
+
+        /**
+         * Clear auth tokens (call on logout)
+         */
+        clearTokens: (): Promise<{ success: boolean }> => ipcRenderer.invoke('api:clearTokens'),
+
+        /**
+         * Check if authenticated
+         */
+        isAuthenticated: (): Promise<boolean> => ipcRenderer.invoke('api:isAuthenticated'),
+
+        /**
+         * Set API base URL
+         */
+        setBaseUrl: (url: string): Promise<{ success: boolean }> => ipcRenderer.invoke('api:setBaseUrl', url),
+
+        /**
+         * Get current API base URL
+         */
+        getBaseUrl: (): Promise<string> => ipcRenderer.invoke('api:getBaseUrl'),
+    },
+
     // ============ License APIs ============
     /**
      * Get stored license context

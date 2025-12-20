@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { getTenantId, hasPermission } from '../../middleware/auth.js';
 import { prisma } from '../../lib/prisma.js';
 import { logger } from '../../lib/logger.js';
+import { authRouteOptions } from '../../types/fastify-schema.js';
 
 // Validation schemas
 const createRoleSchema = z.object({
@@ -182,13 +183,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<RoleWithPermissions[]>;
   }>(
     '/',
-    {
-      schema: {
-        description: 'List all roles with their permissions',
-        tags: ['Roles'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('List all roles with their permissions', ['Roles']),
     async (request, reply) => {
       // Check permission
       if (!hasPermission(request, 'roles:view')) {
@@ -263,9 +258,9 @@ export async function rolesRoutes(fastify: FastifyInstance) {
             createdAt: rp.createdAt.toISOString(),
             permission: rp.permission
               ? {
-                  ...rp.permission,
-                  createdAt: rp.permission.createdAt.toISOString(),
-                }
+                ...rp.permission,
+                createdAt: rp.permission.createdAt.toISOString(),
+              }
               : undefined,
           })),
         }));
@@ -299,13 +294,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     }>;
   }>(
     '/permissions',
-    {
-      schema: {
-        description: 'List all available permissions grouped by module',
-        tags: ['Roles'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('List all available permissions grouped by module', ['Roles']),
     async (request, reply) => {
       if (!hasPermission(request, 'roles:view')) {
         return reply.status(403).send({
@@ -353,13 +342,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<typeof ROLE_TEMPLATES>;
   }>(
     '/templates',
-    {
-      schema: {
-        description: 'Get predefined role templates for quick creation',
-        tags: ['Roles'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Get predefined role templates for quick creation', ['Roles']),
     async (request, reply) => {
       if (!hasPermission(request, 'roles:view')) {
         return reply.status(403).send({
@@ -387,13 +370,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<RoleWithPermissions>;
   }>(
     '/:id',
-    {
-      schema: {
-        description: 'Get a role by ID with its permissions',
-        tags: ['Roles'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Get a role by ID with its permissions', ['Roles']),
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!hasPermission(request, 'roles:view')) {
         return reply.status(403).send({
@@ -450,9 +427,9 @@ export async function rolesRoutes(fastify: FastifyInstance) {
               createdAt: rp.createdAt.toISOString(),
               permission: rp.permission
                 ? {
-                    ...rp.permission,
-                    createdAt: rp.permission.createdAt.toISOString(),
-                  }
+                  ...rp.permission,
+                  createdAt: rp.permission.createdAt.toISOString(),
+                }
                 : undefined,
             })),
           } as unknown as RoleWithPermissions,
@@ -479,13 +456,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<RoleWithPermissions>;
   }>(
     '/',
-    {
-      schema: {
-        description: 'Create a new custom role',
-        tags: ['Roles'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Create a new custom role', ['Roles']),
     async (request, reply) => {
       if (!hasPermission(request, 'roles:create')) {
         return reply.status(403).send({
@@ -584,9 +555,9 @@ export async function rolesRoutes(fastify: FastifyInstance) {
               createdAt: rp.createdAt.toISOString(),
               permission: rp.permission
                 ? {
-                    ...rp.permission,
-                    createdAt: rp.permission.createdAt.toISOString(),
-                  }
+                  ...rp.permission,
+                  createdAt: rp.permission.createdAt.toISOString(),
+                }
                 : undefined,
             })),
           } as unknown as RoleWithPermissions,
@@ -614,13 +585,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<RoleWithPermissions>;
   }>(
     '/:id',
-    {
-      schema: {
-        description: 'Update a role',
-        tags: ['Roles'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Update a role', ['Roles']),
     async (
       request: FastifyRequest<{ Params: { id: string }; Body: UpdateRoleRequest }>,
       reply: FastifyReply
@@ -758,9 +723,9 @@ export async function rolesRoutes(fastify: FastifyInstance) {
               createdAt: rp.createdAt.toISOString(),
               permission: rp.permission
                 ? {
-                    ...rp.permission,
-                    createdAt: rp.permission.createdAt.toISOString(),
-                  }
+                  ...rp.permission,
+                  createdAt: rp.permission.createdAt.toISOString(),
+                }
                 : undefined,
             })),
           } as unknown as RoleWithPermissions,
@@ -787,13 +752,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<{ message: string }>;
   }>(
     '/:id',
-    {
-      schema: {
-        description: 'Delete a custom role (soft delete)',
-        tags: ['Roles'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Delete a custom role (soft delete)', ['Roles']),
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!hasPermission(request, 'roles:delete')) {
         return reply.status(403).send({
@@ -880,13 +839,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<RoleWithPermissions>;
   }>(
     '/from-template',
-    {
-      schema: {
-        description: 'Create a new role from a predefined template',
-        tags: ['Roles'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Create a new role from a predefined template', ['Roles']),
     async (request, reply) => {
       if (!hasPermission(request, 'roles:create')) {
         return reply.status(403).send({
@@ -981,9 +934,9 @@ export async function rolesRoutes(fastify: FastifyInstance) {
               createdAt: rp.createdAt.toISOString(),
               permission: rp.permission
                 ? {
-                    ...rp.permission,
-                    createdAt: rp.permission.createdAt.toISOString(),
-                  }
+                  ...rp.permission,
+                  createdAt: rp.permission.createdAt.toISOString(),
+                }
                 : undefined,
             })),
           } as unknown as RoleWithPermissions,

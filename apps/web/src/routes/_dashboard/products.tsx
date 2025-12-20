@@ -100,139 +100,6 @@ const initialCategories: Category[] = [
   { id: 'stat', name: 'Stationery', prefix: 'STAT', isNonSellable: true },
 ];
 
-// Mock full categories for category management
-const mockFullCategories: CategoryFull[] = [
-  {
-    id: '1',
-    name: 'Electronics',
-    slug: 'electronics',
-    description: 'Electronic devices and accessories',
-    parentId: null,
-    productCount: 45,
-    isActive: true,
-    sortOrder: 1,
-    children: [
-      {
-        id: '1-1',
-        name: 'Computers & Accessories',
-        slug: 'computers-accessories',
-        description: 'Computer peripherals and accessories',
-        parentId: '1',
-        productCount: 28,
-        isActive: true,
-        sortOrder: 1,
-        children: [
-          {
-            id: '1-1-1',
-            name: 'Keyboards',
-            slug: 'keyboards',
-            description: null,
-            parentId: '1-1',
-            productCount: 12,
-            isActive: true,
-            sortOrder: 1,
-          },
-          {
-            id: '1-1-2',
-            name: 'Mice',
-            slug: 'mice',
-            description: null,
-            parentId: '1-1',
-            productCount: 8,
-            isActive: true,
-            sortOrder: 2,
-          },
-        ],
-      },
-      {
-        id: '1-2',
-        name: 'Mobile Devices',
-        slug: 'mobile-devices',
-        description: 'Smartphones and tablets',
-        parentId: '1',
-        productCount: 17,
-        isActive: true,
-        sortOrder: 2,
-      },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Office Supplies',
-    slug: 'office-supplies',
-    description: 'General office supplies and stationery',
-    parentId: null,
-    productCount: 120,
-    isActive: true,
-    sortOrder: 2,
-    children: [
-      {
-        id: '2-1',
-        name: 'Paper Products',
-        slug: 'paper-products',
-        description: 'Paper, notebooks, and related items',
-        parentId: '2',
-        productCount: 45,
-        isActive: true,
-        sortOrder: 1,
-      },
-      {
-        id: '2-2',
-        name: 'Writing Instruments',
-        slug: 'writing-instruments',
-        description: 'Pens, pencils, markers',
-        parentId: '2',
-        productCount: 35,
-        isActive: true,
-        sortOrder: 2,
-      },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Furniture',
-    slug: 'furniture',
-    description: 'Office and home furniture',
-    parentId: null,
-    productCount: 35,
-    isActive: true,
-    sortOrder: 3,
-    children: [
-      {
-        id: '3-1',
-        name: 'Chairs',
-        slug: 'chairs',
-        description: 'Office and ergonomic chairs',
-        parentId: '3',
-        productCount: 15,
-        isActive: true,
-        sortOrder: 1,
-      },
-      {
-        id: '3-2',
-        name: 'Desks',
-        slug: 'desks',
-        description: 'Work desks and standing desks',
-        parentId: '3',
-        productCount: 12,
-        isActive: true,
-        sortOrder: 2,
-      },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Operating Consumables',
-    slug: 'operating-consumables',
-    description: 'Non-sellable consumables for internal operations (not displayed in sales orders)',
-    parentId: null,
-    productCount: 0,
-    isActive: true,
-    sortOrder: 4,
-    children: [],
-  },
-];
-
 const statusConfig: Record<ProductStatus, { label: string; color: string }> = {
   ACTIVE: { label: 'Active', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   INACTIVE: { label: 'Inactive', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
@@ -256,7 +123,6 @@ function ProductsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('products');
   const [products, setProducts] = useState<Product[]>(mockProducts);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
-  const [fullCategories] = useState<CategoryFull[]>(mockFullCategories);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -519,7 +385,7 @@ function ProductsPage() {
     setIsCategoryModalOpen(false);
   };
 
-  const renderCategory = (category: CategoryFull, level: number = 0) => {
+  const _renderCategory = (category: CategoryFull, level: number = 0) => {
     const hasChildren = category.children && category.children.length > 0;
     const isExpanded = expandedCategoryIds.has(category.id);
 
@@ -595,19 +461,12 @@ function ProductsPage() {
         </div>
         {hasChildren && isExpanded && (
           <div className="mt-2 space-y-2">
-            {category.children!.map((child) => renderCategory(child, level + 1))}
+            {category.children!.map((child) => _renderCategory(child, level + 1))}
           </div>
         )}
       </div>
     );
   };
-
-  const totalCategories = fullCategories.reduce((count, cat) => {
-    const countChildren = (c: CategoryFull): number => {
-      return 1 + (c.children?.reduce((acc, child) => acc + countChildren(child), 0) || 0);
-    };
-    return count + countChildren(cat);
-  }, 0);
 
   return (
     <PageContainer>

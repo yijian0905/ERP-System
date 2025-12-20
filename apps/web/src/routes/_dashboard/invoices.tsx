@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowLeft, FileText, MoreHorizontal, Plus, Search, Send, Settings } from 'lucide-react';
+import { ArrowLeft, FileText, MoreHorizontal, Search, Send, Settings } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { EInvoiceStatusBadge, type EInvoiceStatus } from '@/components/einvoice';
-import { InvoiceModal, type InvoiceFormData } from '@/components/invoice';
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import {
@@ -97,39 +96,9 @@ const statusStyles = {
 };
 
 function InvoicesPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [filter, setFilter] = useState<string>('');
 
-  // Handle saving invoice (draft)
-  const handleSave = useCallback(async (data: InvoiceFormData) => {
-    console.log('💾 Saving invoice as draft:', data);
-    // Note: Full invoice save API would be POST /v1/invoices
-    // For now, logging the data until backend invoice CRUD is implemented
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }, []);
 
-  // Handle print complete - this is where inventory deduction happens
-  const handlePrintComplete = useCallback(async (data: InvoiceFormData) => {
-    console.log('🖨️ Invoice printed, deducting inventory...');
-
-    // Deduct inventory for each item
-    for (const item of data.items) {
-      console.log(`📦 Deducting ${item.quantity} x ${item.productName} (${item.sku}) from inventory`);
-
-      // Note: Inventory deduction API would be:
-      // await post('/v1/inventory/stock-out', {
-      //   productId: item.productId,
-      //   quantity: item.quantity,
-      //   reference: invoiceNumber,
-      //   referenceType: 'SALE',
-      // });
-    }
-
-    // Invoice status update would be: await patch(`/v1/invoices/${invoiceId}`, { status: 'pending' });
-
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    console.log('✅ Inventory deducted successfully!');
-  }, []);
 
   // E-Invoice handlers
   const handleSubmitEInvoice = useCallback(async (invoiceId: string) => {
@@ -197,10 +166,6 @@ function InvoicesPage() {
                 E-Invoice Settings
               </Button>
             </Link>
-            <Button onClick={() => setIsModalOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Invoice
-            </Button>
           </div>
         }
       />
@@ -383,14 +348,7 @@ function InvoicesPage() {
         </div>
       </DashboardCard>
 
-      {/* Invoice Modal */}
-      <InvoiceModal
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        onSave={handleSave}
-        onPrintComplete={handlePrintComplete}
-        mode="create"
-      />
+
 
 
     </PageContainer>

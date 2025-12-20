@@ -17,8 +17,7 @@ import {
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { useCallback, useRef, useState } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -42,6 +41,7 @@ import {
 import { FilterSelect } from '@/components/ui/filter-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useCanSkipApproval } from '@/stores/auth';
 
 export const Route = createFileRoute('/_dashboard/orders/sales')({
   component: SalesOrdersPage,
@@ -239,13 +239,13 @@ function SalesOrdersPage() {
   });
 
   // Mock printers list (in real app, this would come from system/electron)
-  const availablePrinters = [
+  const availablePrinters = useMemo(() => [
     { id: 'default', name: 'System Default Printer' },
     { id: 'hp-office', name: 'HP OfficeJet Pro 9015' },
     { id: 'canon-lbp', name: 'Canon LBP6230' },
     { id: 'epson-wf', name: 'Epson WorkForce WF-2860' },
     { id: 'pdf', name: 'Save as PDF' },
-  ];
+  ], []);
 
   // Non-sellable categories should not appear in sales orders
   const nonSellableCategories = ['Operating Consumables'];
@@ -335,6 +335,9 @@ function SalesOrdersPage() {
     return `SO-${year}${month}-${random}`;
   };
 
+  // Check if user can skip approval workflow
+  const canSkipApproval = useCanSkipApproval();
+
   // Create order from draft
   const handleCreateOrder = async () => {
     if (!selectedCustomerId || draftItems.length === 0) return;
@@ -355,7 +358,7 @@ function SalesOrdersPage() {
       subtotal: draftSubtotal,
       tax: draftTax,
       total: draftTotal,
-      status: 'PENDING',
+      status: canSkipApproval ? 'CONFIRMED' : 'PENDING',
       orderDate: new Date().toISOString().split('T')[0],
       expectedDate: expectedDate || null,
       shippedDate: null,
@@ -394,14 +397,6 @@ function SalesOrdersPage() {
       }, 1500);
     }
   }, [selectedOrder]);
-
-  const handlePrint = useReactToPrint({
-    content: () => invoicePrintRef.current,
-    documentTitle: selectedOrder ? `Invoice-${selectedOrder.orderNumber}` : 'Invoice',
-    onBeforePrint: async () => setIsPrinting(true),
-    onAfterPrint: handleAfterPrint,
-    onPrintError: () => setIsPrinting(false),
-  });
 
   // Handle Print - uses Electron silent print or iframe for browser
   const handleSilentPrint = useCallback(async () => {

@@ -146,10 +146,18 @@ export const useAuthStore = create<AuthStore>()(
           tier: user.tier,
           permissions: user.permissions || [],
         });
+        // Sync tokens to Electron main process for IPC API calls
+        if (typeof window !== 'undefined' && window.electronAPI?.api) {
+          window.electronAPI.api.setTokens({ accessToken, refreshToken });
+        }
       },
 
       setTokens: (accessToken, refreshToken) => {
         set({ accessToken, refreshToken });
+        // Sync tokens to Electron main process for IPC API calls
+        if (typeof window !== 'undefined' && window.electronAPI?.api) {
+          window.electronAPI.api.setTokens({ accessToken, refreshToken });
+        }
       },
 
       updateUser: (updates) => {
@@ -168,6 +176,10 @@ export const useAuthStore = create<AuthStore>()(
         set(initialState);
         // Clear auth storage
         localStorage.removeItem('erp-auth');
+        // Clear tokens from Electron main process
+        if (typeof window !== 'undefined' && window.electronAPI?.api) {
+          window.electronAPI.api.clearTokens();
+        }
       },
 
       hasFeature: (feature: string) => {
@@ -271,4 +283,12 @@ export function useHasAllPermissions(...permissions: string[]): boolean {
  */
 export function usePermissions(): string[] {
   return useAuthStore((state) => state.permissions);
+}
+
+/**
+ * Hook to check if user can skip approval workflow
+ * Admin users with 'workflow.skipApproval' permission can bypass pending stage
+ */
+export function useCanSkipApproval(): boolean {
+  return useAuthStore((state) => state.hasPermission('workflow.skipApproval'));
 }

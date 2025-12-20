@@ -216,9 +216,78 @@ export const forecastingApi = {
     confidence?: number;
     model_metrics?: Record<string, number>;
   }> {
-    const response = await get<any>(
+    const response = await get<{
+      forecast: Array<{
+        date: string;
+        predicted_demand: number;
+        lower_bound?: number;
+        upper_bound?: number;
+      }>;
+      confidence?: number;
+      model_metrics?: Record<string, number>;
+    }>(
       `/api/v1/products/${productId}/forecast?days=${days}&includeConfidence=${includeConfidence}`
     );
+    if (!response.data) throw new Error('No data received');
+    return response.data;
+  },
+
+  /**
+   * Bulk stock optimization for multiple products (single API call)
+   */
+  async bulkStockOptimization(
+    products: Array<{
+      product_id: string;
+      current_stock: number;
+      lead_time_days?: number;
+      service_level?: number;
+    }>
+  ): Promise<{
+    tenant_id: string;
+    total_products: number;
+    successful: number;
+    failed: number;
+    results: Array<{
+      product_id: string;
+      status: 'success' | 'error';
+      recommended_reorder_point?: number;
+      recommended_order_quantity?: number;
+      current_status?: string;
+      risk_level?: string;
+      days_of_stock?: number;
+      suggestions?: string[];
+      metrics?: {
+        avg_daily_demand?: number;
+        demand_variability?: number;
+        service_level?: number;
+        lead_time_days?: number;
+      };
+      error?: string;
+    }>;
+  }> {
+    const response = await post<{
+      tenant_id: string;
+      total_products: number;
+      successful: number;
+      failed: number;
+      results: Array<{
+        product_id: string;
+        status: 'success' | 'error';
+        recommended_reorder_point?: number;
+        recommended_order_quantity?: number;
+        current_status?: string;
+        risk_level?: string;
+        days_of_stock?: number;
+        suggestions?: string[];
+        metrics?: {
+          avg_daily_demand?: number;
+          demand_variability?: number;
+          service_level?: number;
+          lead_time_days?: number;
+        };
+        error?: string;
+      }>;
+    }>('/api/v1/forecasting/bulk-stock-optimization', { products });
     if (!response.data) throw new Error('No data received');
     return response.data;
   },

@@ -1,10 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '@erp/database';
-
-const logger = {
-    info: (msg: string) => console.log(`[COMPANY] ${msg}`),
-    error: (msg: string) => console.error(`[COMPANY ERROR] ${msg}`),
-};
+import { logger } from '../../lib/logger.js';
 
 interface CompanyInfo {
     name: string;

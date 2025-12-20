@@ -50,7 +50,7 @@ const loggerPlugin: FastifyPluginAsync<LoggerPluginOptions> = async (
     logResponses = true,
     slowRequestThreshold = 500,
     ignorePaths = ['/health', '/ready', '/metrics'],
-    level = process.env.LOG_LEVEL as any || 'info',
+    level = (process.env.LOG_LEVEL as 'error' | 'warn' | 'info' | 'http' | 'debug') || 'info',
   } = options;
 
   // Create logger instance
@@ -72,11 +72,13 @@ const loggerPlugin: FastifyPluginAsync<LoggerPluginOptions> = async (
   fastify.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
     // Generate or use existing request ID
     const requestId = (request.headers['x-request-id'] as string) || uuidv4();
-    
-    // Attach to request
-    (request as any).requestId = requestId;
-    (request as any).startTime = performance.now();
-    
+
+    // Attach to request using Fastify's request context pattern
+    // @ts-expect-error - Extending request with requestId
+    request.requestId = requestId;
+    // @ts-expect-error - Extending request with startTime
+    request.startTime = performance.now();
+
     // Set response header
     reply.header('x-request-id', requestId);
   });
@@ -90,7 +92,7 @@ const loggerPlugin: FastifyPluginAsync<LoggerPluginOptions> = async (
       }
 
       const context = buildRequestContext(request);
-      
+
       logger.debug(`${request.method} ${request.url}`, {
         ...context,
         event: 'HTTP_REQUEST_START' as LogEvent,
@@ -106,9 +108,10 @@ const loggerPlugin: FastifyPluginAsync<LoggerPluginOptions> = async (
         return;
       }
 
-      const duration = Math.round(performance.now() - ((request as any).startTime || 0));
+      const extendedRequest = request as ExtendedFastifyRequest;
+      const duration = Math.round(performance.now() - (extendedRequest.startTime || 0));
       const context = buildRequestContext(request);
-      
+
       // Determine log level based on status and duration
       const statusCode = reply.statusCode;
       const isError = statusCode >= 500;
@@ -140,13 +143,14 @@ const loggerPlugin: FastifyPluginAsync<LoggerPluginOptions> = async (
   // Log errors
   fastify.addHook('onError', async (request: FastifyRequest, _reply: FastifyReply, error: Error) => {
     const context = buildRequestContext(request);
-    
+    const errorWithCode = error as Error & { code?: string; statusCode?: number };
+
     logger.error(`Request error: ${error.message}`, {
       ...context,
       error: error.message,
       stack: error.stack,
-      code: (error as any).code,
-      statusCode: (error as any).statusCode || 500,
+      code: errorWithCode.code,
+      statusCode: errorWithCode.statusCode || 500,
     });
   });
 
@@ -177,13 +181,14 @@ const loggerPlugin: FastifyPluginAsync<LoggerPluginOptions> = async (
  * Build context object from request
  */
 function buildRequestContext(request: FastifyRequest): LogContext {
-  const user = (request as any).user;
-  const tenantContext = (request as any).tenantContext;
-  
+  const extReq = request as ExtendedFastifyRequest;
+  const user = extReq.user;
+  const tenantContext = extReq.tenantContext;
+
   return {
-    requestId: (request as any).requestId,
-    tenantId: tenantContext?.tenantId,
-    userId: user?.userId,
+    requestId: extReq.requestId,
+    tenantId: tenantContext?.tenantId || user?.tid,
+    userId: user?.sub,
     method: request.method,
     path: request.url,
     userAgent: request.headers['user-agent'],
@@ -194,6 +199,14 @@ function buildRequestContext(request: FastifyRequest): LogContext {
 // ============================================
 // TYPE DECLARATIONS
 // ============================================
+
+// Extended request types for logger plugin
+// Use intersection to add properties without conflicting with existing types
+type ExtendedFastifyRequest = FastifyRequest & {
+  requestId?: string;
+  startTime?: number;
+  tenantContext?: { tenantId?: string };
+};
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -216,6 +229,11 @@ export type { LoggerPluginOptions };
 // UTILITY FUNCTIONS FOR ROUTE HANDLERS
 // ============================================
 
+// Type-safe server instance with logger
+interface FastifyInstanceWithLogger {
+  logger: Logger;
+}
+
 /**
  * Create a child logger with route-specific context
  */
@@ -223,12 +241,13 @@ export function createRouteLogger(
   request: FastifyRequest,
   moduleName: string
 ): Logger {
-  const logger = (request.server as any).logger as Logger;
-  
-  return logger.child({
-    requestId: (request as any).requestId,
-    tenantId: (request as any).tenantContext?.tenantId,
-    userId: (request as any).user?.userId,
+  const server = request.server as unknown as FastifyInstanceWithLogger;
+  const extReq = request as ExtendedFastifyRequest;
+
+  return server.logger.child({
+    requestId: extReq.requestId,
+    tenantId: extReq.tenantContext?.tenantId || extReq.user?.tid,
+    userId: extReq.user?.sub,
     module: moduleName,
   });
 }
@@ -242,12 +261,13 @@ export function logBusinessEvent(
   message: string,
   metadata?: Record<string, unknown>
 ): void {
-  const logger = (request.server as any).logger as Logger;
-  
-  logger.event(event, message, {
-    requestId: (request as any).requestId,
-    tenantId: (request as any).tenantContext?.tenantId,
-    userId: (request as any).user?.userId,
+  const server = request.server as unknown as FastifyInstanceWithLogger;
+  const extReq = request as ExtendedFastifyRequest;
+
+  server.logger.event(event, message, {
+    requestId: extReq.requestId,
+    tenantId: extReq.tenantContext?.tenantId || extReq.user?.tid,
+    userId: extReq.user?.sub,
     ...metadata,
   });
 }
@@ -263,14 +283,15 @@ export function logDbOperation(
   duration: number,
   metadata?: Record<string, unknown>
 ): void {
-  const logger = (request.server as any).logger as Logger;
-  
-  logger.dbOperation({
+  const server = request.server as unknown as FastifyInstanceWithLogger;
+  const extReq = request as ExtendedFastifyRequest;
+
+  server.logger.dbOperation({
     operation,
     model,
     action,
     duration,
-    tenantId: (request as any).tenantContext?.tenantId,
+    tenantId: extReq.tenantContext?.tenantId || extReq.user?.tid,
     ...metadata,
   });
 }
@@ -285,14 +306,14 @@ export function logLicenseCheck(
   valid: boolean,
   reason?: string
 ): void {
-  const logger = (request.server as any).logger as Logger;
-  
-  logger.licenseCheck({
-    tenantId: (request as any).tenantContext?.tenantId,
+  const server = request.server as unknown as FastifyInstanceWithLogger;
+  const extReq = request as ExtendedFastifyRequest;
+
+  server.logger.licenseCheck({
+    tenantId: extReq.tenantContext?.tenantId || extReq.user?.tid || '',
     tier,
     feature,
     valid,
     reason,
   });
 }
-

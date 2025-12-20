@@ -1,5 +1,5 @@
 import type { ApiResponse } from '@erp/shared-types';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, RouteShorthandOptions } from 'fastify';
 
 interface HealthCheck {
   status: 'healthy' | 'unhealthy';
@@ -8,32 +8,44 @@ interface HealthCheck {
   uptime: number;
 }
 
+// Extended schema type for OpenAPI compatibility
+interface RouteSchema extends RouteShorthandOptions {
+  schema?: {
+    description?: string;
+    tags?: string[];
+    response?: Record<number, unknown>;
+    security?: Array<{ bearerAuth?: string[] }>;
+  };
+}
+
 export async function healthRoutes(fastify: FastifyInstance) {
-  fastify.get<{ Reply: ApiResponse<HealthCheck> }>(
-    '/health',
-    {
-      schema: {
-        description: 'Health check endpoint',
-        tags: ['Health'],
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              success: { type: 'boolean' },
-              data: {
-                type: 'object',
-                properties: {
-                  status: { type: 'string' },
-                  timestamp: { type: 'string' },
-                  version: { type: 'string' },
-                  uptime: { type: 'number' },
-                },
+  const healthRouteOptions: RouteSchema = {
+    schema: {
+      description: 'Health check endpoint',
+      tags: ['Health'],
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                status: { type: 'string' },
+                timestamp: { type: 'string' },
+                version: { type: 'string' },
+                uptime: { type: 'number' },
               },
             },
           },
         },
-      } as any,
+      },
     },
+  };
+
+  fastify.get<{ Reply: ApiResponse<HealthCheck> }>(
+    '/health',
+    healthRouteOptions,
     async (_request, reply) => {
       const healthData: HealthCheck = {
         status: 'healthy',

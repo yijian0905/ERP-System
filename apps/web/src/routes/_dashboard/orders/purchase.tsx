@@ -16,8 +16,7 @@ import {
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -40,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
+import { useCanSkipApproval } from '@/stores/auth';
 
 // Search params type
 type PurchaseOrderSearch = {
@@ -206,7 +206,7 @@ const mockOrders: PurchaseOrder[] = [
     tax: 270.00,
     shipping: 200.00,
     total: 3470.00,
-    status: 'PARTIAL',
+    status: 'ORDERED',
     orderDate: '2024-12-01',
     expectedDate: '2024-12-08',
     receivedDate: null,
@@ -237,7 +237,6 @@ function PurchaseOrdersPage() {
   const [selectedWarehouseAddress, setSelectedWarehouseAddress] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [expectedDate, setExpectedDate] = useState('');
-  const [shippingCost, setShippingCost] = useState(0);
 
   // Modal states
   const [isPOModalOpen, setIsPOModalOpen] = useState(false);
@@ -258,13 +257,13 @@ function PurchaseOrdersPage() {
   });
 
   // Mock printers list (in real app, this would come from system/electron)
-  const availablePrinters = [
+  const availablePrinters = useMemo(() => [
     { id: 'default', name: 'System Default Printer' },
     { id: 'hp-office', name: 'HP OfficeJet Pro 9015' },
     { id: 'canon-lbp', name: 'Canon LBP6230' },
     { id: 'epson-wf', name: 'Epson WorkForce WF-2860' },
     { id: 'pdf', name: 'Save as PDF' },
-  ];
+  ], []);
 
   // Initialize from URL params (e.g., from inventory low stock alert)
   useEffect(() => {
@@ -395,7 +394,6 @@ function PurchaseOrdersPage() {
     setSelectedWarehouseAddress('');
     setOrderNotes('');
     setExpectedDate('');
-    setShippingCost(0);
   };
 
   // Generate PO number
@@ -406,6 +404,9 @@ function PurchaseOrdersPage() {
     const random = Math.floor(Math.random() * 10000).toString().padStart(5, '0');
     return `PO-${year}${month}-${random}`;
   };
+
+  // Check if user can skip approval workflow
+  const canSkipApproval = useCanSkipApproval();
 
   // Create PO from draft
   const handleCreatePO = async () => {
@@ -430,7 +431,7 @@ function PurchaseOrdersPage() {
       tax: 0,
       shipping: 0,
       total: draftTotal,
-      status: 'PENDING',
+      status: canSkipApproval ? 'ORDERED' : 'PENDING',
       orderDate: new Date().toISOString().split('T')[0],
       expectedDate: expectedDate || null,
       receivedDate: null,
@@ -465,14 +466,6 @@ function PurchaseOrdersPage() {
       }, 1500);
     }
   }, [selectedOrder]);
-
-  const handlePrint = useReactToPrint({
-    content: () => poPrintRef.current,
-    documentTitle: selectedOrder ? `PurchaseOrder-${selectedOrder.orderNumber}` : 'PurchaseOrder',
-    onBeforePrint: async () => setIsPrinting(true),
-    onAfterPrint: handleAfterPrint,
-    onPrintError: () => setIsPrinting(false),
-  });
 
   // Handle Print - uses Electron silent print or iframe for browser
   const handleSilentPrint = useCallback(async () => {

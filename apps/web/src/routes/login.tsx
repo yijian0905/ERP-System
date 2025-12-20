@@ -12,7 +12,7 @@ import { useAuthStore } from '@/stores/auth';
 import type { AuthUser } from '@/stores/auth';
 
 // Search params type
-interface LoginSearch {
+export interface LoginSearch {
     redirect?: string;
 }
 

@@ -1,15 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AlertCircle, ArrowLeft, CheckCircle, FileText, Info } from 'lucide-react';
 
 import { LhdnSettings } from '@/components/einvoice';
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { get, post, del } from '@/lib/api-client';
-
-export const Route = createFileRoute('/_dashboard/einvoice')({
-  component: EInvoicePage,
-});
 
 interface LhdnCredential {
   id: string;
@@ -22,30 +18,84 @@ interface LhdnCredential {
   isActive: boolean;
 }
 
-function EInvoicePage() {
-  const [credential, setCredential] = useState<LhdnCredential | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+// Simple in-memory cache for credentials
+let credentialCache: {
+  data: LhdnCredential | null;
+  timestamp: number;
+  promise: Promise<LhdnCredential | null> | null;
+} = {
+  data: null,
+  timestamp: 0,
+  promise: null,
+};
 
-  // Load credentials on mount
-  useEffect(() => {
-    const loadCredential = async () => {
-      setIsLoading(true);
-      try {
-        const response = await get<LhdnCredential>('/v1/einvoices/settings/credentials');
-        if (response.success && response.data) {
-          setCredential(response.data);
-        }
-      } catch (error) {
-        // 404 means no credentials configured, which is okay
-        console.log('No credentials configured yet');
-        setCredential(null);
-      } finally {
-        setIsLoading(false);
+const CACHE_TTL = 30000; // 30 seconds cache
+
+/**
+ * Fetch credentials with caching
+ */
+async function fetchCredentials(): Promise<LhdnCredential | null> {
+  const now = Date.now();
+
+  // Return cached data if still valid
+  if (credentialCache.data !== null && now - credentialCache.timestamp < CACHE_TTL) {
+    return credentialCache.data;
+  }
+
+  // If there's already a request in flight, wait for it
+  if (credentialCache.promise) {
+    return credentialCache.promise;
+  }
+
+  // Start new request
+  credentialCache.promise = (async () => {
+    try {
+      const response = await get<LhdnCredential>('/v1/einvoices/settings/credentials');
+      if (response.success && response.data) {
+        credentialCache.data = response.data;
+        credentialCache.timestamp = Date.now();
+        return response.data;
       }
-    };
+      // Not found is okay - means no credentials configured
+      credentialCache.data = null;
+      credentialCache.timestamp = Date.now();
+      return null;
+    } catch {
+      // 404 means no credentials configured, which is okay
+      credentialCache.data = null;
+      credentialCache.timestamp = Date.now();
+      return null;
+    } finally {
+      credentialCache.promise = null;
+    }
+  })();
 
-    loadCredential();
-  }, []);
+  return credentialCache.promise;
+}
+
+/**
+ * Invalidate credential cache (call after save/delete)
+ */
+function invalidateCredentialCache() {
+  credentialCache.data = null;
+  credentialCache.timestamp = 0;
+  credentialCache.promise = null;
+}
+
+export const Route = createFileRoute('/_dashboard/einvoice')({
+  // Prefetch data before navigation completes - this starts loading immediately
+  loader: async () => {
+    // Start fetching credentials in parallel with route transition
+    const credential = await fetchCredentials();
+    return { credential };
+  },
+  component: EInvoicePage,
+});
+
+function EInvoicePage() {
+  // Get preloaded data from route loader
+  const loaderData = Route.useLoaderData();
+  const [credential, setCredential] = useState<LhdnCredential | null>(loaderData.credential);
 
   const handleSave = useCallback(async (data: {
     clientId: string;
@@ -60,6 +110,7 @@ function EInvoicePage() {
     const response = await post<LhdnCredential>('/v1/einvoices/settings/credentials', data);
 
     if (response.success && response.data) {
+      invalidateCredentialCache(); // Clear cache so next navigation gets fresh data
       setCredential(response.data);
     }
   }, []);
@@ -81,30 +132,9 @@ function EInvoicePage() {
   const handleDelete = useCallback(async () => {
     console.log('🗑️ Deleting LHDN credentials...');
     await del('/v1/einvoices/settings/credentials');
+    invalidateCredentialCache(); // Clear cache so next navigation gets fresh data
     setCredential(null);
   }, []);
-
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <PageHeader
-          title="E-Invoice (LHDN)"
-          description="Configure LHDN MyInvois integration"
-          actions={
-            <Button variant="outline" onClick={() => window.history.back()}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Return
-            </Button>
-          }
-        />
-        <DashboardCard>
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-pulse text-muted-foreground">Loading...</div>
-          </div>
-        </DashboardCard>
-      </PageContainer>
-    );
-  }
 
   return (
     <PageContainer>

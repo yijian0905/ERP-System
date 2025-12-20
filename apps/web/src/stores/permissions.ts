@@ -147,6 +147,12 @@ export const PERMISSION_CATEGORIES = {
       'audit.export': 'Export Audit Logs',
     },
   },
+  workflow: {
+    label: 'Workflow',
+    permissions: {
+      'workflow.skipApproval': 'Skip Approval Workflow (Auto-approve all operations)',
+    },
+  },
 } as const;
 
 /**
@@ -411,10 +417,10 @@ export const usePermissionsStore = create<PermissionsStore>()(
       },
 
       updateUserRole: (id, role, customPermissions) => {
-        const permissions = role === 'CUSTOM' 
+        const permissions = role === 'CUSTOM'
           ? (customPermissions || [])
           : ROLE_PERMISSIONS[role];
-        
+
         set((state) => ({
           users: state.users.map((u) =>
             u.id === id ? { ...u, role, permissions } : u
@@ -440,12 +446,12 @@ export const usePermissionsStore = create<PermissionsStore>()(
       canAccessPath: (path) => {
         const { currentUserPermissions } = get();
         const requiredPermissions = PATH_PERMISSIONS[path];
-        
+
         // If no permissions defined for path, allow access
         if (!requiredPermissions || requiredPermissions.length === 0) {
           return true;
         }
-        
+
         // Check if user has any of the required permissions
         return requiredPermissions.some((p) => currentUserPermissions.includes(p));
       },

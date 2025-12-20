@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { getTenantId } from '../../middleware/auth.js';
 import { mockCustomers as globalMockCustomers } from '../../data/mock-data.js';
+import { authRouteOptions } from '../../types/fastify-schema.js';
 
 // Types
 interface Customer {
@@ -74,13 +75,7 @@ export async function customersRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<Customer[]>;
   }>(
     '/',
-    {
-      schema: {
-        description: 'List all customers with pagination',
-        tags: ['Customers'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('List all customers with pagination', ['Customers']),
     async (request, reply) => {
       const params = paginationSchema.parse(request.query);
       const tenantId = getTenantId(request);
@@ -131,13 +126,7 @@ export async function customersRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<Customer>;
   }>(
     '/:id',
-    {
-      schema: {
-        description: 'Get a customer by ID',
-        tags: ['Customers'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Get a customer by ID', ['Customers']),
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
       const tenantId = getTenantId(request);
@@ -170,13 +159,7 @@ export async function customersRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<Customer>;
   }>(
     '/',
-    {
-      schema: {
-        description: 'Create a new customer',
-        tags: ['Customers'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Create a new customer', ['Customers']),
     async (request, reply) => {
       const validation = createCustomerSchema.safeParse(request.body);
       if (!validation.success) {
@@ -230,13 +213,7 @@ export async function customersRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<Customer>;
   }>(
     '/:id',
-    {
-      schema: {
-        description: 'Update a customer',
-        tags: ['Customers'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Update a customer', ['Customers']),
     async (request: FastifyRequest<{ Params: { id: string }; Body: z.infer<typeof updateCustomerSchema> }>, reply: FastifyReply) => {
       const { id } = request.params;
       const tenantId = getTenantId(request);
@@ -288,13 +265,7 @@ export async function customersRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<{ message: string }>;
   }>(
     '/:id',
-    {
-      schema: {
-        description: 'Delete a customer (soft delete)',
-        tags: ['Customers'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Delete a customer (soft delete)', ['Customers']),
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
       const tenantId = getTenantId(request);

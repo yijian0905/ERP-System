@@ -5,7 +5,6 @@ import {
   Calendar,
   CheckCircle,
   Lightbulb,
-  Loader2,
   Package,
   RefreshCw,
   Sparkles,
@@ -33,6 +32,13 @@ import {
   StatsCard,
 } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
+import {
+  Skeleton,
+  StatsCardSkeleton,
+  ChartSkeleton,
+  ListItemSkeleton,
+  InsightCardSkeleton,
+} from '@/components/ui/skeleton';
 import {
   exportData,
   getExportTimestamp,
@@ -73,8 +79,8 @@ interface ProductForecast {
   forecastDemand: number;
   daysOfStock: number;
   recommendation: string;
-  reorderPoint?: number;
-  orderQuantity?: number;
+  reorderPoint: number;
+  orderQuantity: number;
 }
 
 // Type re-export for local usage
@@ -89,12 +95,16 @@ const periodToDays: Record<ForecastPeriod, number> = {
 };
 
 function ForecastingPage() {
-  const [forecastPeriod, setForecastPeriod] = useState('4weeks');
+  const [forecastPeriod, setForecastPeriod] = useState<ForecastPeriod>('4weeks');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [aiServiceAvailable, setAiServiceAvailable] = useState(false);
+  const [aiServiceAvailable, setAiServiceAvailable] = useState<boolean | null>(null);
+
+  // Progressive loading states - each section loads independently
+  const [isLoadingDemand, setIsLoadingDemand] = useState(true);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(true);
 
   // Data states
   const [demandForecast, setDemandForecast] = useState<DemandForecastItem[]>([]);
@@ -103,118 +113,137 @@ function ForecastingPage() {
   const [insights, setInsights] = useState<AIInsight[]>([]);
   const [forecastAccuracy, setForecastAccuracy] = useState(0);
 
-  // Load forecasting data
-  const loadForecastingData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Load health check (fast, non-blocking)
+  const loadHealthCheck = useCallback(async () => {
+    try {
+      const health = await forecastingApi.checkHealth();
+      setAiServiceAvailable(health.available);
+    } catch {
+      setAiServiceAvailable(false);
+    }
+  }, []);
+
+  // Load demand forecast data
+  const loadDemandData = useCallback(async () => {
+    setIsLoadingDemand(true);
+    const days = periodToDays[forecastPeriod as ForecastPeriod] || 28;
 
     try {
-      // Check AI service health
-      try {
-        const health = await forecastingApi.checkHealth();
-        setAiServiceAvailable(health.available);
-      } catch {
-        setAiServiceAvailable(false);
+      const forecastResponse = await forecastingApi.getDemandForecast(
+        mockProducts[0].id,
+        days,
+        true
+      );
+
+      // Transform predictions to chart format
+      const chartData: DemandForecastItem[] = forecastResponse.predictions.map((pred, index) => ({
+        date: index < 4 ? `Week ${index + 1}` : pred.date,
+        actual: index < 4 ? Math.round((pred.predicted_demand || 0) * (0.9 + Math.random() * 0.2)) : null,
+        forecast: Math.round(pred.predicted_demand || 0),
+        lower: Math.round(pred.lower_bound || pred.predicted_demand * 0.85),
+        upper: Math.round(pred.upper_bound || pred.predicted_demand * 1.15),
+      }));
+
+      // Group by week for display
+      const weeklyData: DemandForecastItem[] = [];
+      const weeksToShow = Math.min(8, Math.ceil(chartData.length / 7));
+      for (let i = 0; i < weeksToShow; i++) {
+        const weekStart = i * 7;
+        const weekEnd = Math.min(weekStart + 7, chartData.length);
+        const weekData = chartData.slice(weekStart, weekEnd);
+
+        if (weekData.length > 0) {
+          const avgForecast = weekData.reduce((sum, d) => sum + d.forecast, 0) / weekData.length;
+          const avgLower = weekData.reduce((sum, d) => sum + d.lower, 0) / weekData.length;
+          const avgUpper = weekData.reduce((sum, d) => sum + d.upper, 0) / weekData.length;
+
+          weeklyData.push({
+            date: `Week ${i + 1}`,
+            actual: i < 4 ? Math.round(avgForecast * (0.95 + Math.random() * 0.1)) : null,
+            forecast: Math.round(avgForecast),
+            lower: Math.round(avgLower),
+            upper: Math.round(avgUpper),
+          });
+        }
       }
 
-      const days = periodToDays[forecastPeriod] || 28;
+      setDemandForecast(weeklyData);
 
-      // Get demand forecast for first product
-      try {
-        const forecastResponse = await forecastingApi.getDemandForecast(
-          mockProducts[0].id,
-          days,
-          true
-        );
-
-        // Transform predictions to chart format
-        const chartData: DemandForecastItem[] = forecastResponse.predictions.map((pred, index) => ({
-          date: index < 4 ? `Week ${index + 1}` : pred.date,
-          actual: index < 4 ? Math.round((pred.predicted_demand || 0) * (0.9 + Math.random() * 0.2)) : null,
-          forecast: Math.round(pred.predicted_demand || 0),
-          lower: Math.round(pred.lower_bound || pred.predicted_demand * 0.85),
-          upper: Math.round(pred.upper_bound || pred.predicted_demand * 1.15),
-        }));
-
-        // Group by week for display
-        const weeklyData: DemandForecastItem[] = [];
-        const weeksToShow = Math.min(8, Math.ceil(chartData.length / 7));
-        for (let i = 0; i < weeksToShow; i++) {
-          const weekStart = i * 7;
-          const weekEnd = Math.min(weekStart + 7, chartData.length);
-          const weekData = chartData.slice(weekStart, weekEnd);
-
-          if (weekData.length > 0) {
-            const avgForecast = weekData.reduce((sum, d) => sum + d.forecast, 0) / weekData.length;
-            const avgLower = weekData.reduce((sum, d) => sum + d.lower, 0) / weekData.length;
-            const avgUpper = weekData.reduce((sum, d) => sum + d.upper, 0) / weekData.length;
-
-            weeklyData.push({
-              date: `Week ${i + 1}`,
-              actual: i < 4 ? Math.round(avgForecast * (0.95 + Math.random() * 0.1)) : null,
-              forecast: Math.round(avgForecast),
-              lower: Math.round(avgLower),
-              upper: Math.round(avgUpper),
-            });
-          }
-        }
-
-        setDemandForecast(weeklyData);
-
-        // Set accuracy from model metrics
-        if (forecastResponse.model_metrics?.r2) {
-          setForecastAccuracy(Math.round(forecastResponse.model_metrics.r2 * 100));
-        }
-      } catch (err) {
-        console.error('Failed to load demand forecast:', err);
+      // Set accuracy from model metrics
+      if (forecastResponse.model_metrics?.r2) {
+        setForecastAccuracy(Math.round(forecastResponse.model_metrics.r2 * 100));
       }
-
-      // Get stock optimization for each product
-      const productForecastPromises = mockProducts.map(async (product) => {
-        try {
-          const optimization = await forecastingApi.getStockOptimization(
-            product.id,
-            product.currentStock,
-            7,
-            0.95
-          );
-
-          return {
-            id: product.id,
-            name: product.name,
-            sku: product.sku,
-            currentStock: product.currentStock,
-            forecastDemand: Math.round(optimization.metrics?.avg_daily_demand || 0 * 30),
-            daysOfStock: optimization.days_of_stock || 0,
-            recommendation: optimization.current_status,
-            reorderPoint: optimization.recommended_reorder_point,
-            orderQuantity: optimization.recommended_order_quantity,
-          };
-        } catch (err) {
-          console.error(`Failed to optimize stock for ${product.sku}:`, err);
-          return null;
-        }
-      });
-
-      const productResults = await Promise.all(productForecastPromises);
-      const validProducts = productResults.filter((p): p is ProductForecast => p !== null);
-      setProductForecasts(validProducts);
-
-      // Get AI insights
-      try {
-        const insightsResponse = await forecastingApi.getInsights();
-        setInsights(insightsResponse.insights);
-      } catch (err) {
-        console.error('Failed to load insights:', err);
-      }
-
     } catch (err) {
-      console.error('Failed to load forecasting data:', err);
-      setError('Failed to load forecasting data. Please try again.');
+      console.error('Failed to load demand forecast:', err);
+      setError('Failed to load demand forecast.');
     } finally {
-      setIsLoading(false);
+      setIsLoadingDemand(false);
     }
   }, [forecastPeriod]);
+
+  // Load product forecasts using bulk API (1 call instead of N calls)
+  const loadProductData = useCallback(async () => {
+    setIsLoadingProducts(true);
+
+    try {
+      // Use bulk endpoint - single API call for all products
+      const bulkResponse = await forecastingApi.bulkStockOptimization(
+        mockProducts.map(product => ({
+          product_id: product.id,
+          current_stock: product.currentStock,
+          lead_time_days: 7,
+          service_level: 0.95,
+        }))
+      );
+
+      // Transform results to ProductForecast format
+      const validProducts: ProductForecast[] = bulkResponse.results
+        .filter(result => result.status === 'success')
+        .map(result => {
+          const product = mockProducts.find(p => p.id === result.product_id);
+          return {
+            id: result.product_id,
+            name: product?.name || 'Unknown',
+            sku: product?.sku || 'N/A',
+            currentStock: product?.currentStock || 0,
+            forecastDemand: Math.round((result.metrics?.avg_daily_demand || 0) * 30),
+            daysOfStock: result.days_of_stock || 0,
+            recommendation: result.current_status || 'adequate',
+            reorderPoint: result.recommended_reorder_point || 0,
+            orderQuantity: result.recommended_order_quantity || 0,
+          };
+        });
+      setProductForecasts(validProducts);
+    } catch (err) {
+      console.error('Failed to load product forecasts:', err);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  }, []);
+
+  // Load AI insights
+  const loadInsightsData = useCallback(async () => {
+    setIsLoadingInsights(true);
+
+    try {
+      const insightsResponse = await forecastingApi.getInsights();
+      setInsights(insightsResponse.insights);
+    } catch (err) {
+      console.error('Failed to load insights:', err);
+    } finally {
+      setIsLoadingInsights(false);
+    }
+  }, []);
+
+  // Load all data in parallel (progressive loading)
+  const loadForecastingData = useCallback(async () => {
+    setError(null);
+    // Fire all requests in parallel - each section loads independently
+    loadHealthCheck();
+    loadDemandData();
+    loadProductData();
+    loadInsightsData();
+  }, [loadHealthCheck, loadDemandData, loadProductData, loadInsightsData]);
 
   // Initial load
   useEffect(() => {
@@ -295,23 +324,6 @@ function ForecastingPage() {
     }
   }, [demandForecast, productForecasts, seasonalTrends]);
 
-  // Loading state
-  if (isLoading && demandForecast.length === 0) {
-    return (
-      <PageContainer>
-        <PageHeader
-          title="Demand Forecasting"
-          description="AI-powered demand prediction and inventory optimization"
-        />
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-            <p className="mt-4 text-muted-foreground">Loading forecasting data...</p>
-          </div>
-        </div>
-      </PageContainer>
-    );
-  }
 
   return (
     <PageContainer>
@@ -322,7 +334,7 @@ function ForecastingPage() {
           <div className="flex gap-2">
             <FilterSelect
               value={forecastPeriod}
-              onChange={setForecastPeriod}
+              onChange={(val) => setForecastPeriod(val as ForecastPeriod)}
               options={[
                 { value: '2weeks', label: '2 Weeks' },
                 { value: '4weeks', label: '4 Weeks' },
@@ -370,7 +382,12 @@ function ForecastingPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {aiServiceAvailable ? (
+            {aiServiceAvailable === null ? (
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Skeleton className="h-4 w-4 rounded-full" />
+                Checking...
+              </span>
+            ) : aiServiceAvailable ? (
               <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
                 <CheckCircle className="h-4 w-4" />
                 AI Service Online
@@ -387,40 +404,58 @@ function ForecastingPage() {
 
       {/* Stats */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Forecast Accuracy"
-          value={`${forecastAccuracy}%`}
-          change="Last 30 days"
-          changeType="positive"
-          icon={TrendingUp}
-        />
-        <StatsCard
-          title="Urgent Reorders"
-          value={urgentItems.toString()}
-          change="Needs immediate action"
-          changeType={urgentItems > 0 ? 'negative' : 'positive'}
-          icon={AlertTriangle}
-        />
-        <StatsCard
-          title="Order Recommendations"
-          value={orderNowItems.toString()}
-          change="Items to reorder"
-          changeType="neutral"
-          icon={Package}
-        />
-        <StatsCard
-          title="Products Analyzed"
-          value={productForecasts.length.toString()}
-          change="With AI optimization"
-          changeType="positive"
-          icon={BarChart3}
-        />
+        {isLoadingDemand ? (
+          <StatsCardSkeleton />
+        ) : (
+          <StatsCard
+            title="Forecast Accuracy"
+            value={`${forecastAccuracy}%`}
+            change="Last 30 days"
+            changeType="positive"
+            icon={TrendingUp}
+          />
+        )}
+        {isLoadingProducts ? (
+          <StatsCardSkeleton />
+        ) : (
+          <StatsCard
+            title="Urgent Reorders"
+            value={urgentItems.toString()}
+            change="Needs immediate action"
+            changeType={urgentItems > 0 ? 'negative' : 'positive'}
+            icon={AlertTriangle}
+          />
+        )}
+        {isLoadingProducts ? (
+          <StatsCardSkeleton />
+        ) : (
+          <StatsCard
+            title="Order Recommendations"
+            value={orderNowItems.toString()}
+            change="Items to reorder"
+            changeType="neutral"
+            icon={Package}
+          />
+        )}
+        {isLoadingProducts ? (
+          <StatsCardSkeleton />
+        ) : (
+          <StatsCard
+            title="Products Analyzed"
+            value={productForecasts.length.toString()}
+            change="With AI optimization"
+            changeType="positive"
+            icon={BarChart3}
+          />
+        )}
       </div>
 
       {/* Demand Forecast Chart */}
       <DashboardCard title="Demand Forecast" description="Predicted vs actual demand with confidence intervals" className="mb-6">
         <div className="h-80">
-          {demandForecast.length > 0 ? (
+          {isLoadingDemand ? (
+            <ChartSkeleton className="h-full" />
+          ) : demandForecast.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={demandForecast}>
                 <XAxis
@@ -505,7 +540,13 @@ function ForecastingPage() {
         {/* Product Recommendations */}
         <DashboardCard title="Stock Recommendations" description="AI-driven reorder suggestions">
           <div className="space-y-3">
-            {productForecasts.length > 0 ? (
+            {isLoadingProducts ? (
+              <>
+                <ListItemSkeleton />
+                <ListItemSkeleton />
+                <ListItemSkeleton />
+              </>
+            ) : productForecasts.length > 0 ? (
               productForecasts.map((product) => {
                 const recStyle = recommendationStyles[product.recommendation as keyof typeof recommendationStyles] ||
                   { label: product.recommendation, color: 'bg-gray-100 text-gray-700' };
@@ -599,7 +640,13 @@ function ForecastingPage() {
       {/* AI Insights */}
       <DashboardCard title="AI Insights" description="Automated recommendations based on data analysis">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {insights.length > 0 ? (
+          {isLoadingInsights ? (
+            <>
+              <InsightCardSkeleton />
+              <InsightCardSkeleton />
+              <InsightCardSkeleton />
+            </>
+          ) : insights.length > 0 ? (
             insights.map((insight, index) => {
               const bgColors: Record<string, string> = {
                 warning: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900',

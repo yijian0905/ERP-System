@@ -5,6 +5,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), TanStackRouterVite()],
+  // Use relative paths for Electron file:// protocol compatibility
+  base: './',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -28,4 +30,5 @@ export default defineConfig({
     sourcemap: true,
   },
 });
+
 

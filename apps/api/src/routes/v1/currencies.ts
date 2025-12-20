@@ -14,6 +14,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import { getTenantId } from '../../middleware/auth.js';
+import { type OpenAPIRouteOptions } from '../../types/fastify-schema.js';
 
 // Validation schemas
 const createCurrencySchema = z.object({
@@ -244,14 +245,14 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
             activeOnly: { type: 'boolean', default: true },
           },
         },
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request, reply) => {
       const params = paginationSchema.parse(request.query);
       const tenantId = getTenantId(request);
 
       // Filter by tenant and active status
-      let filteredCurrencies = mockCurrencies.filter((c) => 
+      let filteredCurrencies = mockCurrencies.filter((c) =>
         c.tenantId === tenantId && (!params.activeOnly || c.isActive)
       );
 
@@ -307,7 +308,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Get the base currency for the tenant',
         tags: ['Currencies'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request, reply) => {
       const tenantId = getTenantId(request);
@@ -344,7 +345,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
             id: { type: 'string' },
           },
         },
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
@@ -383,7 +384,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Create a new currency',
         tags: ['Currencies'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request: FastifyRequest<{ Body: CreateCurrencyRequest }>, reply: FastifyReply) => {
       const validation = createCurrencySchema.safeParse(request.body);
@@ -464,7 +465,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Update a currency',
         tags: ['Currencies'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (
       request: FastifyRequest<{ Params: { id: string }; Body: UpdateCurrencyRequest }>,
@@ -552,7 +553,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Delete a currency (soft delete)',
         tags: ['Currencies'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
@@ -611,13 +612,13 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'List all exchange rates with pagination',
         tags: ['Currencies', 'Exchange Rates'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request, reply) => {
       const params = paginationSchema.parse(request.query);
       const tenantId = getTenantId(request);
 
-      const filteredRates = mockExchangeRates.filter((r) => 
+      const filteredRates = mockExchangeRates.filter((r) =>
         r.tenantId === tenantId && (!params.activeOnly || r.isActive)
       );
 
@@ -662,7 +663,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Get exchange rate between two currencies',
         tags: ['Currencies', 'Exchange Rates'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request, reply) => {
       const { fromCode, toCode } = request.params;
@@ -713,7 +714,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
 
       // Find direct rate or inverse rate
       const targetDate = date ? new Date(date) : new Date();
-      
+
       let exchangeRate = mockExchangeRates.find(
         (r) =>
           r.tenantId === tenantId &&
@@ -784,7 +785,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Create a new exchange rate',
         tags: ['Currencies', 'Exchange Rates'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request: FastifyRequest<{ Body: CreateExchangeRateRequest }>, reply: FastifyReply) => {
       const validation = createExchangeRateSchema.safeParse(request.body);
@@ -876,7 +877,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Update an exchange rate',
         tags: ['Currencies', 'Exchange Rates'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (
       request: FastifyRequest<{ Params: { id: string }; Body: UpdateExchangeRateRequest }>,
@@ -913,13 +914,14 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
       const data = validation.data;
 
       // Recalculate inverse rate if rate changed
+      const updateData: typeof data & { inverseRate?: number } = { ...data };
       if (data.rate !== undefined) {
-        (data as any).inverseRate = Number((1 / data.rate).toFixed(8));
+        updateData.inverseRate = Number((1 / data.rate).toFixed(8));
       }
 
       mockExchangeRates[rateIndex] = {
         ...mockExchangeRates[rateIndex],
-        ...data,
+        ...updateData,
         updatedAt: new Date().toISOString(),
       };
 
@@ -955,7 +957,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Delete an exchange rate',
         tags: ['Currencies', 'Exchange Rates'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
@@ -1002,7 +1004,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Convert amount between currencies',
         tags: ['Currencies'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request: FastifyRequest<{ Body: CurrencyConversionRequest }>, reply: FastifyReply) => {
       const validation = conversionSchema.safeParse(request.body);
@@ -1056,7 +1058,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
 
       // Find exchange rate
       const targetDate = date ? new Date(date) : new Date();
-      
+
       const exchangeRate = mockExchangeRates.find(
         (r) =>
           r.tenantId === tenantId &&
@@ -1137,11 +1139,11 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         description: 'Convert multiple amounts between currencies',
         tags: ['Currencies'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
     },
     async (request: FastifyRequest<{ Body: CurrencyConversionRequest[] }>, reply: FastifyReply) => {
       const conversions = request.body;
-      
+
       if (!Array.isArray(conversions) || conversions.length === 0) {
         return reply.status(400).send({
           success: false,
@@ -1197,7 +1199,7 @@ export async function currenciesRoutes(fastify: FastifyInstance) {
         }
 
         const targetDate = date ? new Date(date) : new Date();
-        
+
         const exchangeRate = mockExchangeRates.find(
           (r) =>
             r.tenantId === tenantId &&

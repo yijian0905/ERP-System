@@ -16,8 +16,50 @@ import {
   checkAIServiceHealth,
   getAIInsights,
   bulkForecast,
+  bulkOptimizeStock,
 } from '../../services/ai/index.js';
 import { logger } from '../../lib/logger.js';
+import { type OpenAPIRouteOptions } from '../../types/fastify-schema.js';
+
+// Response types
+interface ForecastDemandResponse {
+  product_id: string;
+  forecast_days: number;
+  predictions: Array<{ date: string; predicted_demand: number }>;
+  model_metrics?: Record<string, number>;
+}
+
+interface StockOptimizationResponse {
+  product_id: string;
+  recommended_reorder_point: number;
+  recommended_order_quantity: number;
+  current_status: string;
+  risk_level: string;
+  suggestions: string[];
+}
+
+interface SeasonalPatternResponse {
+  product_id: string;
+  seasonal_patterns: Array<{ type: string; description: string }>;
+  seasonality_indices: Record<string, number>;
+}
+
+interface AIInsightsResponse {
+  generated_at: string;
+  insights_count: number;
+  insights: Array<{ type: string; title: string; message: string; priority: string; category: string }>;
+  summary: { high_priority: number; medium_priority: number; low_priority: number };
+  fallback?: boolean;
+}
+
+interface BulkForecastResponse {
+  tenant_id: string;
+  forecast_days: number;
+  total_products: number;
+  successful: number;
+  failed: number;
+  results: Array<{ product_id: string; status: string }>;
+}
 
 // Validation schemas
 const forecastDemandSchema = z.object({
@@ -45,7 +87,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
    */
   fastify.post<{
     Body: z.infer<typeof forecastDemandSchema>;
-    Reply: ApiResponse<any>;
+    Reply: ApiResponse<ForecastDemandResponse>;
   }>(
     '/demand',
     {
@@ -62,7 +104,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
             include_confidence: { type: 'boolean', default: false },
           },
         },
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
       preHandler: [requireTier('L2', 'L3'), requireFeature('demandForecasting')],
     },
     async (request: FastifyRequest<{ Body: z.infer<typeof forecastDemandSchema> }>, reply: FastifyReply) => {
@@ -125,7 +167,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
    */
   fastify.post<{
     Body: z.infer<typeof stockOptimizationSchema>;
-    Reply: ApiResponse<any>;
+    Reply: ApiResponse<StockOptimizationResponse>;
   }>(
     '/stock-optimization',
     {
@@ -143,7 +185,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
             service_level: { type: 'number', minimum: 0, maximum: 1, default: 0.95 },
           },
         },
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
       preHandler: [requireTier('L2', 'L3'), requireFeature('demandForecasting')],
     },
     async (request: FastifyRequest<{ Body: z.infer<typeof stockOptimizationSchema> }>, reply: FastifyReply) => {
@@ -207,7 +249,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
    */
   fastify.post<{
     Body: z.infer<typeof seasonalPatternSchema>;
-    Reply: ApiResponse<any>;
+    Reply: ApiResponse<SeasonalPatternResponse>;
   }>(
     '/seasonal-patterns',
     {
@@ -223,7 +265,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
             years: { type: 'number', minimum: 1, maximum: 5, default: 2 },
           },
         },
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
       preHandler: [requireTier('L2', 'L3'), requireFeature('demandForecasting')],
     },
     async (request: FastifyRequest<{ Body: z.infer<typeof seasonalPatternSchema> }>, reply: FastifyReply) => {
@@ -292,7 +334,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
         description: 'Check AI service health status',
         tags: ['Forecasting', 'AI'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
       preHandler: [requireTier('L2', 'L3')],
     },
     async (_request: FastifyRequest, reply: FastifyReply) => {
@@ -326,7 +368,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
    * Get AI-generated insights
    */
   fastify.get<{
-    Reply: ApiResponse<any>;
+    Reply: ApiResponse<AIInsightsResponse>;
   }>(
     '/insights',
     {
@@ -334,7 +376,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
         description: 'Get AI-generated insights and recommendations',
         tags: ['Forecasting', 'AI'],
         security: [{ bearerAuth: [] }],
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
       preHandler: [requireTier('L2', 'L3'), requireFeature('demandForecasting')],
     },
     async (_request: FastifyRequest, reply: FastifyReply) => {
@@ -403,7 +445,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
    */
   fastify.post<{
     Body: { product_ids: string[]; forecast_days?: number };
-    Reply: ApiResponse<any>;
+    Reply: ApiResponse<BulkForecastResponse>;
   }>(
     '/bulk',
     {
@@ -424,7 +466,7 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
             forecast_days: { type: 'number', minimum: 1, maximum: 90, default: 30 },
           },
         },
-      } as any,
+      } as OpenAPIRouteOptions['schema'],
       preHandler: [requireTier('L2', 'L3'), requireFeature('demandForecasting')],
     },
     async (request: FastifyRequest<{ Body: { product_ids: string[]; forecast_days?: number } }>, reply: FastifyReply) => {
@@ -462,6 +504,109 @@ export async function forecastingRoutes(fastify: FastifyInstance) {
           error: {
             code: 'BULK_FORECAST_ERROR',
             message: 'Failed to generate bulk forecast',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          },
+        });
+      }
+    }
+  );
+
+  /**
+   * POST /api/v1/forecasting/bulk-stock-optimization
+   * Bulk stock optimization for multiple products
+   */
+  fastify.post<{
+    Body: {
+      products: Array<{
+        product_id: string;
+        current_stock: number;
+        lead_time_days?: number;
+        service_level?: number;
+      }>;
+    };
+    Reply: ApiResponse<{
+      tenant_id: string;
+      total_products: number;
+      successful: number;
+      failed: number;
+      results: Array<{
+        product_id: string;
+        status: string;
+        recommended_reorder_point?: number;
+        recommended_order_quantity?: number;
+        current_status?: string;
+        risk_level?: string;
+        days_of_stock?: number;
+        suggestions?: string[];
+        metrics?: Record<string, number>;
+        error?: string;
+      }>;
+    }>;
+  }>(
+    '/bulk-stock-optimization',
+    {
+      schema: {
+        description: 'Bulk stock optimization for multiple products (reduces API calls)',
+        tags: ['Forecasting', 'AI'],
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: 'object',
+          required: ['products'],
+          properties: {
+            products: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['product_id', 'current_stock'],
+                properties: {
+                  product_id: { type: 'string', format: 'uuid' },
+                  current_stock: { type: 'number', minimum: 0 },
+                  lead_time_days: { type: 'number', minimum: 1, maximum: 90, default: 7 },
+                  service_level: { type: 'number', minimum: 0, maximum: 1, default: 0.95 },
+                },
+              },
+              minItems: 1,
+              maxItems: 50,
+            },
+          },
+        },
+      } as OpenAPIRouteOptions['schema'],
+      preHandler: [requireTier('L2', 'L3'), requireFeature('demandForecasting')],
+    },
+    async (request: FastifyRequest<{ Body: { products: Array<{ product_id: string; current_stock: number; lead_time_days?: number; service_level?: number }> } }>, reply: FastifyReply) => {
+      const tenantId = getTenantId(request);
+      const { products } = request.body;
+
+      try {
+        const isAIServiceAvailable = await checkAIServiceHealth();
+
+        if (!isAIServiceAvailable) {
+          return reply.status(503).send({
+            success: false,
+            error: {
+              code: 'AI_SERVICE_UNAVAILABLE',
+              message: 'AI service is currently unavailable',
+            },
+          });
+        }
+
+        const bulkResponse = await bulkOptimizeStock({
+          products,
+          tenant_id: tenantId,
+        });
+
+        return reply.send({
+          success: true,
+          data: bulkResponse,
+        });
+      } catch (error) {
+        logger.error('Failed to bulk optimize stock', { error, products, tenantId });
+
+        return reply.status(500).send({
+          success: false,
+          error: {
+            code: 'BULK_OPTIMIZATION_ERROR',
+            message: 'Failed to bulk optimize stock',
             details: error instanceof Error ? error.message : 'Unknown error',
           },
         });

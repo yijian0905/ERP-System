@@ -47,7 +47,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { useUser } from '@/stores/auth';
+import { useUser, useCanSkipApproval } from '@/stores/auth';
 
 export const Route = createFileRoute('/_dashboard/requisitions')({
   component: RequisitionsPage,
@@ -440,6 +440,9 @@ function RequisitionsPage() {
     }));
   };
 
+  // Check if user can skip approval workflow
+  const canSkipApproval = useCanSkipApproval();
+
   // Calculate form total
   const formTotal = formData.items.reduce((sum, item) => sum + item.totalCost, 0);
 
@@ -449,10 +452,22 @@ function RequisitionsPage() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const costCenter = mockCostCenters.find((cc) => cc.id === formData.costCenterId);
+
+    // Determine status: If not draft and user can skip approval, auto-approve
+    let status: RequisitionStatus = asDraft ? 'DRAFT' : 'PENDING';
+    let approvedBy: string | null = null;
+    let approvedDate: string | null = null;
+
+    if (!asDraft && canSkipApproval) {
+      status = 'APPROVED';
+      approvedBy = user?.name || 'System (Auto-approved)';
+      approvedDate = new Date().toISOString().split('T')[0];
+    }
+
     const newRequisition: Requisition = {
       id: String(requisitions.length + 1),
       requisitionNumber: generateRequisitionNumber(),
-      status: asDraft ? 'DRAFT' : 'PENDING',
+      status,
       priority: formData.priority,
       requestedBy: user?.name || 'Unknown User',
       requestedByDept: costCenter?.department || '',
@@ -464,8 +479,8 @@ function RequisitionsPage() {
       totalCost: formTotal,
       requestDate: new Date().toISOString().split('T')[0],
       requiredDate: formData.requiredDate,
-      approvedBy: null,
-      approvedDate: null,
+      approvedBy,
+      approvedDate,
       fulfilledDate: null,
       rejectionReason: null,
       notes: formData.notes,

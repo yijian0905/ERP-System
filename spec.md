@@ -65,6 +65,97 @@ The product is monetized via **License Keys**, which resolve into **capabilities
 
 ---
 
+## 🔌 IPC 與 Port 通訊架構
+
+### 設計原則
+
+Desktop 應用的通訊架構遵循「最小暴露面」原則：
+
+| 通訊類型 | 適用場景 | 是否暴露 Port |
+|---------|---------|:-------------:|
+| **IPC** | Renderer ↔ Main Process 內部通訊 | ❌ |
+| **Outbound HTTP** | Main Process → 外部服務器 | ❌ |
+| **Localhost Port** | 外部程序 → Desktop App | ✅ |
+
+---
+
+### IPC (Inter-Process Communication)
+
+**用途**：Electron 應用內部通訊，負責 UI 與核心邏輯、本機資源及外部服務呼叫的協調。
+
+**規則**：
+- 僅用於 Renderer 與 Main Process 之間
+- 所有 IPC 方法必須在 `preload` 中通過 `contextBridge` 白名單暴露
+- 不對外暴露，不使用 port
+
+**適用場景**：
+- 視窗控制（最小化、最大化、關閉）
+- 列印功能（獲取打印機、靜默列印）
+- License 管理（本機儲存讀寫）
+- API 代理（Main Process 代為發起 HTTP 請求）
+
+**範例流程**（License 驗證）：
+```
+用戶輸入 License Key
+    → Renderer (IPC) → Main Process
+    → Main Process (Outbound HTTP) → 雲端 License Server
+    → License Server 驗證返回
+    → Main Process (IPC) → Renderer
+```
+
+---
+
+### Outbound HTTP
+
+**用途**：Main Process 主動連接外部服務器。
+
+**規則**：
+- 由 Main Process 發起，不在 Renderer 中直接發起
+- 不會在本機開啟監聽端口
+- 適用於需要與雲端服務通訊的場景
+
+**適用場景**：
+- License 激活與驗證
+- 軟體更新檢查
+- 雲端 API 調用（當配置為雲端模式時）
+
+---
+
+### Localhost Port（監聽端口）
+
+**用途**：讓外部程序或系統通過 TCP/IP 連接存取 Desktop App 功能。
+
+**規則**：
+- 僅在有明確外部集成需求時開啟
+- 必須僅監聽 `127.0.0.1`，不對外網卡暴露
+- 必須實施本地鑑權機制（一次性 Token / HMAC）
+- 必須由 Electron Main Process 管理其生命週期
+
+**適用場景**：
+- 外部插件系統需要連接
+- 本機其他程式需要調用 ERP 功能
+- 第三方系統集成（如 POS 設備、硬體設備）
+
+**安全要求**（若需開 Port）：
+1. Port 動態分配（避免固定 port 被占用或掃描）
+2. 啟動後將 `baseUrl` + `authToken` 透過 IPC 傳給 Renderer
+3. 每個請求必須驗證 Token
+4. 實施健康檢查 + 自動重啟 + 退出清理機制
+
+---
+
+### 當前實施狀態
+
+| 功能 | 通訊方式 | 狀態 |
+|-----|---------|:----:|
+| 視窗控制 | IPC | ✅ 已實現 |
+| 列印功能 | IPC | ✅ 已實現 |
+| License 管理 | IPC + Outbound HTTP | ✅ 已實現 |
+| API 調用 | IPC → Main → HTTP | ✅ 已實現 |
+| 外部插件系統 | Localhost Port | 📋 未規劃 |
+
+---
+
 ## 🧾 Licensing & Capability Model
 
 ### Subscription Tiers (business-facing)

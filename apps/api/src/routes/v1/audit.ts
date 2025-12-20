@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import { getTenantId } from '../../middleware/auth.js';
+import { authRouteOptions } from '../../types/fastify-schema.js';
 
 // Types
 type ActionType = 'create' | 'update' | 'delete' | 'login' | 'logout' | 'view' | 'export' | 'print' | 'approve' | 'reject';
@@ -249,13 +250,7 @@ export async function auditRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<AuditLog[]>;
   }>(
     '/',
-    {
-      schema: {
-        description: 'List all audit logs with pagination and filters',
-        tags: ['Audit'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('List all audit logs with pagination and filters', ['Audit']),
     async (request, reply) => {
       const params = paginationSchema.parse(request.query);
       const tenantId = getTenantId(request);
@@ -336,13 +331,7 @@ export async function auditRoutes(fastify: FastifyInstance) {
     Reply: ApiResponse<AuditLog>;
   }>(
     '/:id',
-    {
-      schema: {
-        description: 'Get an audit log by ID',
-        tags: ['Audit'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Get an audit log by ID', ['Audit']),
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
       const tenantId = getTenantId(request);
@@ -381,13 +370,7 @@ export async function auditRoutes(fastify: FastifyInstance) {
     }>;
   }>(
     '/stats',
-    {
-      schema: {
-        description: 'Get audit log statistics',
-        tags: ['Audit'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Get audit log statistics', ['Audit']),
     async (request, reply) => {
       const tenantId = getTenantId(request);
       const filteredLogs = mockAuditLogs.filter((l) => l.tenantId === tenantId);
@@ -431,13 +414,7 @@ export async function auditRoutes(fastify: FastifyInstance) {
     Querystring: z.infer<typeof paginationSchema>;
   }>(
     '/export',
-    {
-      schema: {
-        description: 'Export audit logs as CSV',
-        tags: ['Audit'],
-        security: [{ bearerAuth: [] }],
-      } as any,
-    },
+    authRouteOptions('Export audit logs as CSV', ['Audit']),
     async (request, reply) => {
       const params = paginationSchema.parse(request.query);
       const tenantId = getTenantId(request);
