@@ -200,7 +200,7 @@ function NotificationSettingsPage() {
                     Receive a daily summary of your business activity
                   </p>
                 </div>
-                <select 
+                <select
                   value={notifications.dailyDigest}
                   onChange={(e) => setDailyDigest(e.target.value as 'off' | 'morning' | 'evening')}
                   className="h-9 rounded-md border border-input bg-background px-3 text-sm"
@@ -236,7 +236,7 @@ function NotificationSettingsPage() {
           {/* Info Box */}
           <div className="rounded-lg border bg-muted/50 p-4">
             <p className="text-sm text-muted-foreground">
-              💡 <strong>Tip:</strong> All notification preferences are saved automatically. 
+              💡 <strong>Tip:</strong> All notification preferences are saved automatically.
               Changes will take effect immediately for new notifications.
             </p>
           </div>

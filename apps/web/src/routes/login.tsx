@@ -72,11 +72,7 @@ function LoginPage() {
         [email, password, navigate, redirect, setAuth]
     );
 
-    // Demo login shortcut
-    const handleDemoLogin = useCallback(() => {
-        setEmail('admin@demo-company.com');
-        setPassword('Admin123!');
-    }, []);
+
 
     // Dev mode bypass - auto login without API call
     const handleDevBypass = useCallback(() => {
@@ -216,23 +212,7 @@ function LoginPage() {
                         </Button>
                     </form>
 
-                    {/* Demo Account */}
-                    <div className="mt-6 pt-6 border-t border-slate-700">
-                        <p className="text-sm text-slate-400 text-center mb-3">
-                            Demo Account
-                        </p>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
-                            onClick={handleDemoLogin}
-                        >
-                            Fill Demo Credentials
-                        </Button>
-                        <p className="text-xs text-slate-500 text-center mt-2">
-                            admin@demo-company.com / Admin123!
-                        </p>
-                    </div>
+
 
                     {/* Dev Mode Bypass - Only show in development */}
                     {import.meta.env.DEV && (

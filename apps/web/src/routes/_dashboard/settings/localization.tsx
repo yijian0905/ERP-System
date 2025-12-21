@@ -66,7 +66,7 @@ function LocalizationSettingsPage() {
     const m = (date.getMonth() + 1).toString().padStart(2, '0');
     const y = date.getFullYear();
     const monthName = date.toLocaleString('en', { month: 'short' });
-    
+
     switch (localization.dateFormat) {
       case 'DD/MM/YYYY': return `${d}/${m}/${y}`;
       case 'YYYY-MM-DD': return `${y}-${m}-${d}`;
@@ -287,7 +287,7 @@ function LocalizationSettingsPage() {
           {/* Info Box */}
           <div className="rounded-lg border bg-muted/50 p-4">
             <p className="text-sm text-muted-foreground">
-              💡 <strong>Tip:</strong> All localization preferences are saved automatically. 
+              💡 <strong>Tip:</strong> All localization preferences are saved automatically.
               Changes will be reflected throughout the application immediately.
             </p>
           </div>

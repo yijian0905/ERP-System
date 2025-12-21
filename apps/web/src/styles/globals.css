@@ -94,6 +94,22 @@
     box-shadow: none !important;
   }
 
+  /* Prevent dragging and selection on all elements */
+  * {
+    -webkit-user-drag: none;
+    user-drag: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow text selection only in input fields and textareas */
+  input,
+  textarea,
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
   /* Ensure no ring styles are applied */
   .ring-0,
   [class*="ring-"] {

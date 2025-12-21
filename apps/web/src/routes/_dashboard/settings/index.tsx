@@ -45,9 +45,9 @@ function SettingsLayout() {
           <div className="rounded-lg border bg-card p-2">
             {settingsTabs.map((tab) => {
               const Icon = tab.icon;
-              const isActive = currentPath === tab.href || 
+              const isActive = currentPath === tab.href ||
                 (tab.href === '/settings' && currentPath === '/settings/');
-              
+
               return (
                 <Link
                   key={tab.id}
@@ -256,7 +256,7 @@ function GeneralSettingsContent() {
             <Button variant="outline">Export Data</Button>
           </div>
           <div className="flex items-center justify-between border-t pt-4">
-      <div>
+            <div>
               <h3 className="font-medium text-destructive">Delete Account</h3>
               <p className="text-sm text-muted-foreground">
                 Permanently delete your account and all data

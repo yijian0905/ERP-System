@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 
 import { PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
+import { FilterSelect } from '@/components/ui/filter-select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { patch } from '@/lib/api-client';
@@ -324,20 +325,20 @@ function CompanySettingsPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="country">Country</Label>
-                  <select
-                    id="country"
+                  <FilterSelect
                     value={company.address.country}
-                    onChange={(e) => handleChange('address.country', e.target.value)}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="United States">United States</option>
-                    <option value="Canada">Canada</option>
-                    <option value="United Kingdom">United Kingdom</option>
-                    <option value="Australia">Australia</option>
-                    <option value="Taiwan">Taiwan</option>
-                    <option value="Japan">Japan</option>
-                    <option value="Germany">Germany</option>
-                  </select>
+                    onChange={(value) => handleChange('address.country', value)}
+                    options={[
+                      { value: 'United States', label: 'United States' },
+                      { value: 'Canada', label: 'Canada' },
+                      { value: 'United Kingdom', label: 'United Kingdom' },
+                      { value: 'Australia', label: 'Australia' },
+                      { value: 'Taiwan', label: 'Taiwan' },
+                      { value: 'Japan', label: 'Japan' },
+                      { value: 'Germany', label: 'Germany' },
+                    ]}
+                    placeholder="Select country"
+                  />
                 </div>
               </div>
             </div>

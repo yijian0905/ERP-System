@@ -97,6 +97,7 @@ function NavItemComponent({
   const content = (
     <Link
       to={item.href}
+      draggable={false}
       className={cn(
         'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
         'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -204,6 +205,7 @@ function NavItemWithChildren({
             <DropdownMenuItem key={child.id} asChild>
               <Link
                 to={child.href}
+                draggable={false}
                 className={cn(
                   'flex items-center gap-2',
                   child.href === currentPath && 'bg-accent'
@@ -387,7 +389,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
           {isDark ? 'Light Mode' : 'Dark Mode'}
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/settings">
+          <Link to="/settings" draggable={false}>
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </Link>

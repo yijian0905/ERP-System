@@ -10,8 +10,8 @@
 
 import { ipcMain, net } from 'electron';
 
-// Configuration
-const DEFAULT_API_URL = 'http://localhost:3000';
+// Configuration - Read from environment variable for production deployment
+const DEFAULT_API_URL = process.env.ERP_API_URL || 'http://localhost:3000';
 
 // Auth token storage (secure, not exposed to renderer)
 let authToken: string | null = null;
