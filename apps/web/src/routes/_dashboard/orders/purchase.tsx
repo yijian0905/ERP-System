@@ -40,6 +40,7 @@ import {
 import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
 import { useCanSkipApproval } from '@/stores/auth';
+import { ordersApi } from '@/lib/api';
 
 // Search params type
 type PurchaseOrderSearch = {
@@ -94,125 +95,6 @@ interface PurchaseOrder {
 }
 
 // Mock product types - these are created via "Add Product" in inventory
-// Each product is associated with a supplier
-const mockProductTypes = [
-  { id: 'p1', sku: 'ELEC-001', name: 'Wireless Mouse', cost: 15.00, category: 'Electronics', currentStock: 140, reorderPoint: 50, supplierId: 's1' },
-  { id: 'p2', sku: 'ELEC-002', name: 'Mechanical Keyboard', cost: 45.00, category: 'Electronics', currentStock: 5, reorderPoint: 15, supplierId: 's1' },
-  { id: 'p3', sku: 'ELEC-003', name: 'USB-C Hub', cost: 25.00, category: 'Electronics', currentStock: 185, reorderPoint: 50, supplierId: 's3' },
-  { id: 'p4', sku: 'OFFC-001', name: 'A4 Copy Paper (Ream)', cost: 4.50, category: 'Office Supplies', currentStock: 450, reorderPoint: 200, supplierId: 's2' },
-  { id: 'p5', sku: 'FURN-001', name: 'Ergonomic Chair', cost: 150.00, category: 'Furniture', currentStock: 20, reorderPoint: 10, supplierId: 's4' },
-  { id: 'p6', sku: 'OFFC-002', name: 'Printer Ink Black', cost: 35.00, category: 'Office Supplies', currentStock: 12, reorderPoint: 25, supplierId: 's2' },
-  { id: 'p7', sku: 'ELEC-004', name: 'Monitor Stand', cost: 55.00, category: 'Electronics', currentStock: 30, reorderPoint: 15, supplierId: 's3' },
-  { id: 'p8', sku: 'FURN-002', name: 'Standing Desk', cost: 350.00, category: 'Furniture', currentStock: 8, reorderPoint: 5, supplierId: 's4' },
-  { id: 'p9', sku: 'GLOB-001', name: 'Server Rack Mount', cost: 120.00, category: 'Electronics', currentStock: 15, reorderPoint: 10, supplierId: 's5' },
-  { id: 'p10', sku: 'GLOB-002', name: 'Network Cable Box', cost: 45.00, category: 'Electronics', currentStock: 25, reorderPoint: 20, supplierId: 's5' },
-];
-
-const mockSuppliers = [
-  { id: 's1', name: 'Tech Supplies Inc', email: 'orders@techsupplies.com', address: '100 Tech Drive, San Jose, CA 95101' },
-  { id: 's2', name: 'Office Depot', email: 'b2b@officedepot.com', address: '200 Office Blvd, Miami, FL 33101' },
-  { id: 's3', name: 'Electronics Wholesale', email: 'sales@elecwholesale.com', address: '300 Circuit Ave, Austin, TX 78701' },
-  { id: 's4', name: 'Furniture World', email: 'orders@furnitureworld.com', address: '400 Furniture Lane, Portland, OR 97201' },
-  { id: 's5', name: 'Global Parts Ltd', email: 'procurement@globalparts.com', address: '500 Global Way, Seattle, WA 98101' },
-];
-
-const warehouseData = [
-  { name: 'Main Warehouse', address: '123 Industrial Ave, New York, NY 10001' },
-  { name: 'Secondary Warehouse', address: '456 Storage Blvd, Brooklyn, NY 11201' },
-  { name: 'Downtown Retail Store', address: '789 Main Street, Manhattan, NY 10013' },
-];
-
-const mockOrders: PurchaseOrder[] = [
-  {
-    id: '1',
-    orderNumber: 'PO-2312-00023',
-    supplier: 'Tech Supplies Inc',
-    supplierId: 's1',
-    supplierEmail: 'orders@techsupplies.com',
-    supplierAddress: '100 Tech Drive, San Jose, CA 95101',
-    destinationWarehouse: 'Main Warehouse',
-    destinationAddress: '123 Industrial Ave, New York, NY 10001',
-    items: [
-      { id: 'i1', productId: 'p1', productName: 'Wireless Mouse', sku: 'ELEC-001', quantity: 100, unitCost: 15.00, total: 1500.00 },
-      { id: 'i2', productId: 'p2', productName: 'Mechanical Keyboard', sku: 'ELEC-002', quantity: 50, unitCost: 45.00, total: 2250.00 },
-    ],
-    subtotal: 3750.00,
-    tax: 337.50,
-    shipping: 75.00,
-    total: 4162.50,
-    status: 'RECEIVED',
-    orderDate: '2024-12-05',
-    expectedDate: '2024-12-10',
-    receivedDate: '2024-12-07',
-    notes: '',
-  },
-  {
-    id: '2',
-    orderNumber: 'PO-2312-00022',
-    supplier: 'Office Depot',
-    supplierId: 's2',
-    supplierEmail: 'b2b@officedepot.com',
-    supplierAddress: '200 Office Blvd, Miami, FL 33101',
-    destinationWarehouse: 'Secondary Warehouse',
-    destinationAddress: '456 Storage Blvd, Brooklyn, NY 11201',
-    items: [
-      { id: 'i3', productId: 'p4', productName: 'A4 Copy Paper (Ream)', sku: 'OFFC-001', quantity: 500, unitCost: 4.50, total: 2250.00 },
-    ],
-    subtotal: 2250.00,
-    tax: 202.50,
-    shipping: 50.00,
-    total: 2502.50,
-    status: 'PENDING',
-    orderDate: '2024-12-06',
-    expectedDate: '2024-12-15',
-    receivedDate: null,
-    notes: 'Bulk order for Q1',
-  },
-  {
-    id: '3',
-    orderNumber: 'PO-2312-00021',
-    supplier: 'Electronics Wholesale',
-    supplierId: 's3',
-    supplierEmail: 'sales@elecwholesale.com',
-    supplierAddress: '300 Circuit Ave, Austin, TX 78701',
-    destinationWarehouse: 'Main Warehouse',
-    destinationAddress: '123 Industrial Ave, New York, NY 10001',
-    items: [
-      { id: 'i4', productId: 'p3', productName: 'USB-C Hub', sku: 'ELEC-003', quantity: 200, unitCost: 25.00, total: 5000.00 },
-    ],
-    subtotal: 5000.00,
-    tax: 450.00,
-    shipping: 100.00,
-    total: 5550.00,
-    status: 'ORDERED',
-    orderDate: '2024-12-04',
-    expectedDate: '2024-12-12',
-    receivedDate: null,
-    notes: '',
-  },
-  {
-    id: '4',
-    orderNumber: 'PO-2312-00020',
-    supplier: 'Furniture World',
-    supplierId: 's4',
-    supplierEmail: 'orders@furnitureworld.com',
-    supplierAddress: '400 Furniture Lane, Portland, OR 97201',
-    destinationWarehouse: 'Downtown Retail Store',
-    destinationAddress: '789 Main Street, Manhattan, NY 10013',
-    items: [
-      { id: 'i5', productId: 'p5', productName: 'Ergonomic Chair', sku: 'FURN-001', quantity: 20, unitCost: 150.00, total: 3000.00 },
-    ],
-    subtotal: 3000.00,
-    tax: 270.00,
-    shipping: 200.00,
-    total: 3470.00,
-    status: 'ORDERED',
-    orderDate: '2024-12-01',
-    expectedDate: '2024-12-08',
-    receivedDate: null,
-    notes: '10 chairs received, 10 pending',
-  },
-];
 
 // Company info
 const companyInfo = {

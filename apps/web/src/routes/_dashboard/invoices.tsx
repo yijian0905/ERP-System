@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeft, FileText, MoreHorizontal, Search, Send, Settings } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 import { EInvoiceStatusBadge, type EInvoiceStatus } from '@/components/einvoice';
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { post } from '@/lib/api-client';
+import { invoicesApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/invoices')({
@@ -27,66 +28,19 @@ export const Route = createFileRoute('/_dashboard/invoices')({
 
 import { FilterSelect } from '@/components/ui/filter-select';
 
-// Mock invoice data with e-Invoice status
-const mockInvoices = [
-  {
-    id: '1',
-    invoiceNumber: 'INV-2312-00045',
-    customer: 'Acme Corporation',
-    amount: 1250.0,
-    status: 'paid',
-    issueDate: '2024-12-01',
-    dueDate: '2024-12-31',
-    eInvoiceId: 'ei-001',
-    eInvoiceStatus: 'VALID' as EInvoiceStatus,
-    lhdnUuid: 'ABC123XYZ456',
-  },
-  {
-    id: '2',
-    invoiceNumber: 'INV-2312-00044',
-    customer: 'TechStart Inc.',
-    amount: 890.0,
-    status: 'pending',
-    issueDate: '2024-12-03',
-    dueDate: '2025-01-02',
-    eInvoiceId: 'ei-002',
-    eInvoiceStatus: 'SUBMITTED' as EInvoiceStatus,
-    lhdnUuid: 'DEF789GHI012',
-  },
-  {
-    id: '3',
-    invoiceNumber: 'INV-2312-00043',
-    customer: 'Global Systems',
-    amount: 2340.0,
-    status: 'overdue',
-    issueDate: '2024-11-15',
-    dueDate: '2024-12-15',
-    eInvoiceId: 'ei-003',
-    eInvoiceStatus: 'ERROR' as EInvoiceStatus,
-  },
-  {
-    id: '4',
-    invoiceNumber: 'INV-2312-00042',
-    customer: 'Local Store',
-    amount: 456.0,
-    status: 'paid',
-    issueDate: '2024-11-20',
-    dueDate: '2024-12-20',
-    eInvoiceId: undefined,
-    eInvoiceStatus: undefined,
-  },
-  {
-    id: '5',
-    invoiceNumber: 'INV-2312-00041',
-    customer: 'Smart Solutions',
-    amount: 1780.0,
-    status: 'draft',
-    issueDate: '2024-12-05',
-    dueDate: '2025-01-04',
-    eInvoiceId: 'ei-005',
-    eInvoiceStatus: 'DRAFT' as EInvoiceStatus,
-  },
-];
+// Invoice type for local state
+interface LocalInvoice {
+  id: string;
+  invoiceNumber: string;
+  customer: string;
+  amount: number;
+  status: string;
+  issueDate: string;
+  dueDate: string;
+  eInvoiceId?: string;
+  eInvoiceStatus?: EInvoiceStatus;
+  lhdnUuid?: string;
+}
 
 const statusStyles = {
   paid: 'bg-success/10 text-success',
@@ -96,10 +50,35 @@ const statusStyles = {
 };
 
 function InvoicesPage() {
+  const [invoices, setInvoices] = useState<LocalInvoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>('');
 
-
-
+  // Fetch invoices from API
+  useEffect(() => {
+    async function fetchInvoices() {
+      setIsLoading(true);
+      try {
+        const response = await invoicesApi.list();
+        if (response.success && response.data) {
+          setInvoices(response.data.map((inv) => ({
+            id: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            customer: inv.customerName,
+            amount: inv.total,
+            status: inv.status.toLowerCase(),
+            issueDate: inv.issueDate,
+            dueDate: inv.dueDate,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch invoices:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchInvoices();
+  }, []);
   // E-Invoice handlers
   const handleSubmitEInvoice = useCallback(async (invoiceId: string) => {
     console.log('📤 Creating and submitting e-Invoice for:', invoiceId);
@@ -216,7 +195,7 @@ function InvoicesPage() {
               </tr>
             </thead>
             <tbody>
-              {mockInvoices.map((invoice) => (
+              {invoices.filter(inv => !filter || inv.status === filter).map((invoice) => (
                 <tr
                   key={invoice.id}
                   className="border-b last:border-0 table-row-hover"

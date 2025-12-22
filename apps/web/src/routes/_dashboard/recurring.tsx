@@ -22,7 +22,7 @@ import {
   TrendingUp,
   Trash2,
 } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   DashboardCard,
@@ -59,6 +59,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { recurringApi } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/recurring')({
   component: RecurringRevenuePage,
@@ -86,123 +87,6 @@ interface RecurringItem {
   invoiceCount: number;
 }
 
-// Mock data
-const mockRecurringItems: RecurringItem[] = [
-  {
-    id: '1',
-    name: 'Premium Support Plan',
-    customer: 'Acme Corporation',
-    customerId: 'c1',
-    description: '24/7 priority support with dedicated account manager',
-    amount: 999,
-    billingCycle: 'MONTHLY',
-    startDate: '2024-01-15',
-    nextBillingDate: '2024-12-15',
-    status: 'ACTIVE',
-    lastInvoice: 'INV-2411-00123',
-    totalRevenue: 10989,
-    invoiceCount: 11,
-  },
-  {
-    id: '2',
-    name: 'Software License Subscription',
-    customer: 'TechStart Inc.',
-    customerId: 'c2',
-    description: 'Enterprise software license - 50 seats',
-    amount: 2500,
-    billingCycle: 'MONTHLY',
-    startDate: '2024-03-01',
-    nextBillingDate: '2024-12-01',
-    status: 'ACTIVE',
-    lastInvoice: 'INV-2411-00145',
-    totalRevenue: 22500,
-    invoiceCount: 9,
-  },
-  {
-    id: '3',
-    name: 'Equipment Lease',
-    customer: 'Global Systems',
-    customerId: 'c3',
-    description: 'Monthly lease for office equipment',
-    amount: 750,
-    billingCycle: 'MONTHLY',
-    startDate: '2024-06-01',
-    nextBillingDate: '2024-12-01',
-    status: 'ACTIVE',
-    lastInvoice: 'INV-2411-00156',
-    totalRevenue: 4500,
-    invoiceCount: 6,
-  },
-  {
-    id: '4',
-    name: 'Maintenance Contract',
-    customer: 'City Government',
-    customerId: 'c4',
-    description: 'Annual maintenance for IT infrastructure',
-    amount: 15000,
-    billingCycle: 'YEARLY',
-    startDate: '2024-01-01',
-    nextBillingDate: '2025-01-01',
-    status: 'ACTIVE',
-    lastInvoice: 'INV-2401-00012',
-    totalRevenue: 15000,
-    invoiceCount: 1,
-  },
-  {
-    id: '5',
-    name: 'Consulting Retainer',
-    customer: 'Smart Solutions',
-    customerId: 'c5',
-    description: '20 hours of consulting per month',
-    amount: 3200,
-    billingCycle: 'MONTHLY',
-    startDate: '2024-04-01',
-    nextBillingDate: '2024-12-01',
-    status: 'PAUSED',
-    lastInvoice: 'INV-2410-00089',
-    totalRevenue: 22400,
-    invoiceCount: 7,
-  },
-  {
-    id: '6',
-    name: 'Quarterly Service Package',
-    customer: 'Local Store',
-    customerId: 'c6',
-    description: 'Quarterly on-site service and inspection',
-    amount: 1200,
-    billingCycle: 'QUARTERLY',
-    startDate: '2024-02-01',
-    nextBillingDate: '2025-02-01',
-    status: 'ACTIVE',
-    lastInvoice: 'INV-2411-00098',
-    totalRevenue: 4800,
-    invoiceCount: 4,
-  },
-];
-
-const billingCycleLabels: Record<BillingCycle, string> = {
-  WEEKLY: 'Weekly',
-  MONTHLY: 'Monthly',
-  QUARTERLY: 'Quarterly',
-  YEARLY: 'Yearly',
-};
-
-const statusStyles: Record<SubscriptionStatus, { label: string; color: string }> = {
-  ACTIVE: { label: 'Active', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  PAUSED: { label: 'Paused', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  CANCELLED: { label: 'Cancelled', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  EXPIRED: { label: 'Expired', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-};
-
-// Mock customers for form with extended data
-const mockCustomers = [
-  { id: 'c1', name: 'Acme Corporation', email: 'orders@acme.com', address: '123 Business Ave, NY 10001' },
-  { id: 'c2', name: 'TechStart Inc.', email: 'purchase@techstart.com', address: '456 Tech Blvd, SF 94102' },
-  { id: 'c3', name: 'Global Systems', email: 'procurement@global.com', address: '789 Global Way, LA 90001' },
-  { id: 'c4', name: 'City Government', email: 'procurement@city.gov', address: '100 City Hall, DC 20001' },
-  { id: 'c5', name: 'Smart Solutions', email: 'orders@smart.com', address: '555 Smart Ave, Boston 02101' },
-  { id: 'c6', name: 'Local Store', email: 'buying@localstore.com', address: '321 Main St, Chicago 60601' },
-];
 
 // Company info for invoice
 const companyInfo = {
@@ -214,13 +98,47 @@ const companyInfo = {
 };
 
 function RecurringRevenuePage() {
-  const [items, setItems] = useState<RecurringItem[]>(mockRecurringItems);
+  const [items, setItems] = useState<RecurringItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [cycleFilter, setCycleFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<RecurringItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch recurring items from API
+  useEffect(() => {
+    async function fetchRecurringItems() {
+      setIsLoading(true);
+      try {
+        const response = await recurringApi.list();
+        if (response.success && response.data) {
+          // Map API response to local RecurringItem type
+          setItems(response.data.map((item) => ({
+            id: item.id,
+            name: item.name,
+            customer: item.customerName,
+            customerId: item.customerId,
+            description: item.notes || '',
+            amount: item.amount,
+            billingCycle: item.frequency as BillingCycle,
+            startDate: item.startDate,
+            nextBillingDate: item.nextBillingDate,
+            status: item.status as SubscriptionStatus,
+            lastInvoice: null,
+            totalRevenue: item.amount * 10, // Estimate
+            invoiceCount: 10,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch recurring items:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchRecurringItems();
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',

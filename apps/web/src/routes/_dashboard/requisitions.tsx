@@ -17,7 +17,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
   DashboardCard,
@@ -48,6 +48,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useUser, useCanSkipApproval } from '@/stores/auth';
+import { requisitionsApi, costCentersApi, productsApi, type Product } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/requisitions')({
   component: RequisitionsPage,
@@ -130,176 +131,88 @@ const priorityConfig: Record<Priority, { label: string; color: string }> = {
   URGENT: { label: 'Urgent', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 };
 
-// Mock data
-const mockCostCenters: CostCenter[] = [
-  { id: 'cc1', code: 'CC-ENG', name: 'Engineering', department: 'Engineering', budget: 50000, usedBudget: 32500 },
-  { id: 'cc2', code: 'CC-MKT', name: 'Marketing', department: 'Marketing', budget: 30000, usedBudget: 18200 },
-  { id: 'cc3', code: 'CC-OPS', name: 'Operations', department: 'Operations', budget: 75000, usedBudget: 45600 },
-  { id: 'cc4', code: 'CC-HR', name: 'Human Resources', department: 'HR', budget: 20000, usedBudget: 8500 },
-  { id: 'cc5', code: 'CC-FIN', name: 'Finance', department: 'Finance', budget: 25000, usedBudget: 12300 },
-  { id: 'cc6', code: 'CC-PRD', name: 'Production', department: 'Production', budget: 100000, usedBudget: 67800 },
-];
-
-const mockInventoryItems: InventoryItem[] = [
-  { id: 'inv1', sku: 'OFF-001', name: 'A4 Paper (500 sheets)', category: 'Office Supplies', stock: 150, unitCost: 8.50 },
-  { id: 'inv2', sku: 'OFF-002', name: 'Ballpoint Pens (Box of 12)', category: 'Office Supplies', stock: 80, unitCost: 5.99 },
-  { id: 'inv3', sku: 'OFF-003', name: 'Stapler', category: 'Office Supplies', stock: 25, unitCost: 12.50 },
-  { id: 'inv4', sku: 'IT-001', name: 'USB Flash Drive 32GB', category: 'IT Equipment', stock: 45, unitCost: 15.00 },
-  { id: 'inv5', sku: 'IT-002', name: 'Wireless Mouse', category: 'IT Equipment', stock: 30, unitCost: 25.00 },
-  { id: 'inv6', sku: 'IT-003', name: 'Keyboard', category: 'IT Equipment', stock: 20, unitCost: 45.00 },
-  { id: 'inv7', sku: 'CLN-001', name: 'Hand Sanitizer (500ml)', category: 'Cleaning', stock: 60, unitCost: 4.50 },
-  { id: 'inv8', sku: 'CLN-002', name: 'Disinfectant Wipes (Pack)', category: 'Cleaning', stock: 40, unitCost: 6.99 },
-  { id: 'inv9', sku: 'SAF-001', name: 'Safety Glasses', category: 'Safety Equipment', stock: 100, unitCost: 8.00 },
-  { id: 'inv10', sku: 'SAF-002', name: 'Work Gloves (Pair)', category: 'Safety Equipment', stock: 75, unitCost: 12.00 },
-  { id: 'inv11', sku: 'RAW-001', name: 'Steel Rod (per meter)', category: 'Raw Materials', stock: 500, unitCost: 15.00 },
-  { id: 'inv12', sku: 'RAW-002', name: 'Aluminum Sheet', category: 'Raw Materials', stock: 200, unitCost: 35.00 },
-  // Operating Consumables - Non-sellable items for internal use only
-  { id: 'inv13', sku: 'OPCS-001', name: 'Coffee Beans (1kg)', category: 'Operating Consumables', stock: 20, unitCost: 25.00 },
-  { id: 'inv14', sku: 'OPCS-002', name: 'Printer Toner (HP)', category: 'Operating Consumables', stock: 15, unitCost: 85.00 },
-  { id: 'inv15', sku: 'OPCS-003', name: 'Air Freshener Refill', category: 'Operating Consumables', stock: 30, unitCost: 8.50 },
-  { id: 'inv16', sku: 'OPCS-004', name: 'Paper Towels (Pack of 6)', category: 'Operating Consumables', stock: 50, unitCost: 12.00 },
-  { id: 'inv17', sku: 'OPCS-005', name: 'Trash Bags (Box of 100)', category: 'Operating Consumables', stock: 25, unitCost: 18.00 },
-];
-
-const mockRequisitions: Requisition[] = [
-  {
-    id: '1',
-    requisitionNumber: 'REQ-2024-0001',
-    status: 'FULFILLED',
-    priority: 'MEDIUM',
-    requestedBy: 'John Smith',
-    requestedByDept: 'Engineering',
-    costCenterId: 'cc1',
-    costCenterName: 'Engineering',
-    projectCode: 'PRJ-2024-001',
-    purpose: 'Monthly office supplies replenishment',
-    items: [
-      { id: 'i1', productId: 'inv1', productName: 'A4 Paper (500 sheets)', productSku: 'OFF-001', quantity: 10, unitCost: 8.50, totalCost: 85, availableStock: 150, notes: '' },
-      { id: 'i2', productId: 'inv2', productName: 'Ballpoint Pens (Box of 12)', productSku: 'OFF-002', quantity: 5, unitCost: 5.99, totalCost: 29.95, availableStock: 80, notes: '' },
-    ],
-    totalCost: 114.95,
-    requestDate: '2024-12-01',
-    requiredDate: '2024-12-05',
-    approvedBy: 'Sarah Johnson',
-    approvedDate: '2024-12-02',
-    fulfilledDate: '2024-12-04',
-    rejectionReason: null,
-    notes: '',
-    createdAt: '2024-12-01T09:00:00Z',
-    updatedAt: '2024-12-04T14:00:00Z',
-  },
-  {
-    id: '2',
-    requisitionNumber: 'REQ-2024-0002',
-    status: 'APPROVED',
-    priority: 'HIGH',
-    requestedBy: 'Mike Chen',
-    requestedByDept: 'Production',
-    costCenterId: 'cc6',
-    costCenterName: 'Production',
-    projectCode: 'PRJ-2024-003',
-    purpose: 'Safety equipment for new hires',
-    items: [
-      { id: 'i3', productId: 'inv9', productName: 'Safety Glasses', productSku: 'SAF-001', quantity: 20, unitCost: 8.00, totalCost: 160, availableStock: 100, notes: '' },
-      { id: 'i4', productId: 'inv10', productName: 'Work Gloves (Pair)', productSku: 'SAF-002', quantity: 20, unitCost: 12.00, totalCost: 240, availableStock: 75, notes: '' },
-    ],
-    totalCost: 400,
-    requestDate: '2024-12-05',
-    requiredDate: '2024-12-10',
-    approvedBy: 'Emily Davis',
-    approvedDate: '2024-12-06',
-    fulfilledDate: null,
-    rejectionReason: null,
-    notes: '5 new production staff joining',
-    createdAt: '2024-12-05T10:00:00Z',
-    updatedAt: '2024-12-06T11:00:00Z',
-  },
-  {
-    id: '3',
-    requisitionNumber: 'REQ-2024-0003',
-    status: 'PENDING',
-    priority: 'URGENT',
-    requestedBy: 'Alex Wilson',
-    requestedByDept: 'Operations',
-    costCenterId: 'cc3',
-    costCenterName: 'Operations',
-    projectCode: null,
-    purpose: 'Emergency raw material request for urgent order',
-    items: [
-      { id: 'i5', productId: 'inv11', productName: 'Steel Rod (per meter)', productSku: 'RAW-001', quantity: 100, unitCost: 15.00, totalCost: 1500, availableStock: 500, notes: 'For Order #ORD-2024-0150' },
-      { id: 'i6', productId: 'inv12', productName: 'Aluminum Sheet', productSku: 'RAW-002', quantity: 50, unitCost: 35.00, totalCost: 1750, availableStock: 200, notes: '' },
-    ],
-    totalCost: 3250,
-    requestDate: '2024-12-07',
-    requiredDate: '2024-12-08',
-    approvedBy: null,
-    approvedDate: null,
-    fulfilledDate: null,
-    rejectionReason: null,
-    notes: 'Urgent - customer deadline',
-    createdAt: '2024-12-07T08:00:00Z',
-    updatedAt: '2024-12-07T08:00:00Z',
-  },
-  {
-    id: '4',
-    requisitionNumber: 'REQ-2024-0004',
-    status: 'REJECTED',
-    priority: 'LOW',
-    requestedBy: 'Lisa Brown',
-    requestedByDept: 'Marketing',
-    costCenterId: 'cc2',
-    costCenterName: 'Marketing',
-    projectCode: 'PRJ-2024-005',
-    purpose: 'New IT equipment request',
-    items: [
-      { id: 'i7', productId: 'inv5', productName: 'Wireless Mouse', productSku: 'IT-002', quantity: 10, unitCost: 25.00, totalCost: 250, availableStock: 30, notes: '' },
-      { id: 'i8', productId: 'inv6', productName: 'Keyboard', productSku: 'IT-003', quantity: 10, unitCost: 45.00, totalCost: 450, availableStock: 20, notes: '' },
-    ],
-    totalCost: 700,
-    requestDate: '2024-12-03',
-    requiredDate: '2024-12-15',
-    approvedBy: 'Sarah Johnson',
-    approvedDate: null,
-    fulfilledDate: null,
-    rejectionReason: 'Budget exceeded for this quarter. Please resubmit in Q1 2025.',
-    notes: '',
-    createdAt: '2024-12-03T14:00:00Z',
-    updatedAt: '2024-12-04T09:00:00Z',
-  },
-  {
-    id: '5',
-    requisitionNumber: 'REQ-2024-0005',
-    status: 'DRAFT',
-    priority: 'MEDIUM',
-    requestedBy: 'David Lee',
-    requestedByDept: 'Finance',
-    costCenterId: 'cc5',
-    costCenterName: 'Finance',
-    projectCode: null,
-    purpose: 'Office supplies for audit preparation',
-    items: [
-      { id: 'i9', productId: 'inv1', productName: 'A4 Paper (500 sheets)', productSku: 'OFF-001', quantity: 20, unitCost: 8.50, totalCost: 170, availableStock: 150, notes: 'For printing reports' },
-    ],
-    totalCost: 170,
-    requestDate: '2024-12-07',
-    requiredDate: '2024-12-20',
-    approvedBy: null,
-    approvedDate: null,
-    fulfilledDate: null,
-    rejectionReason: null,
-    notes: 'Annual audit preparation',
-    createdAt: '2024-12-07T16:00:00Z',
-    updatedAt: '2024-12-07T16:00:00Z',
-  },
-];
 
 function RequisitionsPage() {
   const user = useUser();
-  const [requisitions, setRequisitions] = useState<Requisition[]>(mockRequisitions);
+  const [requisitions, setRequisitions] = useState<Requisition[]>([]);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [costCenterFilter, setCostCenterFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
+
+  // Fetch data from API
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        const [reqRes, ccRes, prodRes] = await Promise.all([
+          requisitionsApi.list(),
+          costCentersApi.list(),
+          productsApi.list({ status: 'ACTIVE' }),
+        ]);
+
+        if (reqRes.success && reqRes.data) {
+          // Map API response to local Requisition type
+          setRequisitions(reqRes.data.map((r) => ({
+            id: r.id,
+            requisitionNumber: r.requisitionNumber,
+            status: r.status as RequisitionStatus,
+            priority: 'MEDIUM' as Priority,
+            requestedBy: r.requesterName,
+            requestedByDept: '',
+            costCenterId: r.costCenterId,
+            costCenterName: r.costCenterName,
+            projectCode: null,
+            purpose: r.justification,
+            items: r.items.map((item) => ({
+              id: item.productId,
+              productId: item.productId,
+              productName: item.productName,
+              productSku: '',
+              quantity: item.quantity,
+              unitCost: item.estimatedCost / item.quantity,
+              totalCost: item.estimatedCost,
+              availableStock: 100,
+              notes: '',
+            })),
+            totalCost: r.totalEstimatedCost,
+            requestDate: r.createdAt,
+            requiredDate: r.createdAt,
+            approvedBy: r.approvedBy,
+            approvedDate: r.approvedAt,
+            fulfilledDate: null,
+            rejectionReason: null,
+            notes: '',
+            createdAt: r.createdAt,
+            updatedAt: r.createdAt,
+          })));
+        }
+
+        if (ccRes.success && ccRes.data) {
+          setCostCenters(ccRes.data.map((cc) => ({
+            id: cc.id,
+            code: cc.code,
+            name: cc.name,
+            department: '',
+            budget: cc.budget,
+            usedBudget: cc.spent,
+          })));
+        }
+
+        if (prodRes.success && prodRes.data) {
+          setProducts(prodRes.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch requisitions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   // Modal states
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -383,7 +296,7 @@ function RequisitionsPage() {
   const handleAddItem = () => {
     if (!selectedProductId) return;
 
-    const product = mockInventoryItems.find((p) => p.id === selectedProductId);
+    const product = products.find((p) => p.id === selectedProductId);
     if (!product) return;
 
     // Check if already in list
@@ -404,8 +317,8 @@ function RequisitionsPage() {
         productName: product.name,
         productSku: product.sku,
         quantity: itemQuantity,
-        unitCost: product.unitCost,
-        totalCost: product.unitCost * itemQuantity,
+        unitCost: product.cost,
+        totalCost: product.cost * itemQuantity,
         availableStock: product.stock,
         notes: itemNotes,
       };
@@ -451,7 +364,7 @@ function RequisitionsPage() {
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const costCenter = mockCostCenters.find((cc) => cc.id === formData.costCenterId);
+    const costCenter = costCenters.find((cc) => cc.id === formData.costCenterId);
 
     // Determine status: If not draft and user can skip approval, auto-approve
     let status: RequisitionStatus = asDraft ? 'DRAFT' : 'PENDING';
@@ -640,7 +553,7 @@ function RequisitionsPage() {
               onChange={(val) => setCostCenterFilter(val === 'all' ? '' : val)}
               options={[
                 { value: 'all', label: 'All Cost Centers' },
-                ...mockCostCenters.map((cc) => ({ value: cc.id, label: cc.name })),
+                ...costCenters.map((cc) => ({ value: cc.id, label: cc.name })),
               ]}
               placeholder="All Cost Centers"
               className="w-auto"
@@ -788,7 +701,7 @@ function RequisitionsPage() {
                   <FilterSelect
                     value={formData.costCenterId}
                     onChange={(val) => setFormData((f) => ({ ...f, costCenterId: val }))}
-                    options={mockCostCenters.map((cc) => ({
+                    options={costCenters.map((cc) => ({
                       value: cc.id,
                       label: `${cc.code} - ${cc.name} (Budget: ${formatCurrency(cc.budget - cc.usedBudget)} remaining)`
                     }))}
@@ -848,9 +761,9 @@ function RequisitionsPage() {
                     <FilterSelect
                       value={selectedProductId}
                       onChange={(val) => setSelectedProductId(val)}
-                      options={mockInventoryItems.map((item) => ({
+                      options={products.map((item) => ({
                         value: item.id,
-                        label: `${item.sku} - ${item.name} (${item.stock} available) - ${formatCurrency(item.unitCost)}`,
+                        label: `${item.sku} - ${item.name} (${item.stock} available) - ${formatCurrency(item.cost)}`,
                         disabled: item.stock === 0
                       }))}
                       placeholder="Select item to add..."

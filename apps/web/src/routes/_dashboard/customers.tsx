@@ -11,7 +11,7 @@ import {
   User,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,7 @@ import { Label } from '@/components/ui/label';
 import { FilterSelect } from '@/components/ui/filter-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { customersApi, type Customer as ApiCustomer } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/customers')({
   component: CustomersPage,
@@ -58,94 +59,6 @@ interface Customer {
   createdAt: string;
 }
 
-// Mock data
-const mockCustomers: Customer[] = [
-  {
-    id: '1',
-    code: 'CUST-001',
-    name: 'Acme Corporation',
-    type: 'COMPANY',
-    address: '456 Corporate Blvd, Suite 100, Los Angeles, CA 90001',
-    email: 'contact@acme.com',
-    phone: '+1 (555) 123-4567',
-    fax: '+1 (555) 123-4568',
-    creditLimit: 50000,
-    currentBalance: 1250,
-    isActive: true,
-    createdAt: '2024-01-15',
-  },
-  {
-    id: '2',
-    code: 'CUST-002',
-    name: 'TechStart Inc.',
-    type: 'COMPANY',
-    address: '789 Startup Lane, San Jose, CA 95101',
-    email: 'hello@techstart.io',
-    phone: '+1 (555) 234-5678',
-    fax: null,
-    creditLimit: 25000,
-    currentBalance: 890,
-    isActive: true,
-    createdAt: '2024-02-20',
-  },
-  {
-    id: '3',
-    code: 'CUST-003',
-    name: 'Global Systems',
-    type: 'COMPANY',
-    address: '123 Enterprise Way, Seattle, WA 98101',
-    email: 'info@globalsys.com',
-    phone: '+1 (555) 345-6789',
-    fax: '+1 (555) 345-6790',
-    creditLimit: 100000,
-    currentBalance: 2340,
-    isActive: true,
-    createdAt: '2024-03-10',
-  },
-  {
-    id: '4',
-    code: 'CUST-004',
-    name: 'John Smith',
-    type: 'INDIVIDUAL',
-    address: '456 Oak Street, Apt 12, San Francisco, CA 94102',
-    email: 'john.smith@email.com',
-    phone: '+1 (555) 456-7890',
-    fax: null,
-    creditLimit: 5000,
-    currentBalance: 456,
-    isActive: true,
-    createdAt: '2024-04-05',
-  },
-  {
-    id: '5',
-    code: 'CUST-005',
-    name: 'Smart Solutions LLC',
-    type: 'COMPANY',
-    address: '321 Innovation Drive, Austin, TX 78701',
-    email: 'sales@smartsolutions.com',
-    phone: '+1 (555) 567-8901',
-    fax: '+1 (555) 567-8902',
-    creditLimit: 35000,
-    currentBalance: 1780,
-    isActive: true,
-    createdAt: '2024-05-12',
-  },
-  {
-    id: '6',
-    code: 'CUST-006',
-    name: 'Sarah Johnson',
-    type: 'INDIVIDUAL',
-    address: '789 Pine Avenue, Denver, CO 80202',
-    email: 'sarah.j@email.com',
-    phone: '+1 (555) 678-9012',
-    fax: null,
-    creditLimit: 8000,
-    currentBalance: 0,
-    isActive: true,
-    createdAt: '2024-06-01',
-  },
-];
-
 const typeStyles: Record<CustomerType, string> = {
   INDIVIDUAL: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   COMPANY: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -162,7 +75,8 @@ const typeLabels: Record<CustomerType, string> = {
 };
 
 function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -177,6 +91,24 @@ function CustomersPage() {
     creditLimit: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch customers from API
+  useEffect(() => {
+    async function fetchCustomers() {
+      setIsLoading(true);
+      try {
+        const response = await customersApi.list();
+        if (response.success && response.data) {
+          setCustomers(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch customers:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchCustomers();
+  }, []);
 
   // Filter customers
   const filteredCustomers = customers.filter((customer) => {

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
   DashboardCard,
@@ -43,6 +43,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
+import { inventoryApi } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/inventory/')({
   component: InventoryPage,
@@ -153,226 +154,14 @@ interface WarehouseLowStockAlert {
   canTransferFrom: { warehouse: string; available: number }[];
 }
 
-// Mock data
-const mockInventory: InventoryItem[] = [
-  {
-    id: '1',
-    productId: '1',
-    productName: 'Wireless Mouse',
-    sku: 'ELEC-001',
-    category: 'Electronics',
-    warehouse: 'Main Warehouse',
-    quantity: 150,
-    reservedQty: 10,
-    availableQty: 140,
-    minStock: 20,
-    maxStock: 500,
-    reorderPoint: 50,
-    unitCost: 15.00,
-    lastUpdated: '2024-12-07T10:30:00Z',
-  },
-  {
-    id: '2',
-    productId: '2',
-    productName: 'Mechanical Keyboard',
-    sku: 'ELEC-002',
-    category: 'Electronics',
-    warehouse: 'Main Warehouse',
-    quantity: 8,
-    reservedQty: 3,
-    availableQty: 5,
-    minStock: 10,
-    maxStock: 200,
-    reorderPoint: 15,
-    unitCost: 45.00,
-    lastUpdated: '2024-12-07T09:15:00Z',
-  },
-  {
-    id: '3',
-    productId: '3',
-    productName: 'A4 Copy Paper',
-    sku: 'OFFC-001',
-    category: 'Office Supplies',
-    warehouse: 'Main Warehouse',
-    quantity: 500,
-    reservedQty: 50,
-    availableQty: 450,
-    minStock: 100,
-    maxStock: 2000,
-    reorderPoint: 200,
-    unitCost: 4.50,
-    lastUpdated: '2024-12-06T16:20:00Z',
-  },
-  {
-    id: '4',
-    productId: '4',
-    productName: 'Ergonomic Office Chair',
-    sku: 'FURN-001',
-    category: 'Furniture',
-    warehouse: 'Secondary Warehouse',
-    quantity: 25,
-    reservedQty: 5,
-    availableQty: 20,
-    minStock: 5,
-    maxStock: 100,
-    reorderPoint: 10,
-    unitCost: 150.00,
-    lastUpdated: '2024-12-05T14:00:00Z',
-  },
-  {
-    id: '5',
-    productId: '5',
-    productName: 'USB-C Hub',
-    sku: 'ELEC-003',
-    category: 'Electronics',
-    warehouse: 'Main Warehouse',
-    quantity: 200,
-    reservedQty: 15,
-    availableQty: 185,
-    minStock: 25,
-    maxStock: 400,
-    reorderPoint: 50,
-    unitCost: 25.00,
-    lastUpdated: '2024-12-05T11:30:00Z',
-  },
-  {
-    id: '6',
-    productId: '6',
-    productName: 'Printer Ink Black',
-    sku: 'OFFC-002',
-    category: 'Office Supplies',
-    warehouse: 'Main Warehouse',
-    quantity: 12,
-    reservedQty: 0,
-    availableQty: 12,
-    minStock: 20,
-    maxStock: 100,
-    reorderPoint: 25,
-    unitCost: 35.00,
-    lastUpdated: '2024-12-04T10:00:00Z',
-  },
-  {
-    id: '7',
-    productId: '4',
-    productName: 'Ergonomic Office Chair',
-    sku: 'FURN-001',
-    category: 'Furniture',
-    warehouse: 'Main Warehouse',
-    quantity: 3,
-    reservedQty: 1,
-    availableQty: 2,
-    minStock: 5,
-    maxStock: 50,
-    reorderPoint: 8,
-    unitCost: 150.00,
-    lastUpdated: '2024-12-05T14:00:00Z',
-  },
-  {
-    id: '8',
-    productId: '5',
-    productName: 'USB-C Hub',
-    sku: 'ELEC-003',
-    category: 'Electronics',
-    warehouse: 'Secondary Warehouse',
-    quantity: 5,
-    reservedQty: 0,
-    availableQty: 5,
-    minStock: 10,
-    maxStock: 100,
-    reorderPoint: 15,
-    unitCost: 25.00,
-    lastUpdated: '2024-12-05T11:30:00Z',
-  },
-];
-
+// Warehouse data for dropdowns
 const warehouseData = [
   { name: 'Main Warehouse', address: '123 Industrial Ave, New York, NY 10001' },
   { name: 'Secondary Warehouse', address: '456 Storage Blvd, Brooklyn, NY 11201' },
   { name: 'Downtown Retail Store', address: '789 Main Street, Manhattan, NY 10013' },
 ];
 
-// Mock Purchase Orders (pending/ordered for Stock In)
-const mockPurchaseOrders: PurchaseOrder[] = [
-  {
-    id: '1',
-    orderNumber: 'PO-2312-00021',
-    supplier: 'Electronics Wholesale',
-    destinationWarehouse: 'Main Warehouse',
-    items: [
-      { id: 'i1', productId: '5', productName: 'USB-C Hub', sku: 'ELEC-003', quantity: 200, receivedQuantity: 0, unitCost: 25.00 },
-    ],
-    status: 'ORDERED',
-    orderDate: '2024-12-04',
-    expectedDate: '2024-12-12',
-  },
-  {
-    id: '2',
-    orderNumber: 'PO-2312-00022',
-    supplier: 'Office Depot',
-    destinationWarehouse: 'Secondary Warehouse',
-    items: [
-      { id: 'i2', productId: '3', productName: 'A4 Copy Paper', sku: 'OFFC-001', quantity: 500, receivedQuantity: 0, unitCost: 4.50 },
-    ],
-    status: 'ORDERED',
-    orderDate: '2024-12-06',
-    expectedDate: '2024-12-15',
-  },
-  {
-    id: '3',
-    orderNumber: 'PO-2312-00020',
-    supplier: 'Furniture World',
-    destinationWarehouse: 'Downtown Retail Store',
-    items: [
-      { id: 'i3', productId: '4', productName: 'Ergonomic Office Chair', sku: 'FURN-001', quantity: 20, receivedQuantity: 10, unitCost: 150.00 },
-    ],
-    status: 'PARTIAL',
-    orderDate: '2024-12-01',
-    expectedDate: '2024-12-08',
-  },
-];
-
-// Mock Sales Orders (processing status for Stock Out)
-const mockSalesOrders: SalesOrder[] = [
-  {
-    id: '1',
-    orderNumber: 'SO-2312-00045',
-    customer: 'Acme Corporation',
-    sourceWarehouse: 'Main Warehouse',
-    items: [
-      { id: 's1', productId: '1', productName: 'Wireless Mouse', sku: 'ELEC-001', quantity: 10, shippedQuantity: 0, unitPrice: 29.99 },
-      { id: 's2', productId: '2', productName: 'Mechanical Keyboard', sku: 'ELEC-002', quantity: 5, shippedQuantity: 0, unitPrice: 89.99 },
-    ],
-    status: 'PROCESSING',
-    orderDate: '2024-12-07',
-    expectedDate: '2024-12-14',
-  },
-  {
-    id: '2',
-    orderNumber: 'SO-2312-00046',
-    customer: 'TechStart Inc.',
-    sourceWarehouse: 'Main Warehouse',
-    items: [
-      { id: 's3', productId: '5', productName: 'USB-C Hub', sku: 'ELEC-003', quantity: 20, shippedQuantity: 0, unitPrice: 49.99 },
-    ],
-    status: 'PROCESSING',
-    orderDate: '2024-12-08',
-    expectedDate: '2024-12-15',
-  },
-  {
-    id: '3',
-    orderNumber: 'SO-2312-00044',
-    customer: 'Global Systems',
-    sourceWarehouse: 'Secondary Warehouse',
-    items: [
-      { id: 's4', productId: '4', productName: 'Ergonomic Office Chair', sku: 'FURN-001', quantity: 5, shippedQuantity: 2, unitPrice: 299.99 },
-    ],
-    status: 'PROCESSING',
-    orderDate: '2024-12-06',
-    expectedDate: '2024-12-12',
-  },
-];
-
-const warehouses = warehouseData.map(w => w.name);
+const warehouses = warehouseData.map((w: { name: string; address: string }) => w.name);
 
 
 
@@ -384,7 +173,7 @@ const adjustmentTypeConfig: Record<AdjustmentType, { label: string; icon: typeof
 
 function InventoryPage() {
   const navigate = useNavigate();
-  const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('');
   const [stockFilter, setStockFilter] = useState<string>('');
@@ -409,12 +198,12 @@ function InventoryPage() {
   const [selectedStockOutReason, setSelectedStockOutReason] = useState<StockOutReason | ''>('');
 
   // PO Selection state for "Purchase Order Received" reason
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(mockPurchaseOrders);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
   const [receivingItems, setReceivingItems] = useState<{ itemId: string; quantity: number }[]>([]);
 
   // SO Selection state for "Sales Order Fulfilled" reason
-  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>(mockSalesOrders);
+  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
   const [selectedSO, setSelectedSO] = useState<SalesOrder | null>(null);
   const [shippingItems, setShippingItems] = useState<{ itemId: string; quantity: number }[]>([]);
 

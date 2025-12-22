@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -29,47 +30,80 @@ import {
   StatsCard,
 } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth';
+import { get } from '@/lib/api-client';
 
 export const Route = createFileRoute('/_dashboard/dashboard')({
   component: DashboardPage,
 });
 
-// Mock data for charts
-const salesData = [
-  { name: 'Jan', sales: 4000, orders: 24 },
-  { name: 'Feb', sales: 3000, orders: 18 },
-  { name: 'Mar', sales: 5000, orders: 32 },
-  { name: 'Apr', sales: 4500, orders: 28 },
-  { name: 'May', sales: 6000, orders: 38 },
-  { name: 'Jun', sales: 5500, orders: 35 },
-];
+// Types for dashboard data
+interface DashboardStats {
+  totalRevenue: number;
+  orderCount: number;
+  productCount: number;
+  customerCount: number;
+}
 
-const revenueData = [
-  { name: 'Mon', revenue: 1200 },
-  { name: 'Tue', revenue: 1800 },
-  { name: 'Wed', revenue: 1400 },
-  { name: 'Thu', revenue: 2200 },
-  { name: 'Fri', revenue: 1900 },
-  { name: 'Sat', revenue: 2400 },
-  { name: 'Sun', revenue: 1600 },
-];
+interface SalesData {
+  name: string;
+  sales: number;
+  orders: number;
+}
 
-const recentOrders = [
-  { id: 'SO-2312-00015', customer: 'Acme Corp', amount: '$1,250.00', status: 'Processing' },
-  { id: 'SO-2312-00014', customer: 'TechStart Inc', amount: '$890.00', status: 'Shipped' },
-  { id: 'SO-2312-00013', customer: 'Global Systems', amount: '$2,340.00', status: 'Delivered' },
-  { id: 'SO-2312-00012', customer: 'Local Store', amount: '$456.00', status: 'Processing' },
-  { id: 'SO-2312-00011', customer: 'Smart Solutions', amount: '$1,780.00', status: 'Pending' },
-];
+interface RevenueData {
+  name: string;
+  revenue: number;
+}
 
-const lowStockProducts = [
-  { sku: 'ELEC-001', name: 'Wireless Mouse', stock: 5, reorder: 20 },
-  { sku: 'ELEC-002', name: 'Mechanical Keyboard', stock: 8, reorder: 15 },
-  { sku: 'OFFC-005', name: 'Printer Paper A4', stock: 12, reorder: 50 },
-];
+interface RecentOrder {
+  id: string;
+  customer: string;
+  amount: string;
+  status: string;
+}
+
+interface LowStockProduct {
+  sku: string;
+  name: string;
+  stock: number;
+  reorder: number;
+}
 
 function DashboardPage() {
   const { user } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({ totalRevenue: 0, orderCount: 0, productCount: 0, customerCount: 0 });
+  const [salesData, setSalesData] = useState<SalesData[]>([]);
+  const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
+
+  // Fetch dashboard data from API
+  useEffect(() => {
+    async function fetchDashboardData() {
+      setIsLoading(true);
+      try {
+        const [statsRes, salesRes, revenueRes, ordersRes, lowStockRes] = await Promise.all([
+          get<DashboardStats>('/v1/dashboard/stats'),
+          get<SalesData[]>('/v1/dashboard/sales-chart'),
+          get<RevenueData[]>('/v1/dashboard/revenue-trend'),
+          get<RecentOrder[]>('/v1/dashboard/recent-orders'),
+          get<LowStockProduct[]>('/v1/dashboard/low-stock'),
+        ]);
+
+        if (statsRes.success && statsRes.data) setStats(statsRes.data);
+        if (salesRes.success && salesRes.data) setSalesData(salesRes.data);
+        if (revenueRes.success && revenueRes.data) setRevenueData(revenueRes.data);
+        if (ordersRes.success && ordersRes.data) setRecentOrders(ordersRes.data);
+        if (lowStockRes.success && lowStockRes.data) setLowStockProducts(lowStockRes.data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchDashboardData();
+  }, []);
 
   return (
     <PageContainer>
@@ -82,28 +116,28 @@ function DashboardPage() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Revenue"
-          value="$45,231.89"
+          value={`$${stats.totalRevenue.toLocaleString()}`}
           change="+20.1% from last month"
           changeType="positive"
           icon={DollarSign}
         />
         <StatsCard
           title="Orders"
-          value="156"
+          value={stats.orderCount.toString()}
           change="+12% from last month"
           changeType="positive"
           icon={ShoppingCart}
         />
         <StatsCard
           title="Products"
-          value="2,350"
+          value={stats.productCount.toLocaleString()}
           change="+180 this month"
           changeType="neutral"
           icon={Package}
         />
         <StatsCard
           title="Customers"
-          value="573"
+          value={stats.customerCount.toString()}
           change="+15 this week"
           changeType="positive"
           icon={Users}

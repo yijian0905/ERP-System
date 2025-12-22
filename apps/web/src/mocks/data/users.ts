@@ -1,0 +1,73 @@
+/**
+ * Users Mock Data
+ */
+import { ROLE_PERMISSIONS } from '@/stores/permissions';
+
+export const mockUsers = [
+    {
+        id: '1',
+        name: 'Admin User',
+        email: 'admin@demo-company.com',
+        role: 'ADMIN' as const,
+        permissions: ROLE_PERMISSIONS.ADMIN,
+        isActive: true,
+        department: 'Management',
+        position: 'System Administrator',
+        lastLogin: '2024-12-07T10:30:00Z',
+        createdAt: '2024-01-01',
+    },
+    {
+        id: '2',
+        name: 'Manager User',
+        email: 'manager@demo-company.com',
+        role: 'MANAGER' as const,
+        permissions: ROLE_PERMISSIONS.MANAGER,
+        isActive: true,
+        department: 'Operations',
+        position: 'Operations Manager',
+        lastLogin: '2024-12-07T09:15:00Z',
+        createdAt: '2024-02-15',
+    },
+    {
+        id: '3',
+        name: 'Sales Rep',
+        email: 'sales@demo-company.com',
+        role: 'USER' as const,
+        permissions: ROLE_PERMISSIONS.USER,
+        isActive: true,
+        department: 'Sales',
+        position: 'Sales Representative',
+        lastLogin: '2024-12-06T16:20:00Z',
+        createdAt: '2024-03-20',
+    },
+    {
+        id: '4',
+        name: 'Warehouse Staff',
+        email: 'warehouse@demo-company.com',
+        role: 'CUSTOM' as const,
+        permissions: [
+            'dashboard.view',
+            'products.view',
+            'inventory.view', 'inventory.adjust', 'inventory.transfer',
+            'warehouses.view',
+            'purchasing.view',
+        ],
+        isActive: true,
+        department: 'Warehouse',
+        position: 'Warehouse Associate',
+        lastLogin: '2024-12-05T14:00:00Z',
+        createdAt: '2024-04-10',
+    },
+    {
+        id: '5',
+        name: 'Report Viewer',
+        email: 'viewer@demo-company.com',
+        role: 'VIEWER' as const,
+        permissions: ROLE_PERMISSIONS.VIEWER,
+        isActive: false,
+        department: 'Finance',
+        position: 'Financial Analyst',
+        lastLogin: '2024-11-20T11:00:00Z',
+        createdAt: '2024-05-05',
+    },
+];

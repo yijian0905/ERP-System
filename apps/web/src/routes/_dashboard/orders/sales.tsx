@@ -42,6 +42,7 @@ import { FilterSelect } from '@/components/ui/filter-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useCanSkipApproval } from '@/stores/auth';
+import { ordersApi, customersApi, productsApi } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/orders/sales')({
   component: SalesOrdersPage,
@@ -81,116 +82,6 @@ interface SalesOrder {
   dueDateDays: number;
 }
 
-// Mock inventory items - these represent available stock for sales
-const mockInventoryItems = [
-  { id: 'p1', sku: 'ELEC-001', name: 'Wireless Mouse', price: 29.99, stock: 140, reserved: 10, category: 'Electronics' },
-  { id: 'p2', sku: 'ELEC-002', name: 'Mechanical Keyboard', price: 89.99, stock: 5, reserved: 3, category: 'Electronics' },
-  { id: 'p3', sku: 'ELEC-003', name: 'USB-C Hub', price: 49.99, stock: 185, reserved: 15, category: 'Electronics' },
-  { id: 'p4', sku: 'OFFC-001', name: 'A4 Copy Paper (Ream)', price: 8.99, stock: 450, reserved: 50, category: 'Office Supplies' },
-  { id: 'p5', sku: 'FURN-001', name: 'Ergonomic Chair', price: 299.99, stock: 20, reserved: 5, category: 'Furniture' },
-  { id: 'p6', sku: 'OFFC-002', name: 'Printer Ink Black', price: 45.99, stock: 12, reserved: 0, category: 'Office Supplies' },
-];
-
-const mockCustomers = [
-  { id: 'c1', name: 'Acme Corporation', email: 'orders@acme.com', address: '123 Business Ave, NY 10001' },
-  { id: 'c2', name: 'TechStart Inc.', email: 'purchase@techstart.com', address: '456 Tech Blvd, SF 94102' },
-  { id: 'c3', name: 'Global Systems', email: 'procurement@global.com', address: '789 Global Way, LA 90001' },
-  { id: 'c4', name: 'Local Store', email: 'buying@localstore.com', address: '321 Main St, Chicago 60601' },
-  { id: 'c5', name: 'Smart Solutions', email: 'orders@smart.com', address: '555 Smart Ave, Boston 02101' },
-  { id: 'c6', name: 'City Government', email: 'procurement@city.gov', address: '100 City Hall, DC 20001' },
-];
-
-const mockOrders: SalesOrder[] = [
-  {
-    id: '1',
-    orderNumber: 'SO-2312-00045',
-    customer: 'Acme Corporation',
-    customerId: 'c1',
-    customerEmail: 'orders@acme.com',
-    customerAddress: '123 Business Ave, NY 10001',
-    items: [
-      { id: 'i1', productId: 'p1', productName: 'Wireless Mouse', sku: 'ELEC-001', quantity: 10, unitPrice: 29.99, total: 299.90 },
-      { id: 'i2', productId: 'p2', productName: 'Mechanical Keyboard', sku: 'ELEC-002', quantity: 5, unitPrice: 89.99, total: 449.95 },
-    ],
-    subtotal: 749.85,
-    tax: 67.49,
-    total: 817.34,
-    status: 'PROCESSING',
-    orderDate: '2024-12-07',
-    expectedDate: '2024-12-14',
-    shippedDate: null,
-    notes: 'Rush delivery requested',
-    terms: 'Net 30',
-    taxRate: 9,
-    dueDateDays: 30
-  },
-  {
-    id: '2',
-    orderNumber: 'SO-2312-00044',
-    customer: 'TechStart Inc.',
-    customerId: 'c2',
-    customerEmail: 'purchase@techstart.com',
-    customerAddress: '456 Tech Blvd, SF 94102',
-    items: [
-      { id: 'i3', productId: 'p3', productName: 'USB-C Hub', sku: 'ELEC-003', quantity: 20, unitPrice: 49.99, total: 999.80 },
-    ],
-    subtotal: 999.80,
-    tax: 89.98,
-    total: 1089.78,
-    status: 'SHIPPED',
-    orderDate: '2024-12-06',
-    expectedDate: '2024-12-12',
-    shippedDate: '2024-12-07',
-    notes: '',
-    terms: 'Net 30',
-    taxRate: 9,
-    dueDateDays: 30
-  },
-  {
-    id: '3',
-    orderNumber: 'SO-2312-00043',
-    customer: 'Global Systems',
-    customerId: 'c3',
-    customerEmail: 'procurement@global.com',
-    customerAddress: '789 Global Way, LA 90001',
-    items: [
-      { id: 'i4', productId: 'p5', productName: 'Ergonomic Chair', sku: 'FURN-001', quantity: 10, unitPrice: 299.99, total: 2999.90 },
-    ],
-    subtotal: 2999.90,
-    tax: 269.99,
-    total: 3269.89,
-    status: 'DELIVERED',
-    orderDate: '2024-12-03',
-    expectedDate: '2024-12-10',
-    shippedDate: '2024-12-05',
-    notes: 'Deliver to loading dock',
-    terms: 'Net 30',
-    taxRate: 9,
-    dueDateDays: 30
-  },
-  {
-    id: '4',
-    orderNumber: 'SO-2312-00042',
-    customer: 'Local Store',
-    customerId: 'c4',
-    customerEmail: 'buying@localstore.com',
-    customerAddress: '321 Main St, Chicago 60601',
-    items: [
-      { id: 'i5', productId: 'p4', productName: 'A4 Copy Paper (Ream)', sku: 'OFFC-001', quantity: 50, unitPrice: 8.99, total: 449.50 },
-    ],
-    subtotal: 449.50,
-    tax: 40.46,
-    total: 489.96,
-    status: 'PENDING',
-    orderDate: '2024-12-05',
-    expectedDate: null,
-    shippedDate: null,
-    notes: '',
-    terms: 'Net 30',
-    taxRate: 9,
-    dueDateDays: 30
-  },
-];
 
 // Company info for invoice
 const companyInfo = {
@@ -202,7 +93,10 @@ const companyInfo = {
 };
 
 function SalesOrdersPage() {
-  const [orders, setOrders] = useState<SalesOrder[]>(mockOrders);
+  const [orders, setOrders] = useState<SalesOrder[]>([]);
+  const [mockInventoryItems, setMockInventoryItems] = useState<typeof import('@/lib/api/products').Product[]>([]);
+  const [mockCustomers, setMockCustomers] = useState<typeof import('@/lib/api/customers').Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [inventorySearch, setInventorySearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
 

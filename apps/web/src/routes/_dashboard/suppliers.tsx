@@ -9,7 +9,7 @@ import {
   Search,
   Truck,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { get } from '@/lib/api-client';
 
 export const Route = createFileRoute('/_dashboard/suppliers')({
   component: SuppliersPage,
@@ -48,71 +49,31 @@ interface Supplier {
   isActive: boolean;
 }
 
-// Mock data
-const mockSuppliers: Supplier[] = [
-  {
-    id: '1',
-    code: 'SUP-001',
-    name: 'Tech Supplies Inc',
-    contactPerson: 'John Davis',
-    email: 'orders@techsupplies.com',
-    phone: '+1 (555) 111-2222',
-    website: 'https://techsupplies.com',
-    paymentTerms: 30,
-    isActive: true,
-  },
-  {
-    id: '2',
-    code: 'SUP-002',
-    name: 'Office Depot',
-    contactPerson: 'Sarah Miller',
-    email: 'business@officedepot.com',
-    phone: '+1 (555) 222-3333',
-    website: 'https://officedepot.com',
-    paymentTerms: 15,
-    isActive: true,
-  },
-  {
-    id: '3',
-    code: 'SUP-003',
-    name: 'Electronics Wholesale',
-    contactPerson: 'Mike Chen',
-    email: 'sales@elecwholesale.com',
-    phone: '+1 (555) 333-4444',
-    website: null,
-    paymentTerms: 45,
-    isActive: true,
-  },
-  {
-    id: '4',
-    code: 'SUP-004',
-    name: 'Furniture World',
-    contactPerson: 'Lisa Park',
-    email: 'orders@furnitureworld.com',
-    phone: '+1 (555) 444-5555',
-    website: 'https://furnitureworld.com',
-    paymentTerms: 30,
-    isActive: true,
-  },
-  {
-    id: '5',
-    code: 'SUP-005',
-    name: 'Global Parts Ltd',
-    contactPerson: 'Tom Wilson',
-    email: 'contact@globalparts.co',
-    phone: '+1 (555) 555-6666',
-    website: 'https://globalparts.co',
-    paymentTerms: 60,
-    isActive: true,
-  },
-];
-
 function SuppliersPage() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch suppliers from API
+  useEffect(() => {
+    async function fetchSuppliers() {
+      setIsLoading(true);
+      try {
+        const response = await get<Supplier[]>('/v1/suppliers');
+        if (response.success && response.data) {
+          setSuppliers(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch suppliers:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchSuppliers();
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',

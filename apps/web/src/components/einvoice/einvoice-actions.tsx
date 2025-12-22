@@ -25,29 +25,34 @@ import {
 import { cn } from '@/lib/utils';
 
 import type { EInvoiceStatus } from './einvoice-status-badge';
+import { CancellationCountdown } from './cancellation-countdown';
 
 interface EInvoiceActionsProps {
   eInvoiceId?: string;
   invoiceId: string;
   status?: EInvoiceStatus;
+  validatedAt?: string | Date | null;
   onCreateAndSubmit?: (invoiceId: string) => Promise<void>;
   onSubmit?: (eInvoiceId: string) => Promise<void>;
   onSync?: (eInvoiceId: string) => Promise<void>;
   onCancel?: (eInvoiceId: string, reason: string) => Promise<void>;
   onRetry?: (eInvoiceId: string) => Promise<void>;
   className?: string;
+  showCountdown?: boolean;
 }
 
 export function EInvoiceActions({
   eInvoiceId,
   invoiceId,
   status,
+  validatedAt,
   onCreateAndSubmit,
   onSubmit,
   onSync,
   onCancel,
   onRetry,
   className,
+  showCountdown = true,
 }: EInvoiceActionsProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -206,6 +211,14 @@ export function EInvoiceActions({
             Cancelled
           </span>
         )}
+
+        {/* Show cancellation countdown for VALID/SUBMITTED status */}
+        {showCountdown && showCancel && validatedAt && (
+          <CancellationCountdown
+            validatedAt={validatedAt}
+            status={status}
+          />
+        )}
       </div>
 
       {/* Cancel Dialog */}
@@ -221,6 +234,17 @@ export function EInvoiceActions({
               cannot be undone.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Deadline Warning Banner */}
+          {validatedAt && (
+            <div className="my-4">
+              <CancellationCountdown
+                validatedAt={validatedAt}
+                status={status}
+                className="w-full justify-center"
+              />
+            </div>
+          )}
 
           <div className="py-4">
             <label className="text-sm font-medium">

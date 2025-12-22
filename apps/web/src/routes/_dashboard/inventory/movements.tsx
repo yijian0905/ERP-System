@@ -7,12 +7,13 @@ import {
   Search,
   Truck,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
+import { inventoryApi } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/inventory/movements')({
   component: InventoryMovementsPage,
@@ -35,75 +36,6 @@ interface Movement {
   createdAt: string;
 }
 
-// Mock data
-const mockMovements: Movement[] = [
-  {
-    id: '1',
-    type: 'PURCHASE',
-    productName: 'Wireless Mouse',
-    sku: 'ELEC-001',
-    quantity: 100,
-    fromWarehouse: null,
-    toWarehouse: 'Main Warehouse',
-    reference: 'PO-2312-00012',
-    notes: 'Bulk order from supplier',
-    createdBy: 'Admin User',
-    createdAt: '2024-12-07T10:30:00Z',
-  },
-  {
-    id: '2',
-    type: 'SALE',
-    productName: 'Mechanical Keyboard',
-    sku: 'ELEC-002',
-    quantity: 5,
-    fromWarehouse: 'Main Warehouse',
-    toWarehouse: null,
-    reference: 'SO-2312-00045',
-    notes: null,
-    createdBy: 'Manager User',
-    createdAt: '2024-12-07T09:15:00Z',
-  },
-  {
-    id: '3',
-    type: 'TRANSFER_OUT',
-    productName: 'A4 Copy Paper',
-    sku: 'OFFC-001',
-    quantity: 200,
-    fromWarehouse: 'Main Warehouse',
-    toWarehouse: 'Secondary Warehouse',
-    reference: 'TR-2312-00003',
-    notes: 'Stock redistribution',
-    createdBy: 'Admin User',
-    createdAt: '2024-12-06T16:20:00Z',
-  },
-  {
-    id: '4',
-    type: 'ADJUSTMENT',
-    productName: 'USB-C Hub',
-    sku: 'ELEC-003',
-    quantity: -3,
-    fromWarehouse: 'Main Warehouse',
-    toWarehouse: null,
-    reference: 'ADJ-2312-00008',
-    notes: 'Inventory count correction',
-    createdBy: 'Admin User',
-    createdAt: '2024-12-06T14:00:00Z',
-  },
-  {
-    id: '5',
-    type: 'RETURN_IN',
-    productName: 'Ergonomic Office Chair',
-    sku: 'FURN-001',
-    quantity: 2,
-    fromWarehouse: null,
-    toWarehouse: 'Main Warehouse',
-    reference: 'RET-2312-00002',
-    notes: 'Customer return - defective',
-    createdBy: 'Manager User',
-    createdAt: '2024-12-05T11:30:00Z',
-  },
-];
-
 const typeConfig: Record<MovementType, { label: string; color: string; icon: typeof ArrowUpRight }> = {
   PURCHASE: { label: 'Purchase', color: 'text-green-600 bg-green-100 dark:bg-green-900/30', icon: ArrowDownRight },
   SALE: { label: 'Sale', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30', icon: ArrowUpRight },
@@ -115,10 +47,29 @@ const typeConfig: Record<MovementType, { label: string; color: string; icon: typ
 };
 
 function InventoryMovementsPage() {
-  const [movements] = useState<Movement[]>(mockMovements);
+  const [movements, setMovements] = useState<Movement[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [dateRange, setDateRange] = useState<string>('7');
+
+  // Fetch movements from API
+  useEffect(() => {
+    async function fetchMovements() {
+      setIsLoading(true);
+      try {
+        const response = await inventoryApi.getMovements();
+        if (response.success && response.data) {
+          setMovements(response.data as unknown as Movement[]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch movements:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchMovements();
+  }, []);
 
   // Filter movements
   const filteredMovements = movements.filter((movement) => {

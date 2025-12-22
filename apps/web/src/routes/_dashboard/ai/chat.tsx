@@ -16,6 +16,7 @@ import { useCallback, useRef, useState } from 'react';
 import { PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { get, post } from '@/lib/api-client';
 
 export const Route = createFileRoute('/_dashboard/ai/chat')({
   component: AIChatPage,
@@ -147,7 +148,7 @@ function AIChatPage() {
 
     setMessages((prev) => [...prev, assistantMessage]);
     setIsLoading(false);
-    
+
     setTimeout(scrollToBottom, 100);
   }, [input, isLoading]);
 
@@ -233,7 +234,7 @@ function AIChatPage() {
                 </div>
                 <h3 className="text-lg font-semibold">How can I help you today?</h3>
                 <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-md">
-                  I can help you analyze your business data, generate reports, 
+                  I can help you analyze your business data, generate reports,
                   and provide insights about inventory, sales, customers, and more.
                 </p>
 
@@ -263,8 +264,8 @@ function AIChatPage() {
                   >
                     <div className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0',
-                      message.role === 'user' 
-                        ? 'bg-primary text-primary-foreground' 
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-muted'
                     )}>
                       {message.role === 'user' ? (

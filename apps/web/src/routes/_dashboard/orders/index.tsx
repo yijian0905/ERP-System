@@ -12,7 +12,7 @@ import {
   ShoppingCart,
   TrendingUp,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
   DashboardCard,
@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
+import { ordersApi } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/orders/')({
   component: OrderManagementPage,
@@ -52,24 +53,6 @@ interface UnifiedOrder {
   hasInvoice: boolean;
 }
 
-// Mock data - Combined sales and purchase orders
-const mockOrders: UnifiedOrder[] = [
-  // Sales Orders
-  { id: 's1', orderNumber: 'SO-2312-00045', type: 'SALES', party: 'Acme Corporation', itemCount: 2, total: 817.34, status: 'PROCESSING', orderDate: '2024-12-07', expectedDate: '2024-12-14', hasInvoice: true },
-  { id: 's2', orderNumber: 'SO-2312-00044', type: 'SALES', party: 'TechStart Inc.', itemCount: 1, total: 1089.78, status: 'SHIPPED', orderDate: '2024-12-06', expectedDate: '2024-12-12', hasInvoice: true },
-  { id: 's3', orderNumber: 'SO-2312-00043', type: 'SALES', party: 'Global Systems', itemCount: 1, total: 3269.89, status: 'DELIVERED', orderDate: '2024-12-03', expectedDate: '2024-12-10', hasInvoice: true },
-  { id: 's4', orderNumber: 'SO-2312-00042', type: 'SALES', party: 'Local Store', itemCount: 1, total: 489.96, status: 'PENDING', orderDate: '2024-12-05', expectedDate: null, hasInvoice: false },
-  { id: 's5', orderNumber: 'SO-2312-00041', type: 'SALES', party: 'Smart Solutions', itemCount: 2, total: 1634.56, status: 'COMPLETED', orderDate: '2024-12-01', expectedDate: '2024-12-08', hasInvoice: true },
-  { id: 's6', orderNumber: 'SO-2312-00040', type: 'SALES', party: 'City Government', itemCount: 2, total: 3297.50, status: 'PENDING', orderDate: '2024-12-07', expectedDate: null, hasInvoice: false },
-  // Purchase Orders
-  { id: 'p1', orderNumber: 'PO-2312-00023', type: 'PURCHASE', party: 'Tech Supplies Inc', itemCount: 2, total: 4162.50, status: 'RECEIVED', orderDate: '2024-12-05', expectedDate: '2024-12-10', hasInvoice: false },
-  { id: 'p2', orderNumber: 'PO-2312-00022', type: 'PURCHASE', party: 'Office Depot', itemCount: 1, total: 2502.50, status: 'PENDING', orderDate: '2024-12-06', expectedDate: '2024-12-15', hasInvoice: false },
-  { id: 'p3', orderNumber: 'PO-2312-00021', type: 'PURCHASE', party: 'Electronics Wholesale', itemCount: 1, total: 5550.00, status: 'ORDERED', orderDate: '2024-12-04', expectedDate: '2024-12-12', hasInvoice: false },
-  { id: 'p4', orderNumber: 'PO-2312-00020', type: 'PURCHASE', party: 'Furniture World', itemCount: 1, total: 3470.00, status: 'ORDERED', orderDate: '2024-12-01', expectedDate: '2024-12-08', hasInvoice: false },
-  { id: 'p5', orderNumber: 'PO-2312-00019', type: 'PURCHASE', party: 'Tech Supplies Inc', itemCount: 3, total: 9687.50, status: 'COMPLETED', orderDate: '2024-11-25', expectedDate: '2024-12-02', hasInvoice: false },
-  { id: 'p6', orderNumber: 'PO-2312-00024', type: 'PURCHASE', party: 'Global Parts Ltd', itemCount: 1, total: 2512.50, status: 'PENDING', orderDate: '2024-12-07', expectedDate: null, hasInvoice: false },
-];
-
 const statusStyles: Record<string, string> = {
   PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   CONFIRMED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -85,11 +68,41 @@ const statusStyles: Record<string, string> = {
 
 
 function OrderManagementPage() {
-  const [orders] = useState<UnifiedOrder[]>(mockOrders);
+  const [orders, setOrders] = useState<UnifiedOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [dateRange, setDateRange] = useState<string>('all');
+
+  // Fetch orders from API
+  useEffect(() => {
+    async function fetchOrders() {
+      setIsLoading(true);
+      try {
+        const response = await ordersApi.list();
+        if (response.success && response.data) {
+          setOrders(response.data.map((o) => ({
+            id: o.id,
+            orderNumber: o.orderNumber,
+            type: (o.type === 'SALES' ? 'SALES' : 'PURCHASE') as OrderType,
+            party: o.type === 'SALES' ? o.customerName || '' : o.supplierName || '',
+            itemCount: o.items?.length || 0,
+            total: o.total,
+            status: o.status as OrderStatus,
+            orderDate: o.orderDate,
+            expectedDate: o.expectedDate || null,
+            hasInvoice: false,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch orders:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchOrders();
+  }, []);
 
   // Filter orders
   const filteredOrders = orders

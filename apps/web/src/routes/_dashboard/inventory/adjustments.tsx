@@ -8,7 +8,7 @@ import {
   Plus,
   Search,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import { FilterSelect } from '@/components/ui/filter-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useCanSkipApproval } from '@/stores/auth';
+import { inventoryApi, productsApi, type Product } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/inventory/adjustments')({
   component: InventoryAdjustmentsPage,
@@ -50,70 +51,6 @@ interface Adjustment {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
-// Mock data
-const mockAdjustments: Adjustment[] = [
-  {
-    id: '1',
-    adjustmentNumber: 'ADJ-2312-00008',
-    productName: 'USB-C Hub',
-    sku: 'ELEC-003',
-    warehouse: 'Main Warehouse',
-    quantityBefore: 203,
-    quantityAdjusted: -3,
-    quantityAfter: 200,
-    reason: 'COUNT_CORRECTION',
-    notes: 'Physical count showed discrepancy',
-    createdBy: 'Admin User',
-    createdAt: '2024-12-06T14:00:00Z',
-    status: 'APPROVED',
-  },
-  {
-    id: '2',
-    adjustmentNumber: 'ADJ-2312-00007',
-    productName: 'Printer Ink Black',
-    sku: 'OFFC-002',
-    warehouse: 'Main Warehouse',
-    quantityBefore: 15,
-    quantityAdjusted: -3,
-    quantityAfter: 12,
-    reason: 'EXPIRED',
-    notes: 'Expired ink cartridges removed from stock',
-    createdBy: 'Manager User',
-    createdAt: '2024-12-05T10:30:00Z',
-    status: 'APPROVED',
-  },
-  {
-    id: '3',
-    adjustmentNumber: 'ADJ-2312-00006',
-    productName: 'Mechanical Keyboard',
-    sku: 'ELEC-002',
-    warehouse: 'Main Warehouse',
-    quantityBefore: 10,
-    quantityAdjusted: -2,
-    quantityAfter: 8,
-    reason: 'DAMAGE',
-    notes: 'Damaged during handling',
-    createdBy: 'Admin User',
-    createdAt: '2024-12-04T16:45:00Z',
-    status: 'APPROVED',
-  },
-  {
-    id: '4',
-    adjustmentNumber: 'ADJ-2312-00005',
-    productName: 'Wireless Mouse',
-    sku: 'ELEC-001',
-    warehouse: 'Main Warehouse',
-    quantityBefore: 148,
-    quantityAdjusted: 2,
-    quantityAfter: 150,
-    reason: 'FOUND',
-    notes: 'Found misplaced items in storage',
-    createdBy: 'Admin User',
-    createdAt: '2024-12-03T09:15:00Z',
-    status: 'PENDING',
-  },
-];
-
 const reasonLabels: Record<AdjustmentReason, { label: string; color: string }> = {
   DAMAGE: { label: 'Damage', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
   EXPIRED: { label: 'Expired', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
@@ -129,21 +66,40 @@ const statusStyles = {
   REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
-// Mock products for selection
-const mockProducts = [
-  { id: '1', name: 'Wireless Mouse', sku: 'ELEC-001', currentStock: 150 },
-  { id: '2', name: 'Mechanical Keyboard', sku: 'ELEC-002', currentStock: 8 },
-  { id: '3', name: 'USB-C Hub', sku: 'ELEC-003', currentStock: 200 },
-  { id: '4', name: 'Printer Ink Black', sku: 'OFFC-002', currentStock: 12 },
-];
 
 function InventoryAdjustmentsPage() {
-  const [adjustments, setAdjustments] = useState<Adjustment[]>(mockAdjustments);
+  const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [reasonFilter, setReasonFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch adjustments and products from API
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        const [adjustmentsResponse, productsResponse] = await Promise.all([
+          inventoryApi.getAdjustments(),
+          productsApi.list({ status: 'ACTIVE' }),
+        ]);
+        if (adjustmentsResponse.success && adjustmentsResponse.data) {
+          setAdjustments(adjustmentsResponse.data as unknown as Adjustment[]);
+        }
+        if (productsResponse.success && productsResponse.data) {
+          setProducts(productsResponse.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const [formData, setFormData] = useState({
     productId: '',
@@ -171,7 +127,7 @@ function InventoryAdjustmentsPage() {
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const selectedProduct = mockProducts.find((p) => p.id === formData.productId);
+    const selectedProduct = products.find((p) => p.id === formData.productId);
     if (!selectedProduct) return;
 
     const quantityChange = formData.adjustmentType === 'increase'
@@ -184,9 +140,9 @@ function InventoryAdjustmentsPage() {
       productName: selectedProduct.name,
       sku: selectedProduct.sku,
       warehouse: 'Main Warehouse',
-      quantityBefore: selectedProduct.currentStock,
+      quantityBefore: selectedProduct.stock,
       quantityAdjusted: quantityChange,
-      quantityAfter: selectedProduct.currentStock + quantityChange,
+      quantityAfter: selectedProduct.stock + quantityChange,
       reason: formData.reason,
       notes: formData.notes || null,
       createdBy: 'Current User',
@@ -429,9 +385,9 @@ function InventoryAdjustmentsPage() {
               <FilterSelect
                 value={formData.productId}
                 onChange={(val) => setFormData((f) => ({ ...f, productId: val }))}
-                options={mockProducts.map((p) => ({
+                options={products.map((p) => ({
                   value: p.id,
-                  label: `${p.name} (${p.sku}) - Current: ${p.currentStock}`
+                  label: `${p.name} (${p.sku}) - Current: ${p.stock}`
                 }))}
                 placeholder="Select a product"
                 className="w-full"

@@ -13,7 +13,7 @@ import {
   Trash2,
   TrendingUp,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { CreatableSelect } from '@/components/creatable-select';
 import { FilterSelect } from '@/components/ui/filter-select';
@@ -38,6 +38,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { productsApi, type Product as ApiProduct, type Category as ApiCategory } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/products')({
   component: ProductsPage,
@@ -83,46 +84,19 @@ interface CategoryFull {
   children?: CategoryFull[];
 }
 
-// Initial categories - can be expanded by admin/manager
-// Products categories (sellable items)
-const initialCategories: Category[] = [
-  // Product categories (sellable)
-  { id: 'elec', name: 'Electronics', prefix: 'ELEC' },
-  { id: 'offc', name: 'Office Supplies', prefix: 'OFFC' },
-  { id: 'furn', name: 'Furniture', prefix: 'FURN' },
-  { id: 'pack', name: 'Packaging', prefix: 'PACK' },
-  { id: 'misc', name: 'Miscellaneous', prefix: 'MISC' },
-  // Operating Consumables categories (non-sellable, internal use only)
-  { id: 'clen', name: 'Cleaning Supplies', prefix: 'CLEN', isNonSellable: true },
-  { id: 'bvrg', name: 'Coffee & Beverages', prefix: 'BVRG', isNonSellable: true },
-  { id: 'mant', name: 'Maintenance', prefix: 'MANT', isNonSellable: true },
-  { id: 'safe', name: 'Safety Equipment', prefix: 'SAFE', isNonSellable: true },
-  { id: 'stat', name: 'Stationery', prefix: 'STAT', isNonSellable: true },
-];
-
 const statusConfig: Record<ProductStatus, { label: string; color: string }> = {
   ACTIVE: { label: 'Active', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   INACTIVE: { label: 'Inactive', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
   DISCONTINUED: { label: 'Discontinued', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 };
 
-// Mock data
-const mockProducts: Product[] = [
-  { id: '1', sku: 'ELEC-001', name: 'Wireless Mouse', description: 'Ergonomic wireless mouse with USB receiver', category: 'Electronics', price: 29.99, cost: 15.00, stock: 150, minStock: 20, maxStock: 500, reorderPoint: 50, status: 'ACTIVE', createdAt: '2024-01-15' },
-  { id: '2', sku: 'ELEC-002', name: 'Mechanical Keyboard', description: 'RGB mechanical keyboard with blue switches', category: 'Electronics', price: 149.99, cost: 75.00, stock: 75, minStock: 10, maxStock: 200, reorderPoint: 25, status: 'ACTIVE', createdAt: '2024-02-20' },
-  { id: '3', sku: 'OFFC-001', name: 'A4 Copy Paper', description: '500 sheets, 80gsm white paper', category: 'Office Supplies', price: 8.99, cost: 4.50, stock: 500, minStock: 100, maxStock: 2000, reorderPoint: 200, status: 'ACTIVE', createdAt: '2024-03-10' },
-  { id: '4', sku: 'FURN-001', name: 'Ergonomic Office Chair', description: 'Adjustable height with lumbar support', category: 'Furniture', price: 299.99, cost: 150.00, stock: 25, minStock: 5, maxStock: 100, reorderPoint: 10, status: 'ACTIVE', createdAt: '2024-04-05' },
-  { id: '5', sku: 'ELEC-003', name: 'USB-C Hub', description: '7-in-1 USB-C hub with HDMI and USB 3.0', category: 'Electronics', price: 49.99, cost: 25.00, stock: 200, minStock: 25, maxStock: 400, reorderPoint: 50, status: 'ACTIVE', createdAt: '2024-05-12' },
-  { id: '6', sku: 'OFFC-002', name: 'Printer Ink Black', description: 'Compatible with HP/Canon printers', category: 'Office Supplies', price: 24.99, cost: 12.00, stock: 80, minStock: 20, maxStock: 200, reorderPoint: 40, status: 'ACTIVE', createdAt: '2024-06-01' },
-  { id: '7', sku: 'ELEC-004', name: 'Webcam HD 1080p', description: 'USB webcam with built-in microphone', category: 'Electronics', price: 79.99, cost: 40.00, stock: 0, minStock: 10, maxStock: 150, reorderPoint: 20, status: 'INACTIVE', createdAt: '2024-07-15' },
-];
-
 type TabType = 'products' | 'consumables';
 
 function ProductsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('products');
-  const [products, setProducts] = useState<Product[]>(mockProducts);
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -138,6 +112,36 @@ function ProductsPage() {
   const [parentCategory, setParentCategory] = useState<CategoryFull | null>(null);
   const [isCategorySaving, setIsCategorySaving] = useState(false);
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(new Set(['1', '2', '3']));
+
+  // Fetch products and categories from API
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        const [productsRes, categoriesRes] = await Promise.all([
+          productsApi.list(),
+          productsApi.getCategories(),
+        ]);
+
+        if (productsRes.success && productsRes.data) {
+          // Map API response to local Product type
+          setProducts(productsRes.data.map((p: ApiProduct) => ({
+            ...p,
+            category: p.category, // category name from API
+          })));
+        }
+
+        if (categoriesRes.success && categoriesRes.data) {
+          setCategories(categoriesRes.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   // Category form state
   const [categoryFormData, setCategoryFormData] = useState({

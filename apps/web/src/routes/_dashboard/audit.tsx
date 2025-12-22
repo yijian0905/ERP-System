@@ -22,7 +22,7 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { get } from '@/lib/api-client';
 
 export const Route = createFileRoute('/_dashboard/audit')({
   component: AuditLogsPage,
@@ -64,189 +65,6 @@ interface AuditLog {
   createdAt: string;
 }
 
-// Mock data
-const mockAuditLogs: AuditLog[] = [
-  {
-    id: '1',
-    userId: '1',
-    userName: 'Admin User',
-    userEmail: 'admin@demo-company.com',
-    action: 'update',
-    entityType: 'product',
-    entityId: 'prod-001',
-    entityName: 'Wireless Mouse',
-    oldValues: { price: 29.99, stock: 100 },
-    newValues: { price: 34.99, stock: 150 },
-    changedFields: ['price', 'stock'],
-    ipAddress: '192.168.1.100',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    requestId: 'req-abc123',
-    duration: 45,
-    createdAt: '2024-12-08T10:30:00Z',
-  },
-  {
-    id: '2',
-    userId: '2',
-    userName: 'Manager User',
-    userEmail: 'manager@demo-company.com',
-    action: 'create',
-    entityType: 'order',
-    entityId: 'SO-2312-00045',
-    entityName: 'Sales Order #SO-2312-00045',
-    oldValues: null,
-    newValues: { customerId: 'cust-001', total: 1250.00, items: 5 },
-    changedFields: null,
-    ipAddress: '192.168.1.101',
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-    requestId: 'req-def456',
-    duration: 120,
-    createdAt: '2024-12-08T09:45:00Z',
-  },
-  {
-    id: '3',
-    userId: '1',
-    userName: 'Admin User',
-    userEmail: 'admin@demo-company.com',
-    action: 'login',
-    entityType: 'user',
-    entityId: '1',
-    entityName: 'Admin User',
-    oldValues: null,
-    newValues: { method: 'password' },
-    changedFields: null,
-    ipAddress: '192.168.1.100',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    requestId: 'req-ghi789',
-    duration: 15,
-    createdAt: '2024-12-08T08:00:00Z',
-  },
-  {
-    id: '4',
-    userId: '3',
-    userName: 'Sales Rep',
-    userEmail: 'sales@demo-company.com',
-    action: 'print',
-    entityType: 'invoice',
-    entityId: 'INV-2312-00089',
-    entityName: 'Invoice #INV-2312-00089',
-    oldValues: null,
-    newValues: { printedAt: '2024-12-07T16:30:00Z' },
-    changedFields: null,
-    ipAddress: '192.168.1.102',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    requestId: 'req-jkl012',
-    duration: 250,
-    createdAt: '2024-12-07T16:30:00Z',
-  },
-  {
-    id: '5',
-    userId: '2',
-    userName: 'Manager User',
-    userEmail: 'manager@demo-company.com',
-    action: 'delete',
-    entityType: 'customer',
-    entityId: 'cust-005',
-    entityName: 'Inactive Customer Inc.',
-    oldValues: { name: 'Inactive Customer Inc.', email: 'contact@inactive.com', status: 'inactive' },
-    newValues: null,
-    changedFields: null,
-    ipAddress: '192.168.1.101',
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-    requestId: 'req-mno345',
-    duration: 35,
-    createdAt: '2024-12-07T14:20:00Z',
-  },
-  {
-    id: '6',
-    userId: '4',
-    userName: 'Warehouse Staff',
-    userEmail: 'warehouse@demo-company.com',
-    action: 'update',
-    entityType: 'inventory',
-    entityId: 'inv-item-001',
-    entityName: 'Stock Adjustment - Wireless Mouse',
-    oldValues: { quantity: 150 },
-    newValues: { quantity: 145, reason: 'Damaged goods' },
-    changedFields: ['quantity'],
-    ipAddress: '192.168.1.105',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    requestId: 'req-pqr678',
-    duration: 28,
-    createdAt: '2024-12-07T11:15:00Z',
-  },
-  {
-    id: '7',
-    userId: '1',
-    userName: 'Admin User',
-    userEmail: 'admin@demo-company.com',
-    action: 'approve',
-    entityType: 'order',
-    entityId: 'PO-2312-00012',
-    entityName: 'Purchase Order #PO-2312-00012',
-    oldValues: { status: 'pending' },
-    newValues: { status: 'approved', approvedBy: 'Admin User' },
-    changedFields: ['status', 'approvedBy'],
-    ipAddress: '192.168.1.100',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    requestId: 'req-stu901',
-    duration: 18,
-    createdAt: '2024-12-07T10:00:00Z',
-  },
-  {
-    id: '8',
-    userId: null,
-    userName: 'System',
-    userEmail: null,
-    action: 'export',
-    entityType: 'settings',
-    entityId: null,
-    entityName: 'System Backup',
-    oldValues: null,
-    newValues: { exportType: 'full', format: 'json' },
-    changedFields: null,
-    ipAddress: null,
-    userAgent: null,
-    requestId: 'req-vwx234',
-    duration: 5200,
-    createdAt: '2024-12-07T02:00:00Z',
-  },
-  {
-    id: '9',
-    userId: '2',
-    userName: 'Manager User',
-    userEmail: 'manager@demo-company.com',
-    action: 'logout',
-    entityType: 'user',
-    entityId: '2',
-    entityName: 'Manager User',
-    oldValues: null,
-    newValues: null,
-    changedFields: null,
-    ipAddress: '192.168.1.101',
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-    requestId: 'req-yza567',
-    duration: 8,
-    createdAt: '2024-12-06T18:30:00Z',
-  },
-  {
-    id: '10',
-    userId: '1',
-    userName: 'Admin User',
-    userEmail: 'admin@demo-company.com',
-    action: 'create',
-    entityType: 'warehouse',
-    entityId: 'wh-003',
-    entityName: 'Secondary Warehouse',
-    oldValues: null,
-    newValues: { code: 'WH-003', name: 'Secondary Warehouse', location: 'Building B' },
-    changedFields: null,
-    ipAddress: '192.168.1.100',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    requestId: 'req-bcd890',
-    duration: 65,
-    createdAt: '2024-12-06T15:45:00Z',
-  },
-];
 
 // Action configuration
 const actionConfig: Record<ActionType, { label: string; color: string; icon: typeof Edit }> = {
@@ -278,7 +96,8 @@ const entityTypeLabels: Record<EntityType, string> = {
 };
 
 function AuditLogsPage() {
-  const [logs] = useState<AuditLog[]>(mockAuditLogs);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState<string>('');
   const [entityFilter, setEntityFilter] = useState<string>('');
@@ -288,6 +107,24 @@ function AuditLogsPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const logsPerPage = 10;
+
+  // Fetch audit logs from API
+  useEffect(() => {
+    async function fetchLogs() {
+      setIsLoading(true);
+      try {
+        const response = await get<AuditLog[]>('/v1/audit');
+        if (response.success && response.data) {
+          setLogs(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch audit logs:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchLogs();
+  }, []);
 
   // Filter logs
   const filteredLogs = logs.filter((log) => {

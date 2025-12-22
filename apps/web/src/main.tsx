@@ -34,15 +34,38 @@ const queryClient = new QueryClient({
   },
 });
 
-// Render the app
+/**
+ * Enable MSW mocking in development mode
+ * Controlled by VITE_USE_MOCKS environment variable
+ */
+async function enableMocking(): Promise<void> {
+  // Only enable in development when VITE_USE_MOCKS is true
+  if (!import.meta.env.DEV || import.meta.env.VITE_USE_MOCKS !== 'true') {
+    return;
+  }
+
+  const { worker } = await import('./mocks/browser');
+
+  // Start the MSW worker
+  await worker.start({
+    onUnhandledRequest: 'bypass', // Don't warn about unhandled requests
+  });
+
+  console.log('[MSW] Mock Service Worker enabled');
+}
+
+// Render the app after enabling mocking
 const rootElement = document.getElementById('root')!;
 if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </StrictMode>
-  );
+  enableMocking().then(() => {
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </StrictMode>
+    );
+  });
 }
+

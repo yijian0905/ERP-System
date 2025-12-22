@@ -14,7 +14,7 @@ import {
   User,
   Warehouse,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { DashboardCard, PageContainer, PageHeader, StatsCard } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FilterSelect } from '@/components/ui/filter-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { get } from '@/lib/api-client';
 
 export const Route = createFileRoute('/_dashboard/warehouses')({
   component: WarehousesPage,
@@ -77,95 +78,6 @@ interface WarehouseData {
   inventory: WarehouseInventoryItem[];
 }
 
-// Mock inventory data
-const mockWarehouseInventory: Record<string, WarehouseInventoryItem[]> = {
-  '1': [
-    { id: '1', productName: 'Wireless Mouse', sku: 'ELEC-001', category: 'Electronics', quantity: 150, reservedQty: 10, availableQty: 140, unitCost: 15.00, totalValue: 2250, reorderPoint: 50 },
-    { id: '2', productName: 'Mechanical Keyboard', sku: 'ELEC-002', category: 'Electronics', quantity: 8, reservedQty: 3, availableQty: 5, unitCost: 75.00, totalValue: 600, reorderPoint: 15 },
-    { id: '3', productName: 'A4 Copy Paper', sku: 'OFFC-001', category: 'Office Supplies', quantity: 500, reservedQty: 50, availableQty: 450, unitCost: 4.50, totalValue: 2250, reorderPoint: 200 },
-    { id: '5', productName: 'USB-C Hub', sku: 'ELEC-003', category: 'Electronics', quantity: 200, reservedQty: 15, availableQty: 185, unitCost: 25.00, totalValue: 5000, reorderPoint: 50 },
-    { id: '6', productName: 'Printer Ink Black', sku: 'OFFC-002', category: 'Office Supplies', quantity: 12, reservedQty: 0, availableQty: 12, unitCost: 12.00, totalValue: 144, reorderPoint: 25 },
-    { id: '7', productName: 'Ergonomic Office Chair', sku: 'FURN-001', category: 'Furniture', quantity: 10, reservedQty: 2, availableQty: 8, unitCost: 150.00, totalValue: 1500, reorderPoint: 8 },
-  ],
-  '2': [
-    { id: '4', productName: 'Ergonomic Office Chair', sku: 'FURN-001', category: 'Furniture', quantity: 25, reservedQty: 5, availableQty: 20, unitCost: 150.00, totalValue: 3750, reorderPoint: 10 },
-    { id: '8', productName: 'Standing Desk', sku: 'FURN-002', category: 'Furniture', quantity: 15, reservedQty: 2, availableQty: 13, unitCost: 350.00, totalValue: 5250, reorderPoint: 5 },
-  ],
-  '3': [
-    { id: '9', productName: 'Wireless Mouse', sku: 'ELEC-001', category: 'Electronics', quantity: 35, reservedQty: 5, availableQty: 30, unitCost: 15.00, totalValue: 525, reorderPoint: 15 },
-    { id: '10', productName: 'USB-C Hub', sku: 'ELEC-003', category: 'Electronics', quantity: 20, reservedQty: 3, availableQty: 17, unitCost: 25.00, totalValue: 500, reorderPoint: 10 },
-  ],
-  '4': [],
-};
-
-// Mock data
-const mockWarehouses: WarehouseData[] = [
-  {
-    id: '1',
-    code: 'WH-001',
-    name: 'Main Warehouse',
-    type: 'WAREHOUSE',
-    address: '123 Industrial Ave, New York, NY 10001',
-    phone: '+1 (555) 123-4567',
-    email: 'main@warehouse.com',
-    manager: 'John Smith',
-    isDefault: true,
-    isActive: true,
-    itemCount: 880,
-    totalValue: 11744,
-    capacityUsed: 75,
-    inventory: mockWarehouseInventory['1'],
-  },
-  {
-    id: '2',
-    code: 'WH-002',
-    name: 'Secondary Warehouse',
-    type: 'WAREHOUSE',
-    address: '456 Storage Blvd, Brooklyn, NY 11201',
-    phone: '+1 (555) 234-5678',
-    email: 'secondary@warehouse.com',
-    manager: 'Sarah Johnson',
-    isDefault: false,
-    isActive: true,
-    itemCount: 40,
-    totalValue: 9000,
-    capacityUsed: 45,
-    inventory: mockWarehouseInventory['2'],
-  },
-  {
-    id: '3',
-    code: 'ST-001',
-    name: 'Downtown Retail Store',
-    type: 'STORE',
-    address: '789 Main Street, Manhattan, NY 10013',
-    phone: '+1 (555) 345-6789',
-    email: 'downtown@store.com',
-    manager: 'Mike Chen',
-    isDefault: false,
-    isActive: true,
-    itemCount: 55,
-    totalValue: 1025,
-    capacityUsed: 60,
-    inventory: mockWarehouseInventory['3'],
-  },
-  {
-    id: '4',
-    code: 'VW-001',
-    name: 'Drop Ship Virtual',
-    type: 'VIRTUAL',
-    address: null,
-    phone: null,
-    email: 'dropship@company.com',
-    manager: null,
-    isDefault: false,
-    isActive: true,
-    itemCount: 0,
-    totalValue: 0,
-    capacityUsed: 0,
-    inventory: mockWarehouseInventory['4'],
-  },
-];
-
 const typeStyles: Record<WarehouseType, { label: string; color: string }> = {
   WAREHOUSE: { label: 'Warehouse', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
   STORE: { label: 'Store', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
@@ -173,7 +85,8 @@ const typeStyles: Record<WarehouseType, { label: string; color: string }> = {
 };
 
 function WarehousesPage() {
-  const [warehouses, setWarehouses] = useState<WarehouseData[]>(mockWarehouses);
+  const [warehouses, setWarehouses] = useState<WarehouseData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,6 +95,28 @@ function WarehousesPage() {
   const [selectedWarehouse, setSelectedWarehouse] = useState<WarehouseData | null>(null);
   const [inventorySearchTerm, setInventorySearchTerm] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch warehouses from API
+  useEffect(() => {
+    async function fetchWarehouses() {
+      setIsLoading(true);
+      try {
+        const response = await get<WarehouseData[]>('/v1/warehouses');
+        if (response.success && response.data) {
+          // Add empty inventory array if not present
+          setWarehouses(response.data.map((wh) => ({
+            ...wh,
+            inventory: wh.inventory || [],
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch warehouses:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchWarehouses();
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',

@@ -14,7 +14,7 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
   DashboardCard,
@@ -44,6 +44,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { costCentersApi } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/cost-centers')({
   component: CostCentersPage,
@@ -84,142 +85,45 @@ const statusConfig: Record<CostCenterStatus, { label: string; color: string }> =
   OVER_BUDGET: { label: 'Over Budget', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 };
 
-// Mock data
-const mockCostCenters: CostCenter[] = [
-  {
-    id: 'cc1',
-    code: 'CC-ENG',
-    name: 'Engineering',
-    description: 'Engineering department cost center for R&D and development expenses',
-    department: 'Engineering',
-    manager: 'John Smith',
-    budget: 50000,
-    usedBudget: 32500,
-    status: 'ACTIVE',
-    fiscalYear: 2024,
-    allocations: [
-      { id: 'a1', description: 'Office supplies', amount: 500, date: '2024-12-01', reference: 'REQ-2024-0001', type: 'REQUISITION' },
-      { id: 'a2', description: 'Software licenses', amount: 2500, date: '2024-11-15', reference: 'PO-2024-0045', type: 'PURCHASE' },
-      { id: 'a3', description: 'Hardware upgrade', amount: 5000, date: '2024-11-01', reference: 'PO-2024-0038', type: 'PURCHASE' },
-    ],
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-12-01T10:00:00Z',
-  },
-  {
-    id: 'cc2',
-    code: 'CC-MKT',
-    name: 'Marketing',
-    description: 'Marketing department cost center for campaigns and promotions',
-    department: 'Marketing',
-    manager: 'Sarah Johnson',
-    budget: 30000,
-    usedBudget: 28200,
-    status: 'ACTIVE',
-    fiscalYear: 2024,
-    allocations: [
-      { id: 'a4', description: 'Trade show materials', amount: 8000, date: '2024-11-20', reference: 'PO-2024-0050', type: 'PURCHASE' },
-      { id: 'a5', description: 'Digital ads', amount: 5000, date: '2024-11-10', reference: 'EXP-2024-0088', type: 'EXPENSE' },
-    ],
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-11-25T14:00:00Z',
-  },
-  {
-    id: 'cc3',
-    code: 'CC-OPS',
-    name: 'Operations',
-    description: 'Operations department cost center for operational expenses',
-    department: 'Operations',
-    manager: 'Mike Chen',
-    budget: 75000,
-    usedBudget: 45600,
-    status: 'ACTIVE',
-    fiscalYear: 2024,
-    allocations: [
-      { id: 'a6', description: 'Safety equipment', amount: 3000, date: '2024-12-05', reference: 'REQ-2024-0002', type: 'REQUISITION' },
-      { id: 'a7', description: 'Maintenance supplies', amount: 2500, date: '2024-11-28', reference: 'REQ-2024-0003', type: 'REQUISITION' },
-    ],
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-12-05T11:00:00Z',
-  },
-  {
-    id: 'cc4',
-    code: 'CC-HR',
-    name: 'Human Resources',
-    description: 'HR department cost center for recruitment and training',
-    department: 'HR',
-    manager: 'Emily Davis',
-    budget: 20000,
-    usedBudget: 8500,
-    status: 'ACTIVE',
-    fiscalYear: 2024,
-    allocations: [
-      { id: 'a8', description: 'Training materials', amount: 2000, date: '2024-11-15', reference: 'PO-2024-0042', type: 'PURCHASE' },
-    ],
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-11-15T09:00:00Z',
-  },
-  {
-    id: 'cc5',
-    code: 'CC-FIN',
-    name: 'Finance',
-    description: 'Finance department cost center for accounting and audit expenses',
-    department: 'Finance',
-    manager: 'Alex Wilson',
-    budget: 25000,
-    usedBudget: 12300,
-    status: 'ACTIVE',
-    fiscalYear: 2024,
-    allocations: [
-      { id: 'a9', description: 'Audit fees', amount: 5000, date: '2024-10-01', reference: 'EXP-2024-0065', type: 'EXPENSE' },
-      { id: 'a10', description: 'Software subscription', amount: 1200, date: '2024-09-15', reference: 'EXP-2024-0058', type: 'EXPENSE' },
-    ],
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-10-01T16:00:00Z',
-  },
-  {
-    id: 'cc6',
-    code: 'CC-PRD',
-    name: 'Production',
-    description: 'Production department cost center for manufacturing expenses',
-    department: 'Production',
-    manager: 'David Lee',
-    budget: 100000,
-    usedBudget: 105800,
-    status: 'OVER_BUDGET',
-    fiscalYear: 2024,
-    allocations: [
-      { id: 'a11', description: 'Raw materials', amount: 45000, date: '2024-11-01', reference: 'PO-2024-0055', type: 'PURCHASE' },
-      { id: 'a12', description: 'Equipment maintenance', amount: 8000, date: '2024-10-15', reference: 'EXP-2024-0072', type: 'EXPENSE' },
-      { id: 'a13', description: 'Safety equipment', amount: 2000, date: '2024-12-01', reference: 'REQ-2024-0004', type: 'REQUISITION' },
-    ],
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-12-01T08:00:00Z',
-  },
-  {
-    id: 'cc7',
-    code: 'CC-IT',
-    name: 'Information Technology',
-    description: 'IT department cost center for technology infrastructure',
-    department: 'IT',
-    manager: 'Tom Anderson',
-    budget: 60000,
-    usedBudget: 42000,
-    status: 'ACTIVE',
-    fiscalYear: 2024,
-    allocations: [
-      { id: 'a14', description: 'Server upgrades', amount: 15000, date: '2024-10-20', reference: 'PO-2024-0048', type: 'PURCHASE' },
-      { id: 'a15', description: 'Cloud services', amount: 8000, date: '2024-11-01', reference: 'EXP-2024-0080', type: 'EXPENSE' },
-    ],
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-11-01T12:00:00Z',
-  },
-];
-
 function CostCentersPage() {
-  const [costCenters, setCostCenters] = useState<CostCenter[]>(mockCostCenters);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [departmentFilter, setDepartmentFilter] = useState<string>('');
+
+  // Fetch cost centers from API
+  useEffect(() => {
+    async function fetchCostCenters() {
+      setIsLoading(true);
+      try {
+        const response = await costCentersApi.list();
+        if (response.success && response.data) {
+          // Map API response to local CostCenter type
+          setCostCenters(response.data.map((cc) => ({
+            id: cc.id,
+            code: cc.code,
+            name: cc.name,
+            description: cc.description || '',
+            department: '',
+            manager: '',
+            budget: cc.budget,
+            usedBudget: cc.spent,
+            status: (cc.spent > cc.budget ? 'OVER_BUDGET' : cc.isActive ? 'ACTIVE' : 'INACTIVE') as CostCenterStatus,
+            fiscalYear: new Date().getFullYear(),
+            allocations: [],
+            createdAt: '',
+            updatedAt: '',
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch cost centers:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchCostCenters();
+  }, []);
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

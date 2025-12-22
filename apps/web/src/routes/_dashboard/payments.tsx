@@ -8,7 +8,7 @@ import {
   Plus,
   Search,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
   DashboardCard,
@@ -37,6 +37,7 @@ import { Label } from '@/components/ui/label';
 import { FilterSelect } from '@/components/ui/filter-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { paymentsApi } from '@/lib/api';
 
 export const Route = createFileRoute('/_dashboard/payments')({
   component: PaymentsPage,
@@ -60,88 +61,6 @@ interface Payment {
   paymentDate: string;
   notes: string | null;
 }
-
-// Mock data
-const mockPayments: Payment[] = [
-  {
-    id: '1',
-    paymentNumber: 'PAY-2312-00125',
-    type: 'RECEIVED',
-    method: 'BANK_TRANSFER',
-    status: 'COMPLETED',
-    customer: 'Acme Corporation',
-    invoiceNumber: 'INV-2312-00045',
-    amount: 1250.00,
-    reference: 'TRF-78452369',
-    paymentDate: '2024-12-07',
-    notes: null,
-  },
-  {
-    id: '2',
-    paymentNumber: 'PAY-2312-00124',
-    type: 'RECEIVED',
-    method: 'CREDIT_CARD',
-    status: 'COMPLETED',
-    customer: 'TechStart Inc.',
-    invoiceNumber: 'INV-2312-00044',
-    amount: 890.00,
-    reference: 'CC-****4521',
-    paymentDate: '2024-12-07',
-    notes: null,
-  },
-  {
-    id: '3',
-    paymentNumber: 'PAY-2312-00123',
-    type: 'RECEIVED',
-    method: 'CHECK',
-    status: 'PENDING',
-    customer: 'Global Systems',
-    invoiceNumber: 'INV-2312-00043',
-    amount: 2340.00,
-    reference: 'CHK-10045',
-    paymentDate: '2024-12-06',
-    notes: 'Check clearing in progress',
-  },
-  {
-    id: '4',
-    paymentNumber: 'PAY-2312-00122',
-    type: 'REFUND',
-    method: 'BANK_TRANSFER',
-    status: 'COMPLETED',
-    customer: 'Local Store',
-    invoiceNumber: 'INV-2312-00040',
-    amount: 150.00,
-    reference: 'REF-789456',
-    paymentDate: '2024-12-05',
-    notes: 'Partial refund for damaged goods',
-  },
-  {
-    id: '5',
-    paymentNumber: 'PAY-2312-00121',
-    type: 'RECEIVED',
-    method: 'CASH',
-    status: 'COMPLETED',
-    customer: 'John Smith',
-    invoiceNumber: 'INV-2312-00039',
-    amount: 456.00,
-    reference: null,
-    paymentDate: '2024-12-05',
-    notes: null,
-  },
-  {
-    id: '6',
-    paymentNumber: 'PAY-2312-00120',
-    type: 'ADVANCE',
-    method: 'BANK_TRANSFER',
-    status: 'COMPLETED',
-    customer: 'Smart Solutions',
-    invoiceNumber: null,
-    amount: 5000.00,
-    reference: 'ADV-2024-001',
-    paymentDate: '2024-12-04',
-    notes: 'Advance payment for bulk order',
-  },
-];
 
 const typeStyles: Record<PaymentType, { color: string; icon: typeof ArrowDownRight }> = {
   RECEIVED: { color: 'text-success bg-success/10', icon: ArrowDownRight },
@@ -168,7 +87,8 @@ const methodLabels: Record<PaymentMethod, string> = {
 };
 
 function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>(mockPayments);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -183,6 +103,32 @@ function PaymentsPage() {
     reference: '',
     notes: '',
   });
+
+  // Fetch payments from API
+  useEffect(() => {
+    async function fetchPayments() {
+      setIsLoading(true);
+      try {
+        const response = await paymentsApi.list();
+        if (response.success && response.data) {
+          // Map API response to local Payment type
+          setPayments(response.data.map((p) => ({
+            ...p,
+            type: 'RECEIVED' as PaymentType,
+            customer: p.customerName,
+            invoiceNumber: p.invoiceId || null,
+            paymentDate: p.paymentDate,
+            notes: p.reference || null,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch payments:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchPayments();
+  }, []);
 
   // Filter payments
   const filteredPayments = payments.filter((payment) => {
