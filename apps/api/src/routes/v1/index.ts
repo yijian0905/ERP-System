@@ -12,6 +12,8 @@ import { inventoryRoutes } from './inventory.js';
 import { printAuditRoutes } from './print-audit.js';
 import { productsRoutes } from './products.js';
 import { rolesRoutes } from './roles.js';
+import { suppliersRoutes } from './suppliers.js';
+import { warehousesRoutes } from './warehouses.js';
 
 export async function v1Routes(fastify: FastifyInstance) {
   // Authentication middleware for all v1 routes
@@ -35,5 +37,8 @@ export async function v1Routes(fastify: FastifyInstance) {
   await fastify.register(forecastingRoutes, { prefix: '/forecasting' });
   await fastify.register(printAuditRoutes, { prefix: '/print-audit' });
   await fastify.register(companyRoutes, { prefix: '/company' });
+  await fastify.register(suppliersRoutes, { prefix: '/suppliers' });
+  await fastify.register(warehousesRoutes, { prefix: '/warehouses' });
 }
+
 
