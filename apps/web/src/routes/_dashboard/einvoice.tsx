@@ -7,7 +7,7 @@ import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/da
 import { Button } from '@/components/ui/button';
 import { get, post, del } from '@/lib/api-client';
 
-interface LhdnCredential {
+export interface LhdnCredential {
   id: string;
   clientId: string;
   tin: string;
