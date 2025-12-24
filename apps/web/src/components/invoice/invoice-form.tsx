@@ -1,11 +1,19 @@
-import { Plus, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Plus, Trash2, AlertCircle } from 'lucide-react';
+import { useCallback, useEffect } from 'react';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateInput } from '@/components/ui/date-input';
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -13,24 +21,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import {
+  PAYMENT_MODE_CODES,
+  TAX_TYPE_CODES,
+} from '@erp/shared-types';
 
 import {
+  type InvoiceFormSchema,
+} from './schema';
+import {
   calculateLineTotal,
-  type CustomerOption,
   generateLineItemId,
-  type InvoiceFormData,
-  type InvoiceLineItem,
+  type CustomerOption,
   type ProductOption,
 } from './types';
 
 // Mock data - replace with actual API calls
 const mockCustomers: CustomerOption[] = [
-  { id: '1', code: 'CUST-001', name: 'Acme Corporation', email: 'purchasing@acme.com', address: '456 Corporate Blvd, Los Angeles, CA 90001', phone: '+1 (555) 234-5678' },
-  { id: '2', code: 'CUST-002', name: 'TechStart Inc.', email: 'orders@techstart.io', address: '789 Startup Lane, San Jose, CA 95101', phone: '+1 (555) 345-6789' },
-  { id: '3', code: 'CUST-003', name: 'Global Systems', email: 'info@globalsys.com', address: '123 Enterprise Way, Seattle, WA 98101', phone: '+1 (555) 456-7890' },
+  { id: '1', code: 'CUST-001', name: 'Acme Corporation', email: 'purchasing@acme.com', address: '456 Corporate Blvd, Los Angeles, CA 90001', phone: '+1 (555) 234-5678', tin: 'C2345678901', brn: '202301000001', sstNo: 'A12-3456-7890' },
+  { id: '2', code: 'CUST-002', name: 'TechStart Inc.', email: 'orders@techstart.io', address: '789 Startup Lane, San Jose, CA 95101', phone: '+1 (555) 345-6789', tin: 'C3456789012', brn: '202301000002' },
+  { id: '3', code: 'CUST-003', name: 'Global Systems', email: 'info@globalsys.com', address: '123 Enterprise Way, Seattle, WA 98101', phone: '+1 (555) 456-7890', tin: 'C4567890123' },
 ];
 
 const mockProducts: ProductOption[] = [
@@ -41,439 +52,527 @@ const mockProducts: ProductOption[] = [
   { id: '5', sku: 'ELEC-003', name: 'USB-C Hub', price: 49.99, stock: 200, taxRate: 8.25 },
 ];
 
-interface InvoiceFormProps {
-  formData: InvoiceFormData;
-  onChange: (data: InvoiceFormData) => void;
-  errors?: Record<string, string>;
-}
+export function InvoiceForm() {
+  const form = useFormContext<InvoiceFormSchema>();
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'items',
+  });
 
-export function InvoiceForm({ formData, onChange, errors }: InvoiceFormProps) {
-  // Handle customer selection
-  const handleCustomerChange = useCallback(
-    (customerId: string) => {
-      const customer = mockCustomers.find((c) => c.id === customerId);
-      if (customer) {
-        onChange({
-          ...formData,
-          customerId: customer.id,
-          customerName: customer.name,
-          customerEmail: customer.email,
-          customerAddress: customer.address,
-        });
-      }
-    },
-    [formData, onChange]
-  );
+  // Watch items to calculate totals
+  const items = useWatch({ control: form.control, name: 'items' });
 
-  // Handle adding a new line item
-  const handleAddItem = useCallback(() => {
-    const newItem: InvoiceLineItem = {
-      id: generateLineItemId(),
-      productId: '',
-      productName: '',
-      sku: '',
-      quantity: 1,
-      unitPrice: 0,
-      discount: 0,
-      taxRate: 0,
-      total: 0,
-    };
-    onChange({
-      ...formData,
-      items: [...formData.items, newItem],
+  // Handle customer change
+  const handleCustomerChange = useCallback((customerId: string) => {
+    const customer = mockCustomers.find((c) => c.id === customerId);
+    if (customer) {
+      form.setValue('customerId', customer.id);
+      form.setValue('customerName', customer.name);
+      form.setValue('customerEmail', customer.email);
+      form.setValue('customerAddress', customer.address);
+      form.setValue('customerTin', customer.tin || '');
+      form.setValue('customerBrn', customer.brn || '');
+      form.setValue('customerSstNo', customer.sstNo || '');
+    }
+  }, [form]);
+
+  // Handle product change
+  const handleProductChange = useCallback((index: number, productId: string) => {
+    const product = mockProducts.find((p) => p.id === productId);
+    if (product) {
+      form.setValue(`items.${index}.productId`, product.id);
+      form.setValue(`items.${index}.productName`, product.name);
+      form.setValue(`items.${index}.sku`, product.sku);
+      form.setValue(`items.${index}.unitPrice`, product.price);
+      form.setValue(`items.${index}.taxRate`, product.taxRate);
+
+      // Trigger calculation
+      const quantity = form.getValues(`items.${index}.quantity`) || 1;
+      const discount = form.getValues(`items.${index}.discount`) || 0;
+
+      const total = calculateLineTotal({
+        id: '', // Dummy
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku,
+        quantity,
+        unitPrice: product.price,
+        discount,
+        taxRate: product.taxRate,
+        classificationCode: '022',
+        unitCode: 'C62',
+        taxTypeCode: TAX_TYPE_CODES.SST,
+      });
+      form.setValue(`items.${index}.total`, total);
+    }
+  }, [form]);
+
+  // Recalculate totals whenever items change
+  useEffect(() => {
+    if (!items) return;
+
+    let subtotal = 0;
+    let taxAmount = 0;
+    let discount = 0;
+
+    items.forEach((item) => {
+      const lineSubtotal = (item.quantity || 0) * (item.unitPrice || 0);
+      const lineDiscount = lineSubtotal * ((item.discount || 0) / 100);
+      const afterDiscount = lineSubtotal - lineDiscount;
+      const lineTax = afterDiscount * ((item.taxRate || 0) / 100);
+
+      subtotal += lineSubtotal;
+      discount += lineDiscount;
+      taxAmount += lineTax;
     });
-  }, [formData, onChange]);
 
-  // Handle removing a line item
-  const handleRemoveItem = useCallback(
-    (itemId: string) => {
-      onChange({
-        ...formData,
-        items: formData.items.filter((item) => item.id !== itemId),
-      });
-    },
-    [formData, onChange]
-  );
+    form.setValue('subtotal', subtotal);
+    form.setValue('taxAmount', taxAmount);
+    form.setValue('discount', discount);
+    form.setValue('total', subtotal - discount + taxAmount);
+  }, [items, form]);
 
-  // Handle product selection for a line item
-  const handleProductChange = useCallback(
-    (itemId: string, productId: string) => {
-      const product = mockProducts.find((p) => p.id === productId);
-      if (!product) return;
-
-      onChange({
-        ...formData,
-        items: formData.items.map((item) => {
-          if (item.id !== itemId) return item;
-          const updatedItem = {
-            ...item,
-            productId: product.id,
-            productName: product.name,
-            sku: product.sku,
-            unitPrice: product.price,
-            taxRate: product.taxRate,
-          };
-          return {
-            ...updatedItem,
-            total: calculateLineTotal(updatedItem),
-          };
-        }),
-      });
-    },
-    [formData, onChange]
-  );
-
-  // Handle line item field change
-  const handleItemFieldChange = useCallback(
-    (itemId: string, field: keyof InvoiceLineItem, value: number) => {
-      onChange({
-        ...formData,
-        items: formData.items.map((item) => {
-          if (item.id !== itemId) return item;
-          const updatedItem = { ...item, [field]: value };
-          return {
-            ...updatedItem,
-            total: calculateLineTotal(updatedItem),
-          };
-        }),
-      });
-    },
-    [formData, onChange]
-  );
-
-  // Available products (not already in invoice)
-  const availableProducts = useMemo(() => {
-    const usedProductIds = formData.items.map((item) => item.productId);
-    return mockProducts.filter((p) => !usedProductIds.includes(p.id));
-  }, [formData.items]);
-
-  // Auto-expanding textareas
-  const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const termsTextareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Adjust textarea height based on content
-  const adjustTextareaHeight = useCallback((textarea: HTMLTextAreaElement) => {
-    // Reset height to auto to get the correct scrollHeight
-    textarea.style.height = 'auto';
-    // Set height to scrollHeight (with minimum height)
-    const minHeight = 60; // Match min-h-[60px] from Textarea component
-    textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
-  }, []);
-
-  // Adjust height when notes value changes (from external updates)
-  useEffect(() => {
-    if (notesTextareaRef.current) {
-      adjustTextareaHeight(notesTextareaRef.current);
-    }
-  }, [formData.notes, adjustTextareaHeight]);
-
-  // Adjust height when terms value changes (from external updates)
-  useEffect(() => {
-    if (termsTextareaRef.current) {
-      adjustTextareaHeight(termsTextareaRef.current);
-    }
-  }, [formData.terms, adjustTextareaHeight]);
-
-  // Adjust height on initial mount
-  useEffect(() => {
-    if (notesTextareaRef.current) {
-      adjustTextareaHeight(notesTextareaRef.current);
-    }
-    if (termsTextareaRef.current) {
-      adjustTextareaHeight(termsTextareaRef.current);
-    }
-  }, [adjustTextareaHeight]);
-
-  // Handle notes change with auto-expand
-  const handleNotesChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const textarea = e.target;
-      onChange({ ...formData, notes: textarea.value });
-      // Adjust height immediately based on current content
-      adjustTextareaHeight(textarea);
-    },
-    [formData, onChange, adjustTextareaHeight]
-  );
-
-  // Handle terms change with auto-expand
-  const handleTermsChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const textarea = e.target;
-      onChange({ ...formData, terms: textarea.value });
-      // Adjust height immediately based on current content
-      adjustTextareaHeight(textarea);
-    },
-    [formData, onChange, adjustTextareaHeight]
-  );
+  const validationErrors = form.watch('validationErrors') as unknown as { code: string; message: string; target?: string }[] | undefined;
 
   return (
-    <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1">
-        <div className="space-y-6 pb-4 pr-4 pl-1">
-          {/* Customer Selection */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-              Customer Information
-            </h3>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="customer">Customer *</Label>
-                <Select
-                  value={formData.customerId}
-                  onValueChange={handleCustomerChange}
-                >
-                  <SelectTrigger
-                    id="customer"
-                    className={cn(errors?.customerId && 'border-destructive')}
-                  >
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
+    <div className="space-y-6">
+      {validationErrors && validationErrors.length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Validation Errors</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              {validationErrors.map((err, i) => (
+                <li key={i}>
+                  <span className="font-semibold">{err.code}:</span> {err.message}
+                  {err.target && <span className="text-xs opacity-80 ml-1">({err.target})</span>}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Customer Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Customer & E-Invoice Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <FormField
+            control={form.control}
+            name="customerId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Customer *</FormLabel>
+                <Select onValueChange={handleCustomerChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                  </FormControl>
                   <SelectContent>
                     {mockCustomers.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
-                        <span className="font-medium">{customer.name}</span>
-                        <span className="text-muted-foreground ml-2">
-                          ({customer.code})
-                        </span>
+                        {customer.name} ({customer.code})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors?.customerId && (
-                  <p className="text-sm text-destructive">{errors.customerId}</p>
-                )}
-              </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              {formData.customerId && (
-                <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-                  <p className="font-medium">{formData.customerName}</p>
-                  <p className="text-muted-foreground">{formData.customerEmail}</p>
-                  <p className="text-muted-foreground whitespace-pre-line">
-                    {formData.customerAddress}
-                  </p>
-                </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="customerTin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>TIN</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="e.g. C1234567890" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
+            />
+            <FormField
+              control={form.control}
+              name="customerBrn"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>BRN</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="e.g. 202301000001" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
-          <Separator />
+          <FormField
+            control={form.control}
+            name="customerAddress"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Address</FormLabel>
+                <FormControl>
+                  <Textarea {...field} className="min-h-[80px]" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </CardContent>
+      </Card>
 
-          {/* Invoice Details */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-              Invoice Details
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="invoiceDate">Invoice Date *</Label>
-                <DateInput
-                    value={formData.invoiceDate}
-                  onChange={(value) =>
-                    onChange({ ...formData, invoiceDate: value })
-                    }
-                  error={!!errors?.invoiceDate}
+      {/* Invoice Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Invoice Details</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="invoiceDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Invoice Date *</FormLabel>
+                <FormControl>
+                  <DateInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={!!form.formState.errors.invoiceDate}
                   />
-                {errors?.invoiceDate && (
-                  <p className="text-sm text-destructive">{errors.invoiceDate}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">Due Date *</Label>
-                <DateInput
-                    value={formData.dueDate}
-                  onChange={(value) =>
-                    onChange({ ...formData, dueDate: value })
-                    }
-                  error={!!errors?.dueDate}
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="dueDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Due Date *</FormLabel>
+                <FormControl>
+                  <DateInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={!!form.formState.errors.dueDate}
                   />
-                {errors?.dueDate && (
-                  <p className="text-sm text-destructive">{errors.dueDate}</p>
-                )}
-              </div>
-            </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="paymentMode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Payment Mode</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment mode" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.entries(PAYMENT_MODE_CODES).map(([key, value]) => (
+                      <SelectItem key={value} value={value}>
+                        {key.replace('_', ' ')} ({value})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="currency"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Currency</FormLabel>
+                <FormControl>
+                  <Input {...field} readOnly className="bg-muted" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="col-span-2 grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="billingPeriodStart"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Billing Period Start (Optional)</FormLabel>
+                  <FormControl>
+                    <DateInput value={field.value || ''} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="billingPeriodEnd"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Billing Period End (Optional)</FormLabel>
+                  <FormControl>
+                    <DateInput value={field.value || ''} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
+        </CardContent>
+      </Card>
 
-          <Separator />
-
-          {/* Line Items */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                Line Items
-              </h3>
+      {/* Line Items */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Items</CardTitle>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => append({
+              id: generateLineItemId(),
+              productId: '',
+              productName: '',
+              sku: '',
+              quantity: 1,
+              unitPrice: 0,
+              discount: 0,
+              taxRate: 0,
+              total: 0,
+              classificationCode: '022',
+              unitCode: 'C62',
+              taxTypeCode: TAX_TYPE_CODES.SST,
+            })}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Item
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {fields.map((field, index) => (
+            <div key={field.id} className="grid gap-4 p-4 border rounded-lg relative bg-card/50">
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddItem}
-                disabled={availableProducts.length === 0}
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 text-destructive hover:bg-destructive/10"
+                onClick={() => remove(index)}
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Item
+                <Trash2 className="h-4 w-4" />
               </Button>
-            </div>
 
-            {formData.items.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-6 text-center">
-                <p className="text-muted-foreground text-sm">
-                  No items added yet. Click &ldquo;Add Item&rdquo; to add products to this
-                  invoice.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {formData.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-lg border bg-card p-4 space-y-3"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <Label>Product *</Label>
-                        <Select
-                          value={item.productId}
-                          onValueChange={(value) =>
-                            handleProductChange(item.id, value)
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a product" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {item.productId && (
-                              <SelectItem value={item.productId}>
-                                {item.productName} ({item.sku})
-                              </SelectItem>
-                            )}
-                            {availableProducts.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{product.name}</span>
-                                  <span className="text-muted-foreground text-xs ml-2">
-                                    ${product.price.toFixed(2)} • {product.stock} in stock
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10 mt-6"
-                        onClick={() => handleRemoveItem(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+              {/* Product Select */}
+              <FormField
+                control={form.control}
+                name={`items.${index}.productId`}
+                render={({ field: itemField }) => (
+                  <FormItem>
+                    <FormLabel>Product</FormLabel>
+                    <Select
+                      onValueChange={(value) => handleProductChange(index, value)}
+                      value={itemField.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select product" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {mockProducts.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name} (${p.price})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                    <div className="grid grid-cols-4 gap-3">
-                      <div className="space-y-2">
-                        <Label>Quantity</Label>
+              <div className="grid grid-cols-4 gap-4">
+                <FormField
+                  control={form.control}
+                  name={`items.${index}.quantity`}
+                  render={({ field: itemField }) => (
+                    <FormItem>
+                      <FormLabel>Qty</FormLabel>
+                      <FormControl>
                         <Input
                           type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.id,
-                              'quantity',
-                              parseInt(e.target.value) || 1
-                            )
-                          }
-                          className="border-0 bg-muted/50 focus-visible:ring-0 focus-visible:bg-muted"
+                          {...itemField}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            itemField.onChange(val);
+                            // Recalc handled by useEffect
+                          }}
                         />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Unit Price</Label>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`items.${index}.unitPrice`}
+                  render={({ field: itemField }) => (
+                    <FormItem>
+                      <FormLabel>Price</FormLabel>
+                      <FormControl>
                         <Input
                           type="number"
-                          min="0"
                           step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.id,
-                              'unitPrice',
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="border-0 bg-muted/50 focus-visible:ring-0 focus-visible:bg-muted"
+                          {...itemField}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            itemField.onChange(val);
+                          }}
                         />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Discount %</Label>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`items.${index}.discount`}
+                  render={({ field: itemField }) => (
+                    <FormItem>
+                      <FormLabel>Disc %</FormLabel>
+                      <FormControl>
                         <Input
                           type="number"
-                          min="0"
-                          max="100"
-                          value={item.discount}
-                          onChange={(e) =>
-                            handleItemFieldChange(
-                              item.id,
-                              'discount',
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="border-0 bg-muted/50 focus-visible:ring-0 focus-visible:bg-muted"
+                          {...itemField}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            itemField.onChange(val);
+                          }}
                         />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`items.${index}.total`}
+                  render={({ field: itemField }) => (
+                    <FormItem>
+                      <FormLabel>Total</FormLabel>
+                      <div className="h-10 px-3 py-2 border rounded-md bg-muted text-sm flex items-center">
+                        {itemField.value?.toFixed(2)}
                       </div>
-                      <div className="space-y-2">
-                        <Label>Total</Label>
-                        <div className="h-9 flex items-center px-3 rounded-md bg-muted font-medium">
-                          ${item.total.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {errors?.items && (
-              <p className="text-sm text-destructive">{errors.items}</p>
-            )}
-          </div>
-
-          <Separator />
-
-          {/* Notes & Terms */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-              Additional Information
-            </h3>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  ref={notesTextareaRef}
-                  id="notes"
-                  placeholder="Add any notes for the customer..."
-                  value={formData.notes}
-                  onChange={handleNotesChange}
-                  className="resize-none overflow-hidden"
-                  rows={1}
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="terms">Terms & Conditions</Label>
-                <Textarea
-                  ref={termsTextareaRef}
-                  id="terms"
-                  placeholder="Payment terms and conditions..."
-                  value={formData.terms}
-                  onChange={handleTermsChange}
-                  className="resize-none overflow-hidden"
-                  rows={1}
+
+              {/* E-Invoice Item Fields */}
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name={`items.${index}.classificationCode`}
+                  render={({ field: itemField }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Class Code</FormLabel>
+                      <FormControl>
+                        <Input {...itemField} placeholder="022" className="h-8 text-xs" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`items.${index}.taxTypeCode`}
+                  render={({ field: itemField }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Tax Type</FormLabel>
+                      <Select onValueChange={itemField.onChange} value={itemField.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Tax" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(TAX_TYPE_CODES).map(([k, v]) => (
+                            <SelectItem key={v} value={v} className="text-xs">{k}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`items.${index}.taxExemptionReason`}
+                  render={({ field: itemField }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Exemption (if any)</FormLabel>
+                      <FormControl>
+                        <Input {...itemField} className="h-8 text-xs" />
+                      </FormControl>
+                    </FormItem>
+                  )}
                 />
               </div>
             </div>
-          </div>
-        </div>
-      </ScrollArea>
+          ))}
+          {fields.length === 0 && (
+            <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
+              No items added. Click "Add Item" to start.
+            </div>
+          )}
+          <FormMessage>{form.formState.errors.items?.root?.message}</FormMessage>
+        </CardContent>
+      </Card>
+
+      {/* Notes */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Add notes..." />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="terms"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Terms & Conditions</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Payment terms..." />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
-

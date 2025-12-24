@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client-js"
   output          = "../generated/prisma-client"
@@ -12,118 +9,78 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// TENANCY & AUTHENTICATION
-// ============================================
-
 /// Tenant represents a company/organization using the ERP system
 /// All data is isolated by tenant_id (Row-Level Security pattern)
 model Tenant {
-  id        String       @id @default(uuid()) @db.Uuid
-  name      String       @db.VarChar(255)
-  slug      String       @unique @db.VarChar(100)
-  domain    String?      @unique @db.VarChar(255)
-  status    TenantStatus @default(ACTIVE)
-  tier      LicenseTier  @default(L1)
-  settings  Json         @default("{}")
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
-  deletedAt DateTime?    @map("deleted_at")
-
-  // Auth Policy fields (per spec.md §120-144)
-  authPolicyPrimary       AuthPolicyPrimary   @default(password) @map("auth_policy_primary")
-  authPolicyMfa           AuthPolicyMfa       @default(off) @map("auth_policy_mfa")
+  id                      String               @id @default(uuid()) @db.Uuid
+  name                    String               @db.VarChar(255)
+  slug                    String               @unique @db.VarChar(100)
+  domain                  String?              @unique @db.VarChar(255)
+  status                  TenantStatus         @default(ACTIVE)
+  tier                    LicenseTier          @default(L1)
+  settings                Json                 @default("{}")
+  createdAt               DateTime             @default(now()) @map("created_at")
+  updatedAt               DateTime             @updatedAt @map("updated_at")
+  deletedAt               DateTime?            @map("deleted_at")
+  authPolicyPrimary       AuthPolicyPrimary    @default(password) @map("auth_policy_primary")
+  authPolicyMfa           AuthPolicyMfa        @default(off) @map("auth_policy_mfa")
   authPolicyIdentifier    AuthPolicyIdentifier @default(email) @map("auth_policy_identifier")
-  authPolicyAllowFallback Boolean             @default(true) @map("auth_policy_allow_fallback")
-
-  // Relations
-  users              User[]
-  products           Product[]
-  categories         Category[]
-  customers          Customer[]
-  suppliers          Supplier[]
-  warehouses         Warehouse[]
-  inventoryItems     InventoryItem[]
-  inventoryMovements InventoryMovement[]
-  orders             Order[]
-  invoices           Invoice[]
-  payments           Payment[]
-  licenses           License[]
-  auditLogs          AuditLog[]
-  assets             Asset[]
-  roles              Role[]
-  eInvoices          EInvoice[]
-  lhdnToken          LhdnToken?
-  lhdnCredential     LhdnCredential?
-  capabilities       TenantCapability[]
-  printAudits        PrintAudit[]
+  authPolicyAllowFallback Boolean              @default(true) @map("auth_policy_allow_fallback")
+  assets                  Asset[]
+  auditLogs               AuditLog[]
+  categories              Category[]
+  customers               Customer[]
+  eInvoices               EInvoice[]
+  inventoryItems          InventoryItem[]
+  inventoryMovements      InventoryMovement[]
+  invoices                Invoice[]
+  lhdnCredential          LhdnCredential?
+  lhdnToken               LhdnToken?
+  licenses                License[]
+  orders                  Order[]
+  payments                Payment[]
+  printAudits             PrintAudit[]
+  products                Product[]
+  roles                   Role[]
+  suppliers               Supplier[]
+  capabilities            TenantCapability[]
+  users                   User[]
+  warehouses              Warehouse[]
 
   @@index([status])
   @@index([tier])
   @@map("tenants")
 }
 
-enum TenantStatus {
-  ACTIVE
-  SUSPENDED
-  TRIAL
-  EXPIRED
-}
-
-enum LicenseTier {
-  L1 // Standard
-  L2 // Professional
-  L3 // Enterprise
-}
-
-// Auth Policy enums (per spec.md §120-144)
-enum AuthPolicyPrimary {
-  password
-  sso
-}
-
-enum AuthPolicyMfa {
-  off
-  optional
-  required
-}
-
-enum AuthPolicyIdentifier {
-  email
-  username
-}
-
 /// User belongs to a tenant with role-based access
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  tenantId     String    @map("tenant_id") @db.Uuid
-  email        String    @db.VarChar(255)
-  name         String    @db.VarChar(255)
-  password     String    @db.VarChar(255)
-  role         UserRole  @default(USER) // Legacy field for backward compatibility
-  roleId       String?   @map("role_id") @db.Uuid // New custom role reference
-  avatar       String?   @db.VarChar(500)
-  phone        String?   @db.VarChar(50)
-  isActive     Boolean   @default(true) @map("is_active")
-  lastLoginAt  DateTime? @map("last_login_at")
-  lastLoginIp  String?   @map("last_login_ip") @db.VarChar(45)
-  failedLogins Int       @default(0) @map("failed_logins")
-  lockedUntil  DateTime? @map("locked_until")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
-
-  // Relations
-  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customRole         Role?               @relation(fields: [roleId], references: [id])
-  refreshTokens      RefreshToken[]
-  inventoryMovements InventoryMovement[]
-  ordersCreated      Order[]             @relation("OrderCreatedBy")
-  ordersApproved     Order[]             @relation("OrderApprovedBy")
-  invoicesCreated    Invoice[]           @relation("InvoiceCreatedBy")
-  paymentsReceived   Payment[]           @relation("PaymentReceivedBy")
+  id                 String              @id @default(uuid()) @db.Uuid
+  tenantId           String              @map("tenant_id") @db.Uuid
+  email              String              @db.VarChar(255)
+  name               String              @db.VarChar(255)
+  password           String              @db.VarChar(255)
+  role               UserRole            @default(USER)
+  roleId             String?             @map("role_id") @db.Uuid
+  avatar             String?             @db.VarChar(500)
+  phone              String?             @db.VarChar(50)
+  isActive           Boolean             @default(true) @map("is_active")
+  lastLoginAt        DateTime?           @map("last_login_at")
+  lastLoginIp        String?             @map("last_login_ip") @db.VarChar(45)
+  failedLogins       Int                 @default(0) @map("failed_logins")
+  lockedUntil        DateTime?           @map("locked_until")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  deletedAt          DateTime?           @map("deleted_at")
   auditLogs          AuditLog[]
+  inventoryMovements InventoryMovement[]
+  invoicesCreated    Invoice[]           @relation("InvoiceCreatedBy")
+  ordersApproved     Order[]             @relation("OrderApprovedBy")
+  ordersCreated      Order[]             @relation("OrderCreatedBy")
+  paymentsReceived   Payment[]           @relation("PaymentReceivedBy")
   printAudits        PrintAudit[]
+  refreshTokens      RefreshToken[]
+  customRole         Role?               @relation(fields: [roleId], references: [id])
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -131,13 +88,6 @@ model User {
   @@index([tenantId, roleId])
   @@index([tenantId, isActive])
   @@map("users")
-}
-
-enum UserRole {
-  ADMIN
-  MANAGER
-  USER
-  VIEWER
 }
 
 /// Refresh tokens for JWT authentication
@@ -149,39 +99,30 @@ model RefreshToken {
   ipAddress String?  @map("ip_address") @db.VarChar(45)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
 }
 
-// ============================================
-// PLATFORM ADMINISTRATION
-// (ERP product company internal management)
-// ============================================
-
 /// Platform administrators - ERP company staff who manage all tenants
 /// NOT to be confused with tenant Users who use the ERP system
 model PlatformAdmin {
-  id           String    @id @default(uuid()) @db.Uuid
-  email        String    @unique @db.VarChar(255)
-  name         String    @db.VarChar(255)
-  password     String    @db.VarChar(255)
-  role         String    @default("ADMIN") @db.VarChar(50) // SUPER_ADMIN, ADMIN, SUPPORT
-  department   String?   @db.VarChar(100)
-  avatar       String?   @db.VarChar(500)
-  isActive     Boolean   @default(true) @map("is_active")
-  lastLoginAt  DateTime? @map("last_login_at")
-  lastLoginIp  String?   @map("last_login_ip") @db.VarChar(45)
-  failedLogins Int       @default(0) @map("failed_logins")
-  lockedUntil  DateTime? @map("locked_until")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
-  // Relations
+  id            String                      @id @default(uuid()) @db.Uuid
+  email         String                      @unique @db.VarChar(255)
+  name          String                      @db.VarChar(255)
+  password      String                      @db.VarChar(255)
+  role          String                      @default("ADMIN") @db.VarChar(50)
+  department    String?                     @db.VarChar(100)
+  avatar        String?                     @db.VarChar(500)
+  isActive      Boolean                     @default(true) @map("is_active")
+  lastLoginAt   DateTime?                   @map("last_login_at")
+  lastLoginIp   String?                     @map("last_login_ip") @db.VarChar(45)
+  failedLogins  Int                         @default(0) @map("failed_logins")
+  lockedUntil   DateTime?                   @map("locked_until")
+  createdAt     DateTime                    @default(now()) @map("created_at")
+  updatedAt     DateTime                    @updatedAt @map("updated_at")
   refreshTokens PlatformAdminRefreshToken[]
 
   @@map("platform_admins")
@@ -189,44 +130,36 @@ model PlatformAdmin {
 
 /// Refresh tokens for platform admin JWT authentication
 model PlatformAdminRefreshToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  adminId   String   @map("admin_id") @db.Uuid
-  token     String   @unique @db.VarChar(500)
-  userAgent String?  @map("user_agent") @db.VarChar(500)
-  ipAddress String?  @map("ip_address") @db.VarChar(45)
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  admin PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  id        String        @id @default(uuid()) @db.Uuid
+  adminId   String        @map("admin_id") @db.Uuid
+  token     String        @unique @db.VarChar(500)
+  userAgent String?       @map("user_agent") @db.VarChar(500)
+  ipAddress String?       @map("ip_address") @db.VarChar(45)
+  expiresAt DateTime      @map("expires_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+  admin     PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([adminId])
   @@index([expiresAt])
   @@map("platform_admin_refresh_tokens")
 }
 
-// ============================================
-// ROLE-BASED ACCESS CONTROL (RBAC)
-// ============================================
-
 /// Custom roles per tenant (e.g., Warehouse Manager, HR Manager)
 model Role {
-  id          String    @id @default(uuid()) @db.Uuid
-  tenantId    String    @map("tenant_id") @db.Uuid
-  name        String    @db.VarChar(100)
-  displayName String    @map("display_name") @db.VarChar(255)
-  description String?   @db.Text
-  color       String?   @db.VarChar(20) // For UI badge color
-  isSystem    Boolean   @default(false) @map("is_system") // System roles cannot be deleted
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
-
-  // Relations
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @map("tenant_id") @db.Uuid
+  name        String           @db.VarChar(100)
+  displayName String           @map("display_name") @db.VarChar(255)
+  description String?
+  color       String?          @db.VarChar(20)
+  isSystem    Boolean          @default(false) @map("is_system")
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  deletedAt   DateTime?        @map("deleted_at")
+  permissions RolePermission[]
   tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   users       User[]
-  permissions RolePermission[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -236,17 +169,15 @@ model Role {
 
 /// Permissions define what actions can be performed
 model Permission {
-  id          String   @id @default(uuid()) @db.Uuid
-  code        String   @unique @db.VarChar(100) // e.g., "users:create", "inventory:adjust"
-  name        String   @db.VarChar(255)
-  description String?  @db.Text
-  module      String   @db.VarChar(50) // e.g., "users", "inventory", "orders"
-  action      String   @db.VarChar(50) // e.g., "view", "create", "update", "delete"
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // Relations
-  roles RolePermission[]
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique @db.VarChar(100)
+  name        String           @db.VarChar(255)
+  description String?
+  module      String           @db.VarChar(50)
+  action      String           @db.VarChar(50)
+  sortOrder   Int              @default(0) @map("sort_order")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  roles       RolePermission[]
 
   @@index([module])
   @@index([code])
@@ -255,14 +186,12 @@ model Permission {
 
 /// Junction table for Role-Permission many-to-many relationship
 model RolePermission {
-  id           String   @id @default(uuid()) @db.Uuid
-  roleId       String   @map("role_id") @db.Uuid
-  permissionId String   @map("permission_id") @db.Uuid
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  // Relations
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  id           String     @id @default(uuid()) @db.Uuid
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, permissionId])
   @@index([roleId])
@@ -284,9 +213,7 @@ model License {
   isActive    Boolean     @default(true) @map("is_active")
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
-
-  // Relations
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([licenseKey])
@@ -294,30 +221,24 @@ model License {
   @@map("licenses")
 }
 
-// ============================================
-// PRODUCT CATALOG
-// ============================================
-
 /// Product categories for organization
 model Category {
-  id          String    @id @default(uuid()) @db.Uuid
-  tenantId    String    @map("tenant_id") @db.Uuid
-  parentId    String?   @map("parent_id") @db.Uuid
-  name        String    @db.VarChar(255)
-  slug        String    @db.VarChar(255)
-  description String?   @db.Text
-  image       String?   @db.VarChar(500)
-  sortOrder   Int       @default(0) @map("sort_order")
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
-
-  // Relations
-  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryHierarchy")
-  products Product[]
+  id          String     @id @default(uuid()) @db.Uuid
+  tenantId    String     @map("tenant_id") @db.Uuid
+  parentId    String?    @map("parent_id") @db.Uuid
+  name        String     @db.VarChar(255)
+  slug        String     @db.VarChar(255)
+  description String?
+  image       String?    @db.VarChar(500)
+  sortOrder   Int        @default(0) @map("sort_order")
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products    Product[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -327,37 +248,35 @@ model Category {
 
 /// Products in the catalog
 model Product {
-  id           String        @id @default(uuid()) @db.Uuid
-  tenantId     String        @map("tenant_id") @db.Uuid
-  categoryId   String?       @map("category_id") @db.Uuid
-  sku          String        @db.VarChar(100)
-  barcode      String?       @db.VarChar(100)
-  name         String        @db.VarChar(255)
-  description  String?       @db.Text
-  unit         String        @db.VarChar(50) // pcs, kg, m, etc.
-  price        Decimal       @db.Decimal(12, 2)
-  cost         Decimal       @db.Decimal(12, 2)
-  taxRate      Decimal       @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  minStock     Int           @default(0) @map("min_stock")
-  maxStock     Int           @default(10000) @map("max_stock")
-  reorderPoint Int           @default(0) @map("reorder_point")
-  reorderQty   Int           @default(0) @map("reorder_qty")
-  weight       Decimal?      @db.Decimal(10, 3)
-  dimensions   Json?         // { length, width, height, unit }
-  images       Json          @default("[]") // Array of image URLs
-  attributes   Json          @default("{}") // Custom attributes
-  status       ProductStatus @default(ACTIVE)
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  deletedAt    DateTime?     @map("deleted_at")
-
-  // Relations
-  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  category           Category?           @relation(fields: [categoryId], references: [id])
+  id                 String              @id @default(uuid()) @db.Uuid
+  tenantId           String              @map("tenant_id") @db.Uuid
+  categoryId         String?             @map("category_id") @db.Uuid
+  sku                String              @db.VarChar(100)
+  barcode            String?             @db.VarChar(100)
+  name               String              @db.VarChar(255)
+  description        String?
+  unit               String              @db.VarChar(50)
+  price              Decimal             @db.Decimal(12, 2)
+  cost               Decimal             @db.Decimal(12, 2)
+  taxRate            Decimal             @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  minStock           Int                 @default(0) @map("min_stock")
+  maxStock           Int                 @default(10000) @map("max_stock")
+  reorderPoint       Int                 @default(0) @map("reorder_point")
+  reorderQty         Int                 @default(0) @map("reorder_qty")
+  weight             Decimal?            @db.Decimal(10, 3)
+  dimensions         Json?
+  images             Json                @default("[]")
+  attributes         Json                @default("{}")
+  status             ProductStatus       @default(ACTIVE)
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  deletedAt          DateTime?           @map("deleted_at")
   inventoryItems     InventoryItem[]
   inventoryMovements InventoryMovement[]
-  orderItems         OrderItem[]
   invoiceItems       InvoiceItem[]
+  orderItems         OrderItem[]
+  category           Category?           @relation(fields: [categoryId], references: [id])
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   supplierProducts   SupplierProduct[]
 
   @@unique([tenantId, sku])
@@ -369,51 +288,32 @@ model Product {
   @@map("products")
 }
 
-enum ProductStatus {
-  ACTIVE
-  INACTIVE
-  DISCONTINUED
-  OUT_OF_STOCK
-}
-
-// ============================================
-// INVENTORY MANAGEMENT
-// ============================================
-
 /// Warehouses/Locations for inventory storage
 model Warehouse {
-  id        String          @id @default(uuid()) @db.Uuid
-  tenantId  String          @map("tenant_id") @db.Uuid
-  code      String          @db.VarChar(50)
-  name      String          @db.VarChar(255)
-  address   String?         @db.Text
-  phone     String?         @db.VarChar(50)
-  email     String?         @db.VarChar(255)
-  manager   String?         @db.VarChar(255)
-  type      WarehouseType   @default(WAREHOUSE)
-  isDefault Boolean         @default(false) @map("is_default")
-  isActive  Boolean         @default(true) @map("is_active")
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
-  deletedAt DateTime?       @map("deleted_at")
-
-  // Relations
-  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  inventoryItems     InventoryItem[]
-  movementsFrom      InventoryMovement[] @relation("MovementFromWarehouse")
-  movementsTo        InventoryMovement[] @relation("MovementToWarehouse")
-  ordersShipFrom     Order[]             @relation("OrderShipFromWarehouse")
+  id             String              @id @default(uuid()) @db.Uuid
+  tenantId       String              @map("tenant_id") @db.Uuid
+  code           String              @db.VarChar(50)
+  name           String              @db.VarChar(255)
+  address        String?
+  phone          String?             @db.VarChar(50)
+  email          String?             @db.VarChar(255)
+  manager        String?             @db.VarChar(255)
+  type           WarehouseType       @default(WAREHOUSE)
+  isDefault      Boolean             @default(false) @map("is_default")
+  isActive       Boolean             @default(true) @map("is_active")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  deletedAt      DateTime?           @map("deleted_at")
+  inventoryItems InventoryItem[]
+  movementsFrom  InventoryMovement[] @relation("MovementFromWarehouse")
+  movementsTo    InventoryMovement[] @relation("MovementToWarehouse")
+  ordersShipFrom Order[]             @relation("OrderShipFromWarehouse")
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, code])
   @@index([tenantId])
   @@index([tenantId, isDefault])
   @@map("warehouses")
-}
-
-enum WarehouseType {
-  WAREHOUSE
-  STORE
-  VIRTUAL
 }
 
 /// Inventory items - tracks stock levels per product per warehouse
@@ -424,21 +324,19 @@ model InventoryItem {
   warehouseId   String    @map("warehouse_id") @db.Uuid
   quantity      Int       @default(0)
   reservedQty   Int       @default(0) @map("reserved_qty")
-  availableQty  Int       @default(0) @map("available_qty") // computed: quantity - reservedQty
+  availableQty  Int       @default(0) @map("available_qty")
   batchNumber   String?   @map("batch_number") @db.VarChar(100)
   lotNumber     String?   @map("lot_number") @db.VarChar(100)
   serialNumber  String?   @map("serial_number") @db.VarChar(100)
   expiryDate    DateTime? @map("expiry_date")
-  location      String?   @db.VarChar(100) // Bin/Shelf location
+  location      String?   @db.VarChar(100)
   costPrice     Decimal?  @map("cost_price") @db.Decimal(12, 2)
   lastCountedAt DateTime? @map("last_counted_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse     Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, productId, warehouseId, batchNumber])
   @@index([tenantId])
@@ -460,18 +358,16 @@ model InventoryMovement {
   quantity        Int
   unitCost        Decimal?     @map("unit_cost") @db.Decimal(12, 2)
   totalCost       Decimal?     @map("total_cost") @db.Decimal(12, 2)
-  reference       String?      @db.VarChar(100) // Order ID, Transfer ID, etc.
-  referenceType   String?      @map("reference_type") @db.VarChar(50) // order, transfer, adjustment
+  reference       String?      @db.VarChar(100)
+  referenceType   String?      @map("reference_type") @db.VarChar(50)
   batchNumber     String?      @map("batch_number") @db.VarChar(100)
-  notes           String?      @db.Text
+  notes           String?
   createdAt       DateTime     @default(now()) @map("created_at")
-
-  // Relations
-  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  fromWarehouse Warehouse? @relation("MovementFromWarehouse", fields: [fromWarehouseId], references: [id])
-  toWarehouse   Warehouse? @relation("MovementToWarehouse", fields: [toWarehouseId], references: [id])
-  user          User       @relation(fields: [userId], references: [id])
+  fromWarehouse   Warehouse?   @relation("MovementFromWarehouse", fields: [fromWarehouseId], references: [id])
+  product         Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  toWarehouse     Warehouse?   @relation("MovementToWarehouse", fields: [toWarehouseId], references: [id])
+  user            User         @relation(fields: [userId], references: [id])
 
   @@index([tenantId])
   @@index([tenantId, productId])
@@ -481,53 +377,37 @@ model InventoryMovement {
   @@map("inventory_movements")
 }
 
-enum MovementType {
-  PURCHASE     // Stock in from purchase
-  SALE         // Stock out from sale
-  TRANSFER_IN  // Stock in from transfer
-  TRANSFER_OUT // Stock out from transfer
-  ADJUSTMENT   // Manual adjustment
-  RETURN_IN    // Customer return
-  RETURN_OUT   // Return to supplier
-  DAMAGE       // Damaged goods
-  EXPIRED      // Expired goods
-  INITIAL      // Initial stock count
-}
-
-// ============================================
-// CUSTOMERS & SUPPLIERS
-// ============================================
-
 /// Customers for sales orders and invoices
 model Customer {
-  id             String         @id @default(uuid()) @db.Uuid
-  tenantId       String         @map("tenant_id") @db.Uuid
-  code           String         @db.VarChar(50)
-  name           String         @db.VarChar(255)
-  type           CustomerType   @default(INDIVIDUAL)
-  email          String?        @db.VarChar(255)
-  phone          String?        @db.VarChar(50)
-  mobile         String?        @db.VarChar(50)
-  fax            String?        @db.VarChar(50)
-  website        String?        @db.VarChar(255)
-  taxId          String?        @map("tax_id") @db.VarChar(50)
-  billingAddress Json?          @map("billing_address")
-  shippingAddress Json?         @map("shipping_address")
-  paymentTerms   Int            @default(30) @map("payment_terms") // Days
-  creditLimit    Decimal        @default(0) @map("credit_limit") @db.Decimal(12, 2)
-  currentBalance Decimal        @default(0) @map("current_balance") @db.Decimal(12, 2)
-  notes          String?        @db.Text
-  tags           Json           @default("[]")
-  isActive       Boolean        @default(true) @map("is_active")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-  deletedAt      DateTime?      @map("deleted_at")
-
-  // Relations
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  orders   Order[]
-  invoices Invoice[]
-  payments Payment[]
+  id              String       @id @default(uuid()) @db.Uuid
+  tenantId        String       @map("tenant_id") @db.Uuid
+  code            String       @db.VarChar(50)
+  name            String       @db.VarChar(255)
+  type            CustomerType @default(INDIVIDUAL)
+  email           String?      @db.VarChar(255)
+  phone           String?      @db.VarChar(50)
+  mobile          String?      @db.VarChar(50)
+  fax             String?      @db.VarChar(50)
+  website         String?      @db.VarChar(255)
+  taxId           String?      @map("tax_id") @db.VarChar(50)
+  billingAddress  Json?        @map("billing_address")
+  shippingAddress Json?        @map("shipping_address")
+  paymentTerms    Int          @default(30) @map("payment_terms")
+  creditLimit     Decimal      @default(0) @map("credit_limit") @db.Decimal(12, 2)
+  currentBalance  Decimal      @default(0) @map("current_balance") @db.Decimal(12, 2)
+  notes           String?
+  tags            Json         @default("[]")
+  isActive        Boolean      @default(true) @map("is_active")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  deletedAt       DateTime?    @map("deleted_at")
+  brn             String?      @db.VarChar(30)
+  sstNo           String?      @map("sst_no") @db.VarChar(20)
+  tin             String?      @db.VarChar(20)
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices        Invoice[]
+  orders          Order[]
+  payments        Payment[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -537,44 +417,35 @@ model Customer {
   @@map("customers")
 }
 
-enum CustomerType {
-  INDIVIDUAL
-  COMPANY
-  GOVERNMENT
-  NONPROFIT
-}
-
 /// Suppliers for purchase orders
 model Supplier {
-  id              String    @id @default(uuid()) @db.Uuid
-  tenantId        String    @map("tenant_id") @db.Uuid
-  code            String    @db.VarChar(50)
-  name            String    @db.VarChar(255)
-  contactPerson   String?   @map("contact_person") @db.VarChar(255)
-  email           String?   @db.VarChar(255)
-  phone           String?   @db.VarChar(50)
-  mobile          String?   @db.VarChar(50)
-  fax             String?   @db.VarChar(50)
-  website         String?   @db.VarChar(255)
-  taxId           String?   @map("tax_id") @db.VarChar(50)
-  address         Json?
-  bankDetails     Json?     @map("bank_details")
-  paymentTerms    Int       @default(30) @map("payment_terms") // Days
-  currency        String    @default("USD") @db.VarChar(3)
-  leadTime        Int       @default(7) @map("lead_time") // Days
-  minimumOrder    Decimal   @default(0) @map("minimum_order") @db.Decimal(12, 2)
-  rating          Int?      @db.SmallInt // 1-5
-  notes           String?   @db.Text
-  tags            Json      @default("[]")
-  isActive        Boolean   @default(true) @map("is_active")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
-
-  // Relations
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id               String            @id @default(uuid()) @db.Uuid
+  tenantId         String            @map("tenant_id") @db.Uuid
+  code             String            @db.VarChar(50)
+  name             String            @db.VarChar(255)
+  contactPerson    String?           @map("contact_person") @db.VarChar(255)
+  email            String?           @db.VarChar(255)
+  phone            String?           @db.VarChar(50)
+  mobile           String?           @db.VarChar(50)
+  fax              String?           @db.VarChar(50)
+  website          String?           @db.VarChar(255)
+  taxId            String?           @map("tax_id") @db.VarChar(50)
+  address          Json?
+  bankDetails      Json?             @map("bank_details")
+  paymentTerms     Int               @default(30) @map("payment_terms")
+  currency         String            @default("USD") @db.VarChar(3)
+  leadTime         Int               @default(7) @map("lead_time")
+  minimumOrder     Decimal           @default(0) @map("minimum_order") @db.Decimal(12, 2)
+  rating           Int?              @db.SmallInt
+  notes            String?
+  tags             Json              @default("[]")
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  deletedAt        DateTime?         @map("deleted_at")
   orders           Order[]
   supplierProducts SupplierProduct[]
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -585,32 +456,26 @@ model Supplier {
 
 /// Supplier-Product relationship with pricing
 model SupplierProduct {
-  id           String   @id @default(uuid()) @db.Uuid
-  tenantId     String   @map("tenant_id") @db.Uuid
-  supplierId   String   @map("supplier_id") @db.Uuid
-  productId    String   @map("product_id") @db.Uuid
-  supplierSku  String?  @map("supplier_sku") @db.VarChar(100)
-  unitPrice    Decimal  @map("unit_price") @db.Decimal(12, 2)
-  minOrderQty  Int      @default(1) @map("min_order_qty")
-  leadTime     Int?     @map("lead_time") // Days
-  isPreferred  Boolean  @default(false) @map("is_preferred")
-  lastOrderAt  DateTime? @map("last_order_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  supplierId  String    @map("supplier_id") @db.Uuid
+  productId   String    @map("product_id") @db.Uuid
+  supplierSku String?   @map("supplier_sku") @db.VarChar(100)
+  unitPrice   Decimal   @map("unit_price") @db.Decimal(12, 2)
+  minOrderQty Int       @default(1) @map("min_order_qty")
+  leadTime    Int?      @map("lead_time")
+  isPreferred Boolean   @default(false) @map("is_preferred")
+  lastOrderAt DateTime? @map("last_order_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier    Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, supplierId, productId])
   @@index([tenantId])
   @@index([productId])
   @@map("supplier_products")
 }
-
-// ============================================
-// ORDERS
-// ============================================
 
 /// Orders - both Sales Orders and Purchase Orders
 model Order {
@@ -619,8 +484,8 @@ model Order {
   orderNumber     String      @map("order_number") @db.VarChar(50)
   type            OrderType
   status          OrderStatus @default(DRAFT)
-  customerId      String?     @map("customer_id") @db.Uuid // For sales orders
-  supplierId      String?     @map("supplier_id") @db.Uuid // For purchase orders
+  customerId      String?     @map("customer_id") @db.Uuid
+  supplierId      String?     @map("supplier_id") @db.Uuid
   warehouseId     String?     @map("warehouse_id") @db.Uuid
   createdById     String      @map("created_by_id") @db.Uuid
   approvedById    String?     @map("approved_by_id") @db.Uuid
@@ -634,29 +499,27 @@ model Order {
   taxAmount       Decimal     @default(0) @map("tax_amount") @db.Decimal(12, 2)
   shippingCost    Decimal     @default(0) @map("shipping_cost") @db.Decimal(12, 2)
   discount        Decimal     @default(0) @db.Decimal(12, 2)
-  discountType    String?     @map("discount_type") @db.VarChar(20) // percentage, fixed
+  discountType    String?     @map("discount_type") @db.VarChar(20)
   total           Decimal     @db.Decimal(12, 2)
   currency        String      @default("USD") @db.VarChar(3)
   exchangeRate    Decimal     @default(1) @map("exchange_rate") @db.Decimal(10, 6)
-  paymentTerms    Int?        @map("payment_terms") // Days
+  paymentTerms    Int?        @map("payment_terms")
   paymentMethod   String?     @map("payment_method") @db.VarChar(50)
-  notes           String?     @db.Text
-  internalNotes   String?     @map("internal_notes") @db.Text
+  notes           String?
+  internalNotes   String?     @map("internal_notes")
   tags            Json        @default("[]")
   metadata        Json        @default("{}")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   deletedAt       DateTime?   @map("deleted_at")
-
-  // Relations
-  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer   Customer?   @relation(fields: [customerId], references: [id])
-  supplier   Supplier?   @relation(fields: [supplierId], references: [id])
-  warehouse  Warehouse?  @relation("OrderShipFromWarehouse", fields: [warehouseId], references: [id])
-  createdBy  User        @relation("OrderCreatedBy", fields: [createdById], references: [id])
-  approvedBy User?       @relation("OrderApprovedBy", fields: [approvedById], references: [id])
-  items      OrderItem[]
-  invoices   Invoice[]
+  invoices        Invoice[]
+  items           OrderItem[]
+  approvedBy      User?       @relation("OrderApprovedBy", fields: [approvedById], references: [id])
+  createdBy       User        @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+  supplier        Supplier?   @relation(fields: [supplierId], references: [id])
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse       Warehouse?  @relation("OrderShipFromWarehouse", fields: [warehouseId], references: [id])
 
   @@unique([tenantId, orderNumber])
   @@index([tenantId])
@@ -668,25 +531,6 @@ model Order {
   @@map("orders")
 }
 
-enum OrderType {
-  SALES
-  PURCHASE
-  RETURN
-  TRANSFER
-}
-
-enum OrderStatus {
-  DRAFT
-  PENDING
-  CONFIRMED
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  COMPLETED
-  CANCELLED
-  ON_HOLD
-}
-
 /// Order line items
 model OrderItem {
   id           String   @id @default(uuid()) @db.Uuid
@@ -694,75 +538,76 @@ model OrderItem {
   productId    String   @map("product_id") @db.Uuid
   sku          String   @db.VarChar(100)
   name         String   @db.VarChar(255)
-  description  String?  @db.Text
+  description  String?
   quantity     Int
   shippedQty   Int      @default(0) @map("shipped_qty")
   receivedQty  Int      @default(0) @map("received_qty")
   unitPrice    Decimal  @map("unit_price") @db.Decimal(12, 2)
   unitCost     Decimal? @map("unit_cost") @db.Decimal(12, 2)
   discount     Decimal  @default(0) @db.Decimal(12, 2)
-  discountType String?  @map("discount_type") @db.VarChar(20) // percentage, fixed
+  discountType String?  @map("discount_type") @db.VarChar(20)
   taxRate      Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
   taxAmount    Decimal  @default(0) @map("tax_amount") @db.Decimal(12, 2)
   total        Decimal  @db.Decimal(12, 2)
-  notes        String?  @db.Text
+  notes        String?
   sortOrder    Int      @default(0) @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product  @relation(fields: [productId], references: [id])
 
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
 }
 
-// ============================================
-// INVOICING & PAYMENTS
-// ============================================
-
 /// Invoices generated from orders
 model Invoice {
-  id            String        @id @default(uuid()) @db.Uuid
-  tenantId      String        @map("tenant_id") @db.Uuid
-  orderId       String?       @map("order_id") @db.Uuid
-  customerId    String        @map("customer_id") @db.Uuid
-  createdById   String        @map("created_by_id") @db.Uuid
-  invoiceNumber String        @map("invoice_number") @db.VarChar(50)
-  type          InvoiceType   @default(INVOICE)
-  status        InvoiceStatus @default(DRAFT)
-  issueDate     DateTime      @default(now()) @map("issue_date")
-  dueDate       DateTime      @map("due_date")
-  paidDate      DateTime?     @map("paid_date")
-  subtotal      Decimal       @db.Decimal(12, 2)
-  taxAmount     Decimal       @default(0) @map("tax_amount") @db.Decimal(12, 2)
-  discount      Decimal       @default(0) @db.Decimal(12, 2)
-  shippingCost  Decimal       @default(0) @map("shipping_cost") @db.Decimal(12, 2)
-  total         Decimal       @db.Decimal(12, 2)
-  paidAmount    Decimal       @default(0) @map("paid_amount") @db.Decimal(12, 2)
-  balanceDue    Decimal       @default(0) @map("balance_due") @db.Decimal(12, 2)
-  currency      String        @default("USD") @db.VarChar(3)
-  exchangeRate  Decimal       @default(1) @map("exchange_rate") @db.Decimal(10, 6)
-  notes         String?       @db.Text
-  terms         String?       @db.Text
-  footer        String?       @db.Text
-  metadata      Json          @default("{}")
-  sentAt        DateTime?     @map("sent_at")
-  viewedAt      DateTime?     @map("viewed_at")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-  deletedAt     DateTime?     @map("deleted_at")
-
-  // Relations
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  order     Order?        @relation(fields: [orderId], references: [id])
-  customer  Customer      @relation(fields: [customerId], references: [id])
-  createdBy User          @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
-  items     InvoiceItem[]
-  payments  Payment[]
-  eInvoices EInvoice[]
+  id                  String        @id @default(uuid()) @db.Uuid
+  tenantId            String        @map("tenant_id") @db.Uuid
+  orderId             String?       @map("order_id") @db.Uuid
+  customerId          String        @map("customer_id") @db.Uuid
+  createdById         String        @map("created_by_id") @db.Uuid
+  invoiceNumber       String        @map("invoice_number") @db.VarChar(50)
+  type                InvoiceType   @default(INVOICE)
+  status              InvoiceStatus @default(DRAFT)
+  issueDate           DateTime      @default(now()) @map("issue_date")
+  dueDate             DateTime      @map("due_date")
+  paidDate            DateTime?     @map("paid_date")
+  subtotal            Decimal       @db.Decimal(12, 2)
+  taxAmount           Decimal       @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  discount            Decimal       @default(0) @db.Decimal(12, 2)
+  shippingCost        Decimal       @default(0) @map("shipping_cost") @db.Decimal(12, 2)
+  total               Decimal       @db.Decimal(12, 2)
+  paidAmount          Decimal       @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  balanceDue          Decimal       @default(0) @map("balance_due") @db.Decimal(12, 2)
+  currency            String        @default("USD") @db.VarChar(3)
+  exchangeRate        Decimal       @default(1) @map("exchange_rate") @db.Decimal(10, 6)
+  notes               String?
+  terms               String?
+  footer              String?
+  metadata            Json          @default("{}")
+  sentAt              DateTime?     @map("sent_at")
+  viewedAt            DateTime?     @map("viewed_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+  deletedAt           DateTime?     @map("deleted_at")
+  billReferenceNumber String?       @map("bill_reference_number") @db.VarChar(100)
+  billingFrequency    String?       @map("billing_frequency") @db.VarChar(20)
+  billingPeriodEnd    DateTime?     @map("billing_period_end")
+  billingPeriodStart  DateTime?     @map("billing_period_start")
+  paymentBankAccount  String?       @map("payment_bank_account") @db.VarChar(50)
+  paymentMode         String?       @map("payment_mode") @db.VarChar(2)
+  prepaymentAmount    Decimal?      @map("prepayment_amount") @db.Decimal(12, 2)
+  prepaymentDate      DateTime?     @map("prepayment_date")
+  prepaymentReference String?       @map("prepayment_reference") @db.VarChar(100)
+  eInvoices           EInvoice[]
+  items               InvoiceItem[]
+  createdBy           User          @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  customer            Customer      @relation(fields: [customerId], references: [id])
+  order               Order?        @relation(fields: [orderId], references: [id])
+  tenant              Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments            Payment[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
@@ -773,47 +618,30 @@ model Invoice {
   @@map("invoices")
 }
 
-enum InvoiceType {
-  INVOICE
-  CREDIT_NOTE
-  DEBIT_NOTE
-  PROFORMA
-}
-
-enum InvoiceStatus {
-  DRAFT
-  PENDING
-  SENT
-  VIEWED
-  PARTIAL
-  PAID
-  OVERDUE
-  CANCELLED
-  VOID
-}
-
 /// Invoice line items
 model InvoiceItem {
-  id          String   @id @default(uuid()) @db.Uuid
-  invoiceId   String   @map("invoice_id") @db.Uuid
-  productId   String?  @map("product_id") @db.Uuid
-  sku         String?  @db.VarChar(100)
-  name        String   @db.VarChar(255)
-  description String?  @db.Text
-  quantity    Int
-  unitPrice   Decimal  @map("unit_price") @db.Decimal(12, 2)
-  discount    Decimal  @default(0) @db.Decimal(12, 2)
-  taxRate     Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  taxAmount   Decimal  @default(0) @map("tax_amount") @db.Decimal(12, 2)
-  total       Decimal  @db.Decimal(12, 2)
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  invoice       Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  product       Product?       @relation(fields: [productId], references: [id])
-  eInvoiceItems EInvoiceItem[]
+  id                 String         @id @default(uuid()) @db.Uuid
+  invoiceId          String         @map("invoice_id") @db.Uuid
+  productId          String?        @map("product_id") @db.Uuid
+  sku                String?        @db.VarChar(100)
+  name               String         @db.VarChar(255)
+  description        String?
+  quantity           Int
+  unitPrice          Decimal        @map("unit_price") @db.Decimal(12, 2)
+  discount           Decimal        @default(0) @db.Decimal(12, 2)
+  taxRate            Decimal        @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount          Decimal        @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  total              Decimal        @db.Decimal(12, 2)
+  sortOrder          Int            @default(0) @map("sort_order")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+  classificationCode String?        @map("classification_code") @db.VarChar(10)
+  taxExemptionReason String?        @map("tax_exemption_reason") @db.VarChar(200)
+  taxTypeCode        String?        @map("tax_type_code") @db.VarChar(2)
+  unitCode           String?        @map("unit_code") @db.VarChar(5)
+  eInvoiceItems      EInvoiceItem[]
+  invoice            Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product            Product?       @relation(fields: [productId], references: [id])
 
   @@index([invoiceId])
   @@index([productId])
@@ -835,17 +663,15 @@ model Payment {
   currency      String        @default("USD") @db.VarChar(3)
   exchangeRate  Decimal       @default(1) @map("exchange_rate") @db.Decimal(10, 6)
   paymentDate   DateTime      @default(now()) @map("payment_date")
-  reference     String?       @db.VarChar(255) // Check number, transaction ID, etc.
-  notes         String?       @db.Text
+  reference     String?       @db.VarChar(255)
+  notes         String?
   metadata      Json          @default("{}")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
-
-  // Relations
-  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoice    Invoice?  @relation(fields: [invoiceId], references: [id])
-  customer   Customer  @relation(fields: [customerId], references: [id])
-  receivedBy User      @relation("PaymentReceivedBy", fields: [receivedById], references: [id])
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  invoice       Invoice?      @relation(fields: [invoiceId], references: [id])
+  receivedBy    User          @relation("PaymentReceivedBy", fields: [receivedById], references: [id])
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, paymentNumber])
   @@index([tenantId])
@@ -853,6 +679,348 @@ model Payment {
   @@index([tenantId, invoiceId])
   @@index([tenantId, paymentDate])
   @@map("payments")
+}
+
+/// Audit logs for tracking all data changes
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  userId        String?  @map("user_id") @db.Uuid
+  action        String   @db.VarChar(50)
+  entityType    String   @map("entity_type") @db.VarChar(50)
+  entityId      String?  @map("entity_id") @db.Uuid
+  entityName    String?  @map("entity_name") @db.VarChar(255)
+  oldValues     Json?    @map("old_values")
+  newValues     Json?    @map("new_values")
+  changedFields Json?    @map("changed_fields")
+  ipAddress     String?  @map("ip_address") @db.VarChar(45)
+  userAgent     String?  @map("user_agent") @db.VarChar(500)
+  requestId     String?  @map("request_id") @db.VarChar(100)
+  duration      Int?
+  createdAt     DateTime @default(now()) @map("created_at")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user          User?    @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@index([tenantId, entityType])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, action])
+  @@map("audit_logs")
+}
+
+/// Assets - categorized into Current Assets and Fixed Assets
+model Asset {
+  id                 String             @id @default(uuid()) @db.Uuid
+  tenantId           String             @map("tenant_id") @db.Uuid
+  assetTag           String             @map("asset_tag") @db.VarChar(50)
+  name               String             @db.VarChar(255)
+  description        String?
+  assetType          AssetType          @map("asset_type")
+  category           AssetCategory
+  status             AssetStatus        @default(ACTIVE)
+  location           String             @db.VarChar(255)
+  assignedTo         String?            @map("assigned_to") @db.VarChar(255)
+  purchaseDate       DateTime           @map("purchase_date")
+  purchaseCost       Decimal            @map("purchase_cost") @db.Decimal(12, 2)
+  currentValue       Decimal            @map("current_value") @db.Decimal(12, 2)
+  depreciationMethod DepreciationMethod @default(STRAIGHT_LINE) @map("depreciation_method")
+  usefulLifeYears    Int?               @map("useful_life_years")
+  salvageValue       Decimal?           @map("salvage_value") @db.Decimal(12, 2)
+  warrantyExpiry     DateTime?          @map("warranty_expiry")
+  serialNumber       String?            @map("serial_number") @db.VarChar(100)
+  manufacturer       String?            @db.VarChar(255)
+  model              String?            @db.VarChar(255)
+  notes              String?
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  deletedAt          DateTime?          @map("deleted_at")
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, assetTag])
+  @@index([tenantId])
+  @@index([tenantId, assetType])
+  @@index([tenantId, category])
+  @@index([tenantId, status])
+  @@index([tenantId, location])
+  @@map("assets")
+}
+
+/// E-Invoice record for LHDN MyInvois integration
+model EInvoice {
+  id                 String         @id @default(uuid()) @db.Uuid
+  tenantId           String         @map("tenant_id") @db.Uuid
+  invoiceId          String         @map("invoice_id") @db.Uuid
+  invoiceType        EInvoiceType   @map("invoice_type")
+  status             EInvoiceStatus @default(DRAFT)
+  lhdnUuid           String?        @unique @map("lhdn_uuid") @db.VarChar(100)
+  lhdnLongId         String?        @map("lhdn_long_id") @db.VarChar(255)
+  lhdnSubmissionUid  String?        @map("lhdn_submission_uid") @db.VarChar(100)
+  submittedAt        DateTime?      @map("submitted_at")
+  validatedAt        DateTime?      @map("validated_at")
+  cancelledAt        DateTime?      @map("cancelled_at")
+  rejectedAt         DateTime?      @map("rejected_at")
+  requestJson        Json?          @map("request_json")
+  responseJson       Json?          @map("response_json")
+  documentHash       String?        @map("document_hash") @db.VarChar(255)
+  rejectReason       String?        @map("reject_reason")
+  validationErrors   Json?          @map("validation_errors")
+  retryCount         Int            @default(0) @map("retry_count")
+  lastRetryAt        DateTime?      @map("last_retry_at")
+  originalEInvoiceId String?        @map("original_einvoice_id") @db.Uuid
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+  items              EInvoiceItem[]
+  logs               EInvoiceLog[]
+  invoice            Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  originalEInvoice   EInvoice?      @relation("EInvoiceReference", fields: [originalEInvoiceId], references: [id])
+  relatedEInvoices   EInvoice[]     @relation("EInvoiceReference")
+  tenant             Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, invoiceId])
+  @@index([lhdnUuid])
+  @@index([lhdnSubmissionUid])
+  @@map("einvoices")
+}
+
+/// E-Invoice line items with LHDN-specific fields
+model EInvoiceItem {
+  id                 String       @id @default(uuid()) @db.Uuid
+  eInvoiceId         String       @map("einvoice_id") @db.Uuid
+  invoiceItemId      String?      @map("invoice_item_id") @db.Uuid
+  classificationCode String       @map("classification_code") @db.VarChar(50)
+  description        String       @db.VarChar(500)
+  quantity           Decimal      @db.Decimal(12, 4)
+  unitCode           String       @map("unit_code") @db.VarChar(10)
+  unitPrice          Decimal      @map("unit_price") @db.Decimal(12, 4)
+  taxType            String       @map("tax_type") @db.VarChar(10)
+  taxRate            Decimal      @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount          Decimal      @map("tax_amount") @db.Decimal(12, 2)
+  taxExemptReason    String?      @map("tax_exempt_reason") @db.VarChar(255)
+  subtotal           Decimal      @db.Decimal(12, 2)
+  discountAmount     Decimal      @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  discountRate       Decimal      @default(0) @map("discount_rate") @db.Decimal(5, 2)
+  totalAmount        Decimal      @map("total_amount") @db.Decimal(12, 2)
+  sortOrder          Int          @default(0) @map("sort_order")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  eInvoice           EInvoice     @relation(fields: [eInvoiceId], references: [id], onDelete: Cascade)
+  invoiceItem        InvoiceItem? @relation(fields: [invoiceItemId], references: [id])
+
+  @@index([eInvoiceId])
+  @@map("einvoice_items")
+}
+
+/// E-Invoice activity log for audit trail
+model EInvoiceLog {
+  id           String         @id @default(uuid()) @db.Uuid
+  eInvoiceId   String         @map("einvoice_id") @db.Uuid
+  action       String         @db.VarChar(50)
+  status       EInvoiceStatus
+  message      String?
+  requestData  Json?          @map("request_data")
+  responseData Json?          @map("response_data")
+  errorCode    String?        @map("error_code") @db.VarChar(50)
+  errorMessage String?        @map("error_message")
+  ipAddress    String?        @map("ip_address") @db.VarChar(45)
+  userAgent    String?        @map("user_agent") @db.VarChar(500)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  eInvoice     EInvoice       @relation(fields: [eInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([eInvoiceId])
+  @@index([eInvoiceId, createdAt])
+  @@map("einvoice_logs")
+}
+
+/// LHDN API token cache (tenant-level)
+model LhdnToken {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @unique @map("tenant_id") @db.Uuid
+  accessToken String   @map("access_token")
+  tokenType   String   @map("token_type") @db.VarChar(50)
+  expiresAt   DateTime @map("expires_at")
+  scope       String?  @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([expiresAt])
+  @@map("lhdn_tokens")
+}
+
+/// LHDN API credentials per tenant
+model LhdnCredential {
+  id                    String          @id @default(uuid()) @db.Uuid
+  tenantId              String          @unique @map("tenant_id") @db.Uuid
+  clientId              String          @map("client_id") @db.VarChar(255)
+  clientSecretEncrypted String          @map("client_secret_encrypted")
+  tin                   String          @db.VarChar(50)
+  brn                   String?         @db.VarChar(50)
+  idType                String          @map("id_type") @db.VarChar(20)
+  idValue               String          @map("id_value") @db.VarChar(50)
+  environment           LhdnEnvironment @default(SANDBOX)
+  isActive              Boolean         @default(true) @map("is_active")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  tenant                Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("lhdn_credentials")
+}
+
+/// Tenant capabilities - controls feature access
+/// Codes: erp_core, forecasting, ai_chat, ai_agent, automation_rules
+model TenantCapability {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  code      String   @db.VarChar(50)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([code])
+  @@map("tenant_capabilities")
+}
+
+/// Print audit logs for tracking all print events (Enterprise feature)
+model PrintAudit {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  documentType   String   @map("document_type") @db.VarChar(50)
+  documentId     String   @map("document_id") @db.Uuid
+  documentNumber String?  @map("document_number") @db.VarChar(100)
+  printerName    String?  @map("printer_name") @db.VarChar(255)
+  paperSize      String?  @map("paper_size") @db.VarChar(20)
+  copies         Int      @default(1)
+  printMode      String?  @map("print_mode") @db.VarChar(20)
+  success        Boolean  @default(true)
+  errorMessage   String?  @map("error_message")
+  ipAddress      String?  @map("ip_address") @db.VarChar(45)
+  userAgent      String?  @map("user_agent") @db.VarChar(500)
+  printTimestamp DateTime @default(now()) @map("print_timestamp")
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@index([tenantId, documentType])
+  @@index([tenantId, printTimestamp])
+  @@map("print_audits")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  EXPIRED
+}
+
+enum LicenseTier {
+  L1
+  L2
+  L3
+}
+
+enum AuthPolicyPrimary {
+  password
+  sso
+}
+
+enum AuthPolicyMfa {
+  off
+  optional
+  required
+}
+
+enum AuthPolicyIdentifier {
+  email
+  username
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+  VIEWER
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+  OUT_OF_STOCK
+}
+
+enum WarehouseType {
+  WAREHOUSE
+  STORE
+  VIRTUAL
+}
+
+enum MovementType {
+  PURCHASE
+  SALE
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT
+  RETURN_IN
+  RETURN_OUT
+  DAMAGE
+  EXPIRED
+  INITIAL
+}
+
+enum CustomerType {
+  INDIVIDUAL
+  COMPANY
+  GOVERNMENT
+  NONPROFIT
+}
+
+enum OrderType {
+  SALES
+  PURCHASE
+  RETURN
+  TRANSFER
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum InvoiceType {
+  INVOICE
+  CREDIT_NOTE
+  DEBIT_NOTE
+  PROFORMA
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  SENT
+  VIEWED
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELLED
+  VOID
 }
 
 enum PaymentType {
@@ -880,87 +1048,9 @@ enum PaymentStatus {
   REFUNDED
 }
 
-// ============================================
-// AUDIT & LOGGING (L3 Feature)
-// ============================================
-
-/// Audit logs for tracking all data changes
-model AuditLog {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @map("tenant_id") @db.Uuid
-  userId      String?  @map("user_id") @db.Uuid
-  action      String   @db.VarChar(50) // create, update, delete, login, logout, etc.
-  entityType  String   @map("entity_type") @db.VarChar(50) // product, customer, invoice, etc.
-  entityId    String?  @map("entity_id") @db.Uuid
-  entityName  String?  @map("entity_name") @db.VarChar(255)
-  oldValues   Json?    @map("old_values")
-  newValues   Json?    @map("new_values")
-  changedFields Json?  @map("changed_fields") // Array of field names that changed
-  ipAddress   String?  @map("ip_address") @db.VarChar(45)
-  userAgent   String?  @map("user_agent") @db.VarChar(500)
-  requestId   String?  @map("request_id") @db.VarChar(100)
-  duration    Int?     // Request duration in ms
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // Relations
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User?  @relation(fields: [userId], references: [id])
-
-  @@index([tenantId])
-  @@index([tenantId, userId])
-  @@index([tenantId, entityType])
-  @@index([tenantId, entityType, entityId])
-  @@index([tenantId, createdAt])
-  @@index([tenantId, action])
-  @@map("audit_logs")
-}
-
-// ============================================
-// ASSET MANAGEMENT
-// ============================================
-
-/// Assets - categorized into Current Assets and Fixed Assets
-model Asset {
-  id                String            @id @default(uuid()) @db.Uuid
-  tenantId          String            @map("tenant_id") @db.Uuid
-  assetTag          String            @map("asset_tag") @db.VarChar(50)
-  name              String            @db.VarChar(255)
-  description       String?           @db.Text
-  assetType         AssetType         @map("asset_type") // CURRENT or FIXED
-  category          AssetCategory
-  status            AssetStatus       @default(ACTIVE)
-  location          String            @db.VarChar(255)
-  assignedTo        String?           @map("assigned_to") @db.VarChar(255)
-  purchaseDate      DateTime          @map("purchase_date")
-  purchaseCost      Decimal           @map("purchase_cost") @db.Decimal(12, 2)
-  currentValue      Decimal           @map("current_value") @db.Decimal(12, 2)
-  depreciationMethod DepreciationMethod @map("depreciation_method") @default(STRAIGHT_LINE)
-  usefulLifeYears   Int?              @map("useful_life_years")
-  salvageValue      Decimal?          @map("salvage_value") @db.Decimal(12, 2)
-  warrantyExpiry    DateTime?         @map("warranty_expiry")
-  serialNumber      String?           @map("serial_number") @db.VarChar(100)
-  manufacturer      String?           @db.VarChar(255)
-  model             String?           @db.VarChar(255)
-  notes             String?           @db.Text
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
-  deletedAt         DateTime?         @map("deleted_at")
-
-  // Relations
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, assetTag])
-  @@index([tenantId])
-  @@index([tenantId, assetType])
-  @@index([tenantId, category])
-  @@index([tenantId, status])
-  @@index([tenantId, location])
-  @@map("assets")
-}
-
 enum AssetType {
-  CURRENT // Current Assets - can be converted to cash within a year
-  FIXED   // Fixed Assets - long-term tangible assets
+  CURRENT
+  FIXED
 }
 
 enum AssetCategory {
@@ -990,244 +1080,29 @@ enum DepreciationMethod {
   NONE
 }
 
-// ============================================
-// E-INVOICE (LHDN MyInvois Integration)
-// ============================================
-
-/// E-Invoice record for LHDN MyInvois integration
-model EInvoice {
-  id                      String           @id @default(uuid()) @db.Uuid
-  tenantId                String           @map("tenant_id") @db.Uuid
-  invoiceId               String           @map("invoice_id") @db.Uuid
-  invoiceType             EInvoiceType     @map("invoice_type")
-  status                  EInvoiceStatus   @default(DRAFT)
-  
-  // LHDN identifiers
-  lhdnUuid                String?          @unique @map("lhdn_uuid") @db.VarChar(100)
-  lhdnLongId              String?          @map("lhdn_long_id") @db.VarChar(255)
-  lhdnSubmissionUid       String?          @map("lhdn_submission_uid") @db.VarChar(100)
-  
-  // Submission timestamps
-  submittedAt             DateTime?        @map("submitted_at")
-  validatedAt             DateTime?        @map("validated_at")
-  cancelledAt             DateTime?        @map("cancelled_at")
-  rejectedAt              DateTime?        @map("rejected_at")
-  
-  // Request/Response storage
-  requestJson             Json?            @map("request_json")
-  responseJson            Json?            @map("response_json")
-  documentHash            String?          @map("document_hash") @db.VarChar(255)
-  
-  // Error handling
-  rejectReason            String?          @map("reject_reason") @db.Text
-  validationErrors        Json?            @map("validation_errors")
-  retryCount              Int              @default(0) @map("retry_count")
-  lastRetryAt             DateTime?        @map("last_retry_at")
-  
-  // Reference to original invoice (for Credit/Debit notes)
-  originalEInvoiceId      String?          @map("original_einvoice_id") @db.Uuid
-  
-  createdAt               DateTime         @default(now()) @map("created_at")
-  updatedAt               DateTime         @updatedAt @map("updated_at")
-
-  // Relations
-  tenant                  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoice                 Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  originalEInvoice        EInvoice?        @relation("EInvoiceReference", fields: [originalEInvoiceId], references: [id])
-  relatedEInvoices        EInvoice[]       @relation("EInvoiceReference")
-  items                   EInvoiceItem[]
-  logs                    EInvoiceLog[]
-
-  @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, invoiceId])
-  @@index([lhdnUuid])
-  @@index([lhdnSubmissionUid])
-  @@map("einvoices")
-}
-
-/// E-Invoice line items with LHDN-specific fields
-model EInvoiceItem {
-  id                      String           @id @default(uuid()) @db.Uuid
-  eInvoiceId              String           @map("einvoice_id") @db.Uuid
-  invoiceItemId           String?          @map("invoice_item_id") @db.Uuid
-  
-  // LHDN item classification
-  classificationCode      String           @map("classification_code") @db.VarChar(50) // e.g., "001" for goods
-  description             String           @db.VarChar(500)
-  
-  // Quantities and pricing
-  quantity                Decimal          @db.Decimal(12, 4)
-  unitCode                String           @map("unit_code") @db.VarChar(10) // UOM code (e.g., "PCE", "KGM")
-  unitPrice               Decimal          @map("unit_price") @db.Decimal(12, 4)
-  
-  // Tax details
-  taxType                 String           @map("tax_type") @db.VarChar(10) // "01" for SST, "02" for Service Tax, etc.
-  taxRate                 Decimal          @map("tax_rate") @db.Decimal(5, 2)
-  taxAmount               Decimal          @map("tax_amount") @db.Decimal(12, 2)
-  taxExemptReason         String?          @map("tax_exempt_reason") @db.VarChar(255)
-  
-  // Amounts
-  subtotal                Decimal          @db.Decimal(12, 2)
-  discountAmount          Decimal          @default(0) @map("discount_amount") @db.Decimal(12, 2)
-  discountRate            Decimal          @default(0) @map("discount_rate") @db.Decimal(5, 2)
-  totalAmount             Decimal          @map("total_amount") @db.Decimal(12, 2)
-  
-  sortOrder               Int              @default(0) @map("sort_order")
-  createdAt               DateTime         @default(now()) @map("created_at")
-  updatedAt               DateTime         @updatedAt @map("updated_at")
-
-  // Relations
-  eInvoice                EInvoice         @relation(fields: [eInvoiceId], references: [id], onDelete: Cascade)
-  invoiceItem             InvoiceItem?     @relation(fields: [invoiceItemId], references: [id])
-
-  @@index([eInvoiceId])
-  @@map("einvoice_items")
-}
-
-/// E-Invoice activity log for audit trail
-model EInvoiceLog {
-  id                      String           @id @default(uuid()) @db.Uuid
-  eInvoiceId              String           @map("einvoice_id") @db.Uuid
-  action                  String           @db.VarChar(50) // submit, cancel, reject, validate, retry
-  status                  EInvoiceStatus
-  message                 String?          @db.Text
-  requestData             Json?            @map("request_data")
-  responseData            Json?            @map("response_data")
-  errorCode               String?          @map("error_code") @db.VarChar(50)
-  errorMessage            String?          @map("error_message") @db.Text
-  ipAddress               String?          @map("ip_address") @db.VarChar(45)
-  userAgent               String?          @map("user_agent") @db.VarChar(500)
-  createdAt               DateTime         @default(now()) @map("created_at")
-
-  // Relations
-  eInvoice                EInvoice         @relation(fields: [eInvoiceId], references: [id], onDelete: Cascade)
-
-  @@index([eInvoiceId])
-  @@index([eInvoiceId, createdAt])
-  @@map("einvoice_logs")
-}
-
-/// LHDN API token cache (tenant-level)
-model LhdnToken {
-  id                      String           @id @default(uuid()) @db.Uuid
-  tenantId                String           @unique @map("tenant_id") @db.Uuid
-  accessToken             String           @map("access_token") @db.Text
-  tokenType               String           @map("token_type") @db.VarChar(50)
-  expiresAt               DateTime         @map("expires_at")
-  scope                   String?          @db.VarChar(100)
-  createdAt               DateTime         @default(now()) @map("created_at")
-  updatedAt               DateTime         @updatedAt @map("updated_at")
-
-  // Relations
-  tenant                  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([expiresAt])
-  @@map("lhdn_tokens")
-}
-
-/// LHDN API credentials per tenant
-model LhdnCredential {
-  id                      String           @id @default(uuid()) @db.Uuid
-  tenantId                String           @unique @map("tenant_id") @db.Uuid
-  clientId                String           @map("client_id") @db.VarChar(255)
-  clientSecretEncrypted   String           @map("client_secret_encrypted") @db.Text
-  tin                     String           @db.VarChar(50) // Tax Identification Number
-  brn                     String?          @db.VarChar(50) // Business Registration Number
-  idType                  String           @map("id_type") @db.VarChar(20) // NRIC, PASSPORT, BRN, ARMY
-  idValue                 String           @map("id_value") @db.VarChar(50)
-  environment             LhdnEnvironment  @default(SANDBOX)
-  isActive                Boolean          @default(true) @map("is_active")
-  createdAt               DateTime         @default(now()) @map("created_at")
-  updatedAt               DateTime         @updatedAt @map("updated_at")
-
-  // Relations
-  tenant                  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@map("lhdn_credentials")
-}
-
 enum EInvoiceType {
-  INVOICE          // Standard invoice
-  CREDIT_NOTE      // Credit note referencing original invoice
-  DEBIT_NOTE       // Debit note referencing original invoice
-  REFUND_NOTE      // Refund note
-  SELF_BILLED      // Self-billed invoice
+  INVOICE
+  CREDIT_NOTE
+  DEBIT_NOTE
+  REFUND_NOTE
+  SELF_BILLED
   SELF_BILLED_CREDIT_NOTE
   SELF_BILLED_DEBIT_NOTE
   SELF_BILLED_REFUND_NOTE
 }
 
 enum EInvoiceStatus {
-  DRAFT            // Not yet submitted
-  PENDING          // Waiting for submission
-  SUBMITTED        // Submitted to LHDN, awaiting validation
-  VALID            // Validated and accepted by LHDN
-  INVALID          // Validation failed
-  CANCELLED        // Cancelled by issuer
-  REJECTED         // Rejected by buyer
-  ERROR            // System error during submission
+  DRAFT
+  PENDING
+  SUBMITTED
+  VALID
+  INVALID
+  CANCELLED
+  REJECTED
+  ERROR
 }
 
 enum LhdnEnvironment {
-  SANDBOX          // Test environment
-  PRODUCTION       // Live environment
-}
-
-// ============================================
-// CAPABILITY-BASED ACCESS CONTROL (per spec.md §81-94)
-// ============================================
-
-/// Tenant capabilities - controls feature access
-/// Codes: erp_core, forecasting, ai_chat, ai_agent, automation_rules
-model TenantCapability {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  code      String   @db.VarChar(50) // e.g., erp_core, forecasting, ai_chat
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, code])
-  @@index([tenantId])
-  @@index([code])
-  @@map("tenant_capabilities")
-}
-
-// ============================================
-// PRINT AUDIT (per spec.md §283-291)
-// ============================================
-
-/// Print audit logs for tracking all print events (Enterprise feature)
-model PrintAudit {
-  id             String   @id @default(uuid()) @db.Uuid
-  tenantId       String   @map("tenant_id") @db.Uuid
-  userId         String   @map("user_id") @db.Uuid
-  documentType   String   @map("document_type") @db.VarChar(50) // invoice, delivery_note, receipt
-  documentId     String   @map("document_id") @db.Uuid
-  documentNumber String?  @map("document_number") @db.VarChar(100)
-  printerName    String?  @map("printer_name") @db.VarChar(255)
-  paperSize      String?  @map("paper_size") @db.VarChar(20) // A4, Letter, etc.
-  copies         Int      @default(1)
-  printMode      String?  @map("print_mode") @db.VarChar(20) // silent, pdf, preview
-  success        Boolean  @default(true)
-  errorMessage   String?  @map("error_message") @db.Text
-  ipAddress      String?  @map("ip_address") @db.VarChar(45)
-  userAgent      String?  @map("user_agent") @db.VarChar(500)
-  printTimestamp DateTime @default(now()) @map("print_timestamp")
-
-  // Relations
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id])
-
-  @@index([tenantId])
-  @@index([tenantId, userId])
-  @@index([tenantId, documentType])
-  @@index([tenantId, printTimestamp])
-  @@map("print_audits")
+  SANDBOX
+  PRODUCTION
 }

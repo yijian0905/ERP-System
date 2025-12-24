@@ -8,6 +8,7 @@ import { currenciesRoutes } from './currencies.js';
 import { customersRoutes } from './customers.js';
 import { dashboardRoutes } from './dashboard.js';
 import { einvoicesRoutes } from './einvoices.js';
+import { einvoiceTestRoutes } from './einvoice-test.js';
 import { forecastingRoutes } from './forecasting.js';
 import { inventoryRoutes } from './inventory.js';
 import { printAuditRoutes } from './print-audit.js';
@@ -34,6 +35,7 @@ export async function v1Routes(fastify: FastifyInstance) {
   await fastify.register(auditRoutes, { prefix: '/audit' });
   await fastify.register(rolesRoutes, { prefix: '/roles' });
   await fastify.register(einvoicesRoutes, { prefix: '/einvoices' });
+  await fastify.register(einvoiceTestRoutes, { prefix: '/einvoice-test' });
   await fastify.register(currenciesRoutes, { prefix: '/currencies' });
   await fastify.register(forecastingRoutes, { prefix: '/forecasting' });
   await fastify.register(printAuditRoutes, { prefix: '/print-audit' });

@@ -11,6 +11,11 @@ export interface InvoiceLineItem {
   discount: number;
   taxRate: number;
   total: number;
+  // E-Invoice fields
+  classificationCode: string;
+  unitCode: string;
+  taxTypeCode: string;
+  taxExemptionReason?: string;
 }
 
 /**
@@ -21,8 +26,25 @@ export interface InvoiceFormData {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
+  customerTin?: string;
+  customerBrn?: string;
+  customerSstNo?: string;
   invoiceDate: string;
   dueDate: string;
+  // E-Invoice fields
+  currency: string;
+  exchangeRate: number;
+  billingPeriodStart?: string;
+  billingPeriodEnd?: string;
+  billingFrequency?: string;
+  paymentMode?: string;
+  paymentBankAccount?: string;
+  prepaymentAmount?: number;
+  prepaymentDate?: string;
+  prepaymentReference?: string;
+  billReferenceNumber?: string;
+  // Output only
+  validationErrors?: { code: string; message: string; target?: string }[];
   items: InvoiceLineItem[];
   notes: string;
   terms: string;
@@ -42,6 +64,9 @@ export interface CustomerOption {
   email: string;
   address: string;
   phone: string;
+  tin?: string;
+  brn?: string;
+  sstNo?: string;
 }
 
 /**
@@ -134,6 +159,8 @@ export function getDefaultInvoiceFormData(): InvoiceFormData {
     customerAddress: '',
     invoiceDate: today.toISOString().split('T')[0],
     dueDate: dueDate.toISOString().split('T')[0],
+    currency: 'MYR',
+    exchangeRate: 1,
     items: [],
     notes: '',
     terms: 'Payment is due within 30 days of invoice date.',

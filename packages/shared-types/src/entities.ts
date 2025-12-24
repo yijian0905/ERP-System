@@ -236,12 +236,32 @@ export interface WarehouseStock {
 // CUSTOMER
 // ============================================
 
+/**
+ * Address structure for E-Invoice compliance
+ * Per MyInvois spec §5.2, fields 14-15
+ */
 export interface Address {
-  street?: string;
+  street?: string;        // addressLine1 in E-Invoice
+  addressLine2?: string;  // Additional address line
+  addressLine3?: string;  // Additional address line
   city?: string;
-  state?: string;
+  state?: string;         // State code (01-17) for Malaysia
   postalCode?: string;
-  country?: string;
+  country?: string;       // ISO 3166-1 alpha-3 (e.g., MYS)
+}
+
+/**
+ * E-Invoice compliant Address structure
+ * All fields per MyInvois spec
+ */
+export interface EInvoiceAddress {
+  addressLine1: string;   // Mandatory
+  addressLine2?: string;
+  addressLine3?: string;
+  cityName: string;       // Mandatory
+  postalZone: string;     // Mandatory
+  stateCode: string;      // Mandatory: 01-17 for Malaysia
+  countryCode: string;    // Mandatory: ISO 3166-1 alpha-3
 }
 
 export interface Customer extends BaseEntity {
@@ -249,11 +269,15 @@ export interface Customer extends BaseEntity {
   name: string;
   type: CustomerType;
   email?: string | null;
-  phone?: string | null;
+  phone?: string | null;           // Mandatory for E-Invoice
   mobile?: string | null;
   fax?: string | null;
   website?: string | null;
-  taxId?: string | null;
+  taxId?: string | null;           // TIN for E-Invoice
+  // E-Invoice specific fields
+  tin?: string | null;             // Tax Identification Number (equivalent to taxId)
+  brn?: string | null;             // Business Registration Number
+  sstNo?: string | null;           // SST Registration Number (conditional)
   billingAddress?: Address | null;
   shippingAddress?: Address | null;
   paymentTerms: number;
@@ -262,6 +286,8 @@ export interface Customer extends BaseEntity {
   notes?: string | null;
   tags: string[];
   isActive: boolean;
+  // E-Invoice readiness flag
+  eInvoiceReady?: boolean;         // Computed: has TIN/BRN, phone, complete address
 }
 
 export interface CreateCustomerRequest {
@@ -269,11 +295,15 @@ export interface CreateCustomerRequest {
   name: string;
   type?: CustomerType;
   email?: string;
-  phone?: string;
+  phone?: string;        // Mandatory for E-Invoice
   mobile?: string;
   fax?: string;
   website?: string;
-  taxId?: string;
+  taxId?: string;        // Legacy field
+  // E-Invoice fields
+  tin?: string;          // Tax Identification Number
+  brn?: string;          // Business Registration Number
+  sstNo?: string;        // SST Registration Number
   billingAddress?: Address;
   shippingAddress?: Address;
   paymentTerms?: number;
@@ -498,6 +528,17 @@ export interface Invoice extends BaseEntity {
   metadata: Record<string, unknown>;
   sentAt?: string | null;
   viewedAt?: string | null;
+  // E-Invoice specific fields (per MyInvois spec §5.2)
+  eInvoiceVersion?: string | null;        // "1.1" recommended
+  billingPeriodStart?: string | null;     // For recurring invoices
+  billingPeriodEnd?: string | null;       // For recurring invoices  
+  billingFrequency?: string | null;       // Daily, Weekly, Monthly
+  paymentMode?: string | null;            // 01-07 per spec §6.4
+  paymentBankAccount?: string | null;     // Bank account number
+  prepaymentAmount?: number | null;       // Prepayment/advance
+  prepaymentDate?: string | null;         // Prepayment date
+  prepaymentReference?: string | null;    // Prepayment reference
+  billReferenceNumber?: string | null;    // Bill reference
   order?: Order | null;
   customer?: Customer;
   items?: InvoiceItem[];
@@ -519,6 +560,11 @@ export interface InvoiceItem {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  // E-Invoice specific fields
+  classificationCode?: string | null;     // MSIC/product classification
+  unitCode?: string | null;               // Unit of measure (C62, KGM, LTR etc.)
+  taxTypeCode?: string | null;            // Tax type (01-06, E)
+  taxExemptionReason?: string | null;     // If tax exempt
   product?: Product | null;
 }
 
@@ -531,9 +577,20 @@ export interface CreateInvoiceRequest {
   discount?: number;
   shippingCost?: number;
   currency?: string;
+  exchangeRate?: number;          // For non-MYR currencies
   notes?: string;
   terms?: string;
   footer?: string;
+  // E-Invoice fields
+  billingPeriodStart?: string;    // For recurring invoices
+  billingPeriodEnd?: string;      // For recurring invoices
+  billingFrequency?: string;      // Daily, Weekly, Monthly
+  paymentMode?: string;           // 01-07 per spec
+  paymentBankAccount?: string;    // Bank account number
+  prepaymentAmount?: number;      // Prepayment/advance
+  prepaymentDate?: string;        // Prepayment date
+  prepaymentReference?: string;   // Prepayment reference
+  billReferenceNumber?: string;   // Bill reference
   items: CreateInvoiceItemRequest[];
 }
 
@@ -546,6 +603,11 @@ export interface CreateInvoiceItemRequest {
   unitPrice: number;
   discount?: number;
   taxRate?: number;
+  // E-Invoice fields
+  classificationCode?: string;    // MSIC/product classification
+  unitCode?: string;              // Unit of measure (C62, KGM, LTR)
+  taxTypeCode?: string;           // Tax type (01-06, E)
+  taxExemptionReason?: string;    // If tax exempt
 }
 
 export interface UpdateInvoiceRequest {
@@ -556,6 +618,11 @@ export interface UpdateInvoiceRequest {
   notes?: string;
   terms?: string;
   footer?: string;
+  // E-Invoice fields
+  billingPeriodStart?: string;
+  billingPeriodEnd?: string;
+  paymentMode?: string;
+  paymentBankAccount?: string;
 }
 
 // ============================================
@@ -694,7 +761,7 @@ export interface RoleWithPermissions extends Role {
 }
 
 // Permission module definitions for grouping in UI
-export type PermissionModule = 
+export type PermissionModule =
   | 'users'
   | 'roles'
   | 'products'

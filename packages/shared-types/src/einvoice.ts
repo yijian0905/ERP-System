@@ -114,10 +114,10 @@ export interface EInvoice {
   id: string;
   tenantId: string;
   invoiceId: string;
-  invoiceType: EInvoiceType;
+  type: EInvoiceType;
   status: EInvoiceStatus;
   lhdnUuid?: string | null;
-  lhdnLongId?: string | null;
+  longId?: string | null;
   lhdnSubmissionUid?: string | null;
   submittedAt?: string | null;
   validatedAt?: string | null;

@@ -22620,6 +22620,9 @@ export namespace Prisma {
     fax: string | null
     website: string | null
     taxId: string | null
+    tin: string | null
+    brn: string | null
+    sstNo: string | null
     paymentTerms: number | null
     creditLimit: Decimal | null
     currentBalance: Decimal | null
@@ -22642,6 +22645,9 @@ export namespace Prisma {
     fax: string | null
     website: string | null
     taxId: string | null
+    tin: string | null
+    brn: string | null
+    sstNo: string | null
     paymentTerms: number | null
     creditLimit: Decimal | null
     currentBalance: Decimal | null
@@ -22664,6 +22670,9 @@ export namespace Prisma {
     fax: number
     website: number
     taxId: number
+    tin: number
+    brn: number
+    sstNo: number
     billingAddress: number
     shippingAddress: number
     paymentTerms: number
@@ -22703,6 +22712,9 @@ export namespace Prisma {
     fax?: true
     website?: true
     taxId?: true
+    tin?: true
+    brn?: true
+    sstNo?: true
     paymentTerms?: true
     creditLimit?: true
     currentBalance?: true
@@ -22725,6 +22737,9 @@ export namespace Prisma {
     fax?: true
     website?: true
     taxId?: true
+    tin?: true
+    brn?: true
+    sstNo?: true
     paymentTerms?: true
     creditLimit?: true
     currentBalance?: true
@@ -22747,6 +22762,9 @@ export namespace Prisma {
     fax?: true
     website?: true
     taxId?: true
+    tin?: true
+    brn?: true
+    sstNo?: true
     billingAddress?: true
     shippingAddress?: true
     paymentTerms?: true
@@ -22859,6 +22877,9 @@ export namespace Prisma {
     fax: string | null
     website: string | null
     taxId: string | null
+    tin: string | null
+    brn: string | null
+    sstNo: string | null
     billingAddress: JsonValue | null
     shippingAddress: JsonValue | null
     paymentTerms: number
@@ -22903,6 +22924,9 @@ export namespace Prisma {
     fax?: boolean
     website?: boolean
     taxId?: boolean
+    tin?: boolean
+    brn?: boolean
+    sstNo?: boolean
     billingAddress?: boolean
     shippingAddress?: boolean
     paymentTerms?: boolean
@@ -22933,6 +22957,9 @@ export namespace Prisma {
     fax?: boolean
     website?: boolean
     taxId?: boolean
+    tin?: boolean
+    brn?: boolean
+    sstNo?: boolean
     billingAddress?: boolean
     shippingAddress?: boolean
     paymentTerms?: boolean
@@ -22959,6 +22986,9 @@ export namespace Prisma {
     fax?: boolean
     website?: boolean
     taxId?: boolean
+    tin?: boolean
+    brn?: boolean
+    sstNo?: boolean
     billingAddress?: boolean
     shippingAddress?: boolean
     paymentTerms?: boolean
@@ -22985,6 +23015,9 @@ export namespace Prisma {
     fax?: boolean
     website?: boolean
     taxId?: boolean
+    tin?: boolean
+    brn?: boolean
+    sstNo?: boolean
     billingAddress?: boolean
     shippingAddress?: boolean
     paymentTerms?: boolean
@@ -22998,7 +23031,7 @@ export namespace Prisma {
     deletedAt?: boolean
   }
 
-  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "code" | "name" | "type" | "email" | "phone" | "mobile" | "fax" | "website" | "taxId" | "billingAddress" | "shippingAddress" | "paymentTerms" | "creditLimit" | "currentBalance" | "notes" | "tags" | "isActive" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["customer"]>
+  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "code" | "name" | "type" | "email" | "phone" | "mobile" | "fax" | "website" | "taxId" | "tin" | "brn" | "sstNo" | "billingAddress" | "shippingAddress" | "paymentTerms" | "creditLimit" | "currentBalance" | "notes" | "tags" | "isActive" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["customer"]>
   export type CustomerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     orders?: boolean | Customer$ordersArgs<ExtArgs>
@@ -23033,6 +23066,9 @@ export namespace Prisma {
       fax: string | null
       website: string | null
       taxId: string | null
+      tin: string | null
+      brn: string | null
+      sstNo: string | null
       billingAddress: Prisma.JsonValue | null
       shippingAddress: Prisma.JsonValue | null
       paymentTerms: number
@@ -23482,6 +23518,9 @@ export namespace Prisma {
     readonly fax: FieldRef<"Customer", 'String'>
     readonly website: FieldRef<"Customer", 'String'>
     readonly taxId: FieldRef<"Customer", 'String'>
+    readonly tin: FieldRef<"Customer", 'String'>
+    readonly brn: FieldRef<"Customer", 'String'>
+    readonly sstNo: FieldRef<"Customer", 'String'>
     readonly billingAddress: FieldRef<"Customer", 'Json'>
     readonly shippingAddress: FieldRef<"Customer", 'Json'>
     readonly paymentTerms: FieldRef<"Customer", 'Int'>
@@ -29565,6 +29604,7 @@ export namespace Prisma {
     paidAmount: Decimal | null
     balanceDue: Decimal | null
     exchangeRate: Decimal | null
+    prepaymentAmount: Decimal | null
   }
 
   export type InvoiceSumAggregateOutputType = {
@@ -29576,6 +29616,7 @@ export namespace Prisma {
     paidAmount: Decimal | null
     balanceDue: Decimal | null
     exchangeRate: Decimal | null
+    prepaymentAmount: Decimal | null
   }
 
   export type InvoiceMinAggregateOutputType = {
@@ -29599,6 +29640,15 @@ export namespace Prisma {
     balanceDue: Decimal | null
     currency: string | null
     exchangeRate: Decimal | null
+    billingPeriodStart: Date | null
+    billingPeriodEnd: Date | null
+    billingFrequency: string | null
+    paymentMode: string | null
+    paymentBankAccount: string | null
+    prepaymentAmount: Decimal | null
+    prepaymentDate: Date | null
+    prepaymentReference: string | null
+    billReferenceNumber: string | null
     notes: string | null
     terms: string | null
     footer: string | null
@@ -29630,6 +29680,15 @@ export namespace Prisma {
     balanceDue: Decimal | null
     currency: string | null
     exchangeRate: Decimal | null
+    billingPeriodStart: Date | null
+    billingPeriodEnd: Date | null
+    billingFrequency: string | null
+    paymentMode: string | null
+    paymentBankAccount: string | null
+    prepaymentAmount: Decimal | null
+    prepaymentDate: Date | null
+    prepaymentReference: string | null
+    billReferenceNumber: string | null
     notes: string | null
     terms: string | null
     footer: string | null
@@ -29661,6 +29720,15 @@ export namespace Prisma {
     balanceDue: number
     currency: number
     exchangeRate: number
+    billingPeriodStart: number
+    billingPeriodEnd: number
+    billingFrequency: number
+    paymentMode: number
+    paymentBankAccount: number
+    prepaymentAmount: number
+    prepaymentDate: number
+    prepaymentReference: number
+    billReferenceNumber: number
     notes: number
     terms: number
     footer: number
@@ -29683,6 +29751,7 @@ export namespace Prisma {
     paidAmount?: true
     balanceDue?: true
     exchangeRate?: true
+    prepaymentAmount?: true
   }
 
   export type InvoiceSumAggregateInputType = {
@@ -29694,6 +29763,7 @@ export namespace Prisma {
     paidAmount?: true
     balanceDue?: true
     exchangeRate?: true
+    prepaymentAmount?: true
   }
 
   export type InvoiceMinAggregateInputType = {
@@ -29717,6 +29787,15 @@ export namespace Prisma {
     balanceDue?: true
     currency?: true
     exchangeRate?: true
+    billingPeriodStart?: true
+    billingPeriodEnd?: true
+    billingFrequency?: true
+    paymentMode?: true
+    paymentBankAccount?: true
+    prepaymentAmount?: true
+    prepaymentDate?: true
+    prepaymentReference?: true
+    billReferenceNumber?: true
     notes?: true
     terms?: true
     footer?: true
@@ -29748,6 +29827,15 @@ export namespace Prisma {
     balanceDue?: true
     currency?: true
     exchangeRate?: true
+    billingPeriodStart?: true
+    billingPeriodEnd?: true
+    billingFrequency?: true
+    paymentMode?: true
+    paymentBankAccount?: true
+    prepaymentAmount?: true
+    prepaymentDate?: true
+    prepaymentReference?: true
+    billReferenceNumber?: true
     notes?: true
     terms?: true
     footer?: true
@@ -29779,6 +29867,15 @@ export namespace Prisma {
     balanceDue?: true
     currency?: true
     exchangeRate?: true
+    billingPeriodStart?: true
+    billingPeriodEnd?: true
+    billingFrequency?: true
+    paymentMode?: true
+    paymentBankAccount?: true
+    prepaymentAmount?: true
+    prepaymentDate?: true
+    prepaymentReference?: true
+    billReferenceNumber?: true
     notes?: true
     terms?: true
     footer?: true
@@ -29898,6 +29995,15 @@ export namespace Prisma {
     balanceDue: Decimal
     currency: string
     exchangeRate: Decimal
+    billingPeriodStart: Date | null
+    billingPeriodEnd: Date | null
+    billingFrequency: string | null
+    paymentMode: string | null
+    paymentBankAccount: string | null
+    prepaymentAmount: Decimal | null
+    prepaymentDate: Date | null
+    prepaymentReference: string | null
+    billReferenceNumber: string | null
     notes: string | null
     terms: string | null
     footer: string | null
@@ -29949,6 +30055,15 @@ export namespace Prisma {
     balanceDue?: boolean
     currency?: boolean
     exchangeRate?: boolean
+    billingPeriodStart?: boolean
+    billingPeriodEnd?: boolean
+    billingFrequency?: boolean
+    paymentMode?: boolean
+    paymentBankAccount?: boolean
+    prepaymentAmount?: boolean
+    prepaymentDate?: boolean
+    prepaymentReference?: boolean
+    billReferenceNumber?: boolean
     notes?: boolean
     terms?: boolean
     footer?: boolean
@@ -29989,6 +30104,15 @@ export namespace Prisma {
     balanceDue?: boolean
     currency?: boolean
     exchangeRate?: boolean
+    billingPeriodStart?: boolean
+    billingPeriodEnd?: boolean
+    billingFrequency?: boolean
+    paymentMode?: boolean
+    paymentBankAccount?: boolean
+    prepaymentAmount?: boolean
+    prepaymentDate?: boolean
+    prepaymentReference?: boolean
+    billReferenceNumber?: boolean
     notes?: boolean
     terms?: boolean
     footer?: boolean
@@ -30025,6 +30149,15 @@ export namespace Prisma {
     balanceDue?: boolean
     currency?: boolean
     exchangeRate?: boolean
+    billingPeriodStart?: boolean
+    billingPeriodEnd?: boolean
+    billingFrequency?: boolean
+    paymentMode?: boolean
+    paymentBankAccount?: boolean
+    prepaymentAmount?: boolean
+    prepaymentDate?: boolean
+    prepaymentReference?: boolean
+    billReferenceNumber?: boolean
     notes?: boolean
     terms?: boolean
     footer?: boolean
@@ -30061,6 +30194,15 @@ export namespace Prisma {
     balanceDue?: boolean
     currency?: boolean
     exchangeRate?: boolean
+    billingPeriodStart?: boolean
+    billingPeriodEnd?: boolean
+    billingFrequency?: boolean
+    paymentMode?: boolean
+    paymentBankAccount?: boolean
+    prepaymentAmount?: boolean
+    prepaymentDate?: boolean
+    prepaymentReference?: boolean
+    billReferenceNumber?: boolean
     notes?: boolean
     terms?: boolean
     footer?: boolean
@@ -30072,7 +30214,7 @@ export namespace Prisma {
     deletedAt?: boolean
   }
 
-  export type InvoiceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "orderId" | "customerId" | "createdById" | "invoiceNumber" | "type" | "status" | "issueDate" | "dueDate" | "paidDate" | "subtotal" | "taxAmount" | "discount" | "shippingCost" | "total" | "paidAmount" | "balanceDue" | "currency" | "exchangeRate" | "notes" | "terms" | "footer" | "metadata" | "sentAt" | "viewedAt" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["invoice"]>
+  export type InvoiceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "orderId" | "customerId" | "createdById" | "invoiceNumber" | "type" | "status" | "issueDate" | "dueDate" | "paidDate" | "subtotal" | "taxAmount" | "discount" | "shippingCost" | "total" | "paidAmount" | "balanceDue" | "currency" | "exchangeRate" | "billingPeriodStart" | "billingPeriodEnd" | "billingFrequency" | "paymentMode" | "paymentBankAccount" | "prepaymentAmount" | "prepaymentDate" | "prepaymentReference" | "billReferenceNumber" | "notes" | "terms" | "footer" | "metadata" | "sentAt" | "viewedAt" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["invoice"]>
   export type InvoiceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     order?: boolean | Invoice$orderArgs<ExtArgs>
@@ -30128,6 +30270,15 @@ export namespace Prisma {
       balanceDue: Prisma.Decimal
       currency: string
       exchangeRate: Prisma.Decimal
+      billingPeriodStart: Date | null
+      billingPeriodEnd: Date | null
+      billingFrequency: string | null
+      paymentMode: string | null
+      paymentBankAccount: string | null
+      prepaymentAmount: Prisma.Decimal | null
+      prepaymentDate: Date | null
+      prepaymentReference: string | null
+      billReferenceNumber: string | null
       notes: string | null
       terms: string | null
       footer: string | null
@@ -30587,6 +30738,15 @@ export namespace Prisma {
     readonly balanceDue: FieldRef<"Invoice", 'Decimal'>
     readonly currency: FieldRef<"Invoice", 'String'>
     readonly exchangeRate: FieldRef<"Invoice", 'Decimal'>
+    readonly billingPeriodStart: FieldRef<"Invoice", 'DateTime'>
+    readonly billingPeriodEnd: FieldRef<"Invoice", 'DateTime'>
+    readonly billingFrequency: FieldRef<"Invoice", 'String'>
+    readonly paymentMode: FieldRef<"Invoice", 'String'>
+    readonly paymentBankAccount: FieldRef<"Invoice", 'String'>
+    readonly prepaymentAmount: FieldRef<"Invoice", 'Decimal'>
+    readonly prepaymentDate: FieldRef<"Invoice", 'DateTime'>
+    readonly prepaymentReference: FieldRef<"Invoice", 'String'>
+    readonly billReferenceNumber: FieldRef<"Invoice", 'String'>
     readonly notes: FieldRef<"Invoice", 'String'>
     readonly terms: FieldRef<"Invoice", 'String'>
     readonly footer: FieldRef<"Invoice", 'String'>
@@ -31146,6 +31306,10 @@ export namespace Prisma {
     taxRate: Decimal | null
     taxAmount: Decimal | null
     total: Decimal | null
+    classificationCode: string | null
+    unitCode: string | null
+    taxTypeCode: string | null
+    taxExemptionReason: string | null
     sortOrder: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -31164,6 +31328,10 @@ export namespace Prisma {
     taxRate: Decimal | null
     taxAmount: Decimal | null
     total: Decimal | null
+    classificationCode: string | null
+    unitCode: string | null
+    taxTypeCode: string | null
+    taxExemptionReason: string | null
     sortOrder: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -31182,6 +31350,10 @@ export namespace Prisma {
     taxRate: number
     taxAmount: number
     total: number
+    classificationCode: number
+    unitCode: number
+    taxTypeCode: number
+    taxExemptionReason: number
     sortOrder: number
     createdAt: number
     updatedAt: number
@@ -31222,6 +31394,10 @@ export namespace Prisma {
     taxRate?: true
     taxAmount?: true
     total?: true
+    classificationCode?: true
+    unitCode?: true
+    taxTypeCode?: true
+    taxExemptionReason?: true
     sortOrder?: true
     createdAt?: true
     updatedAt?: true
@@ -31240,6 +31416,10 @@ export namespace Prisma {
     taxRate?: true
     taxAmount?: true
     total?: true
+    classificationCode?: true
+    unitCode?: true
+    taxTypeCode?: true
+    taxExemptionReason?: true
     sortOrder?: true
     createdAt?: true
     updatedAt?: true
@@ -31258,6 +31438,10 @@ export namespace Prisma {
     taxRate?: true
     taxAmount?: true
     total?: true
+    classificationCode?: true
+    unitCode?: true
+    taxTypeCode?: true
+    taxExemptionReason?: true
     sortOrder?: true
     createdAt?: true
     updatedAt?: true
@@ -31363,6 +31547,10 @@ export namespace Prisma {
     taxRate: Decimal
     taxAmount: Decimal
     total: Decimal
+    classificationCode: string | null
+    unitCode: string | null
+    taxTypeCode: string | null
+    taxExemptionReason: string | null
     sortOrder: number
     createdAt: Date
     updatedAt: Date
@@ -31400,6 +31588,10 @@ export namespace Prisma {
     taxRate?: boolean
     taxAmount?: boolean
     total?: boolean
+    classificationCode?: boolean
+    unitCode?: boolean
+    taxTypeCode?: boolean
+    taxExemptionReason?: boolean
     sortOrder?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -31422,6 +31614,10 @@ export namespace Prisma {
     taxRate?: boolean
     taxAmount?: boolean
     total?: boolean
+    classificationCode?: boolean
+    unitCode?: boolean
+    taxTypeCode?: boolean
+    taxExemptionReason?: boolean
     sortOrder?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -31442,6 +31638,10 @@ export namespace Prisma {
     taxRate?: boolean
     taxAmount?: boolean
     total?: boolean
+    classificationCode?: boolean
+    unitCode?: boolean
+    taxTypeCode?: boolean
+    taxExemptionReason?: boolean
     sortOrder?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -31462,12 +31662,16 @@ export namespace Prisma {
     taxRate?: boolean
     taxAmount?: boolean
     total?: boolean
+    classificationCode?: boolean
+    unitCode?: boolean
+    taxTypeCode?: boolean
+    taxExemptionReason?: boolean
     sortOrder?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type InvoiceItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "invoiceId" | "productId" | "sku" | "name" | "description" | "quantity" | "unitPrice" | "discount" | "taxRate" | "taxAmount" | "total" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["invoiceItem"]>
+  export type InvoiceItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "invoiceId" | "productId" | "sku" | "name" | "description" | "quantity" | "unitPrice" | "discount" | "taxRate" | "taxAmount" | "total" | "classificationCode" | "unitCode" | "taxTypeCode" | "taxExemptionReason" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["invoiceItem"]>
   export type InvoiceItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     invoice?: boolean | InvoiceDefaultArgs<ExtArgs>
     product?: boolean | InvoiceItem$productArgs<ExtArgs>
@@ -31503,6 +31707,10 @@ export namespace Prisma {
       taxRate: Prisma.Decimal
       taxAmount: Prisma.Decimal
       total: Prisma.Decimal
+      classificationCode: string | null
+      unitCode: string | null
+      taxTypeCode: string | null
+      taxExemptionReason: string | null
       sortOrder: number
       createdAt: Date
       updatedAt: Date
@@ -31944,6 +32152,10 @@ export namespace Prisma {
     readonly taxRate: FieldRef<"InvoiceItem", 'Decimal'>
     readonly taxAmount: FieldRef<"InvoiceItem", 'Decimal'>
     readonly total: FieldRef<"InvoiceItem", 'Decimal'>
+    readonly classificationCode: FieldRef<"InvoiceItem", 'String'>
+    readonly unitCode: FieldRef<"InvoiceItem", 'String'>
+    readonly taxTypeCode: FieldRef<"InvoiceItem", 'String'>
+    readonly taxExemptionReason: FieldRef<"InvoiceItem", 'String'>
     readonly sortOrder: FieldRef<"InvoiceItem", 'Int'>
     readonly createdAt: FieldRef<"InvoiceItem", 'DateTime'>
     readonly updatedAt: FieldRef<"InvoiceItem", 'DateTime'>
@@ -45023,6 +45235,9 @@ export namespace Prisma {
     fax: 'fax',
     website: 'website',
     taxId: 'taxId',
+    tin: 'tin',
+    brn: 'brn',
+    sstNo: 'sstNo',
     billingAddress: 'billingAddress',
     shippingAddress: 'shippingAddress',
     paymentTerms: 'paymentTerms',
@@ -45173,6 +45388,15 @@ export namespace Prisma {
     balanceDue: 'balanceDue',
     currency: 'currency',
     exchangeRate: 'exchangeRate',
+    billingPeriodStart: 'billingPeriodStart',
+    billingPeriodEnd: 'billingPeriodEnd',
+    billingFrequency: 'billingFrequency',
+    paymentMode: 'paymentMode',
+    paymentBankAccount: 'paymentBankAccount',
+    prepaymentAmount: 'prepaymentAmount',
+    prepaymentDate: 'prepaymentDate',
+    prepaymentReference: 'prepaymentReference',
+    billReferenceNumber: 'billReferenceNumber',
     notes: 'notes',
     terms: 'terms',
     footer: 'footer',
@@ -45200,6 +45424,10 @@ export namespace Prisma {
     taxRate: 'taxRate',
     taxAmount: 'taxAmount',
     total: 'total',
+    classificationCode: 'classificationCode',
+    unitCode: 'unitCode',
+    taxTypeCode: 'taxTypeCode',
+    taxExemptionReason: 'taxExemptionReason',
     sortOrder: 'sortOrder',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -47381,6 +47609,9 @@ export namespace Prisma {
     fax?: StringNullableFilter<"Customer"> | string | null
     website?: StringNullableFilter<"Customer"> | string | null
     taxId?: StringNullableFilter<"Customer"> | string | null
+    tin?: StringNullableFilter<"Customer"> | string | null
+    brn?: StringNullableFilter<"Customer"> | string | null
+    sstNo?: StringNullableFilter<"Customer"> | string | null
     billingAddress?: JsonNullableFilter<"Customer">
     shippingAddress?: JsonNullableFilter<"Customer">
     paymentTerms?: IntFilter<"Customer"> | number
@@ -47410,6 +47641,9 @@ export namespace Prisma {
     fax?: SortOrderInput | SortOrder
     website?: SortOrderInput | SortOrder
     taxId?: SortOrderInput | SortOrder
+    tin?: SortOrderInput | SortOrder
+    brn?: SortOrderInput | SortOrder
+    sstNo?: SortOrderInput | SortOrder
     billingAddress?: SortOrderInput | SortOrder
     shippingAddress?: SortOrderInput | SortOrder
     paymentTerms?: SortOrder
@@ -47443,6 +47677,9 @@ export namespace Prisma {
     fax?: StringNullableFilter<"Customer"> | string | null
     website?: StringNullableFilter<"Customer"> | string | null
     taxId?: StringNullableFilter<"Customer"> | string | null
+    tin?: StringNullableFilter<"Customer"> | string | null
+    brn?: StringNullableFilter<"Customer"> | string | null
+    sstNo?: StringNullableFilter<"Customer"> | string | null
     billingAddress?: JsonNullableFilter<"Customer">
     shippingAddress?: JsonNullableFilter<"Customer">
     paymentTerms?: IntFilter<"Customer"> | number
@@ -47472,6 +47709,9 @@ export namespace Prisma {
     fax?: SortOrderInput | SortOrder
     website?: SortOrderInput | SortOrder
     taxId?: SortOrderInput | SortOrder
+    tin?: SortOrderInput | SortOrder
+    brn?: SortOrderInput | SortOrder
+    sstNo?: SortOrderInput | SortOrder
     billingAddress?: SortOrderInput | SortOrder
     shippingAddress?: SortOrderInput | SortOrder
     paymentTerms?: SortOrder
@@ -47505,6 +47745,9 @@ export namespace Prisma {
     fax?: StringNullableWithAggregatesFilter<"Customer"> | string | null
     website?: StringNullableWithAggregatesFilter<"Customer"> | string | null
     taxId?: StringNullableWithAggregatesFilter<"Customer"> | string | null
+    tin?: StringNullableWithAggregatesFilter<"Customer"> | string | null
+    brn?: StringNullableWithAggregatesFilter<"Customer"> | string | null
+    sstNo?: StringNullableWithAggregatesFilter<"Customer"> | string | null
     billingAddress?: JsonNullableWithAggregatesFilter<"Customer">
     shippingAddress?: JsonNullableWithAggregatesFilter<"Customer">
     paymentTerms?: IntWithAggregatesFilter<"Customer"> | number
@@ -48151,6 +48394,15 @@ export namespace Prisma {
     balanceDue?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     currency?: StringFilter<"Invoice"> | string
     exchangeRate?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    billingPeriodEnd?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    billingFrequency?: StringNullableFilter<"Invoice"> | string | null
+    paymentMode?: StringNullableFilter<"Invoice"> | string | null
+    paymentBankAccount?: StringNullableFilter<"Invoice"> | string | null
+    prepaymentAmount?: DecimalNullableFilter<"Invoice"> | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    prepaymentReference?: StringNullableFilter<"Invoice"> | string | null
+    billReferenceNumber?: StringNullableFilter<"Invoice"> | string | null
     notes?: StringNullableFilter<"Invoice"> | string | null
     terms?: StringNullableFilter<"Invoice"> | string | null
     footer?: StringNullableFilter<"Invoice"> | string | null
@@ -48190,6 +48442,15 @@ export namespace Prisma {
     balanceDue?: SortOrder
     currency?: SortOrder
     exchangeRate?: SortOrder
+    billingPeriodStart?: SortOrderInput | SortOrder
+    billingPeriodEnd?: SortOrderInput | SortOrder
+    billingFrequency?: SortOrderInput | SortOrder
+    paymentMode?: SortOrderInput | SortOrder
+    paymentBankAccount?: SortOrderInput | SortOrder
+    prepaymentAmount?: SortOrderInput | SortOrder
+    prepaymentDate?: SortOrderInput | SortOrder
+    prepaymentReference?: SortOrderInput | SortOrder
+    billReferenceNumber?: SortOrderInput | SortOrder
     notes?: SortOrderInput | SortOrder
     terms?: SortOrderInput | SortOrder
     footer?: SortOrderInput | SortOrder
@@ -48233,6 +48494,15 @@ export namespace Prisma {
     balanceDue?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     currency?: StringFilter<"Invoice"> | string
     exchangeRate?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    billingPeriodEnd?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    billingFrequency?: StringNullableFilter<"Invoice"> | string | null
+    paymentMode?: StringNullableFilter<"Invoice"> | string | null
+    paymentBankAccount?: StringNullableFilter<"Invoice"> | string | null
+    prepaymentAmount?: DecimalNullableFilter<"Invoice"> | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    prepaymentReference?: StringNullableFilter<"Invoice"> | string | null
+    billReferenceNumber?: StringNullableFilter<"Invoice"> | string | null
     notes?: StringNullableFilter<"Invoice"> | string | null
     terms?: StringNullableFilter<"Invoice"> | string | null
     footer?: StringNullableFilter<"Invoice"> | string | null
@@ -48272,6 +48542,15 @@ export namespace Prisma {
     balanceDue?: SortOrder
     currency?: SortOrder
     exchangeRate?: SortOrder
+    billingPeriodStart?: SortOrderInput | SortOrder
+    billingPeriodEnd?: SortOrderInput | SortOrder
+    billingFrequency?: SortOrderInput | SortOrder
+    paymentMode?: SortOrderInput | SortOrder
+    paymentBankAccount?: SortOrderInput | SortOrder
+    prepaymentAmount?: SortOrderInput | SortOrder
+    prepaymentDate?: SortOrderInput | SortOrder
+    prepaymentReference?: SortOrderInput | SortOrder
+    billReferenceNumber?: SortOrderInput | SortOrder
     notes?: SortOrderInput | SortOrder
     terms?: SortOrderInput | SortOrder
     footer?: SortOrderInput | SortOrder
@@ -48312,6 +48591,15 @@ export namespace Prisma {
     balanceDue?: DecimalWithAggregatesFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     currency?: StringWithAggregatesFilter<"Invoice"> | string
     exchangeRate?: DecimalWithAggregatesFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: DateTimeNullableWithAggregatesFilter<"Invoice"> | Date | string | null
+    billingPeriodEnd?: DateTimeNullableWithAggregatesFilter<"Invoice"> | Date | string | null
+    billingFrequency?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
+    paymentMode?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
+    paymentBankAccount?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
+    prepaymentAmount?: DecimalNullableWithAggregatesFilter<"Invoice"> | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: DateTimeNullableWithAggregatesFilter<"Invoice"> | Date | string | null
+    prepaymentReference?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
+    billReferenceNumber?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
     notes?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
     terms?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
     footer?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
@@ -48339,6 +48627,10 @@ export namespace Prisma {
     taxRate?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    classificationCode?: StringNullableFilter<"InvoiceItem"> | string | null
+    unitCode?: StringNullableFilter<"InvoiceItem"> | string | null
+    taxTypeCode?: StringNullableFilter<"InvoiceItem"> | string | null
+    taxExemptionReason?: StringNullableFilter<"InvoiceItem"> | string | null
     sortOrder?: IntFilter<"InvoiceItem"> | number
     createdAt?: DateTimeFilter<"InvoiceItem"> | Date | string
     updatedAt?: DateTimeFilter<"InvoiceItem"> | Date | string
@@ -48360,6 +48652,10 @@ export namespace Prisma {
     taxRate?: SortOrder
     taxAmount?: SortOrder
     total?: SortOrder
+    classificationCode?: SortOrderInput | SortOrder
+    unitCode?: SortOrderInput | SortOrder
+    taxTypeCode?: SortOrderInput | SortOrder
+    taxExemptionReason?: SortOrderInput | SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -48384,6 +48680,10 @@ export namespace Prisma {
     taxRate?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    classificationCode?: StringNullableFilter<"InvoiceItem"> | string | null
+    unitCode?: StringNullableFilter<"InvoiceItem"> | string | null
+    taxTypeCode?: StringNullableFilter<"InvoiceItem"> | string | null
+    taxExemptionReason?: StringNullableFilter<"InvoiceItem"> | string | null
     sortOrder?: IntFilter<"InvoiceItem"> | number
     createdAt?: DateTimeFilter<"InvoiceItem"> | Date | string
     updatedAt?: DateTimeFilter<"InvoiceItem"> | Date | string
@@ -48405,6 +48705,10 @@ export namespace Prisma {
     taxRate?: SortOrder
     taxAmount?: SortOrder
     total?: SortOrder
+    classificationCode?: SortOrderInput | SortOrder
+    unitCode?: SortOrderInput | SortOrder
+    taxTypeCode?: SortOrderInput | SortOrder
+    taxExemptionReason?: SortOrderInput | SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -48431,6 +48735,10 @@ export namespace Prisma {
     taxRate?: DecimalWithAggregatesFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalWithAggregatesFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
     total?: DecimalWithAggregatesFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    classificationCode?: StringNullableWithAggregatesFilter<"InvoiceItem"> | string | null
+    unitCode?: StringNullableWithAggregatesFilter<"InvoiceItem"> | string | null
+    taxTypeCode?: StringNullableWithAggregatesFilter<"InvoiceItem"> | string | null
+    taxExemptionReason?: StringNullableWithAggregatesFilter<"InvoiceItem"> | string | null
     sortOrder?: IntWithAggregatesFilter<"InvoiceItem"> | number
     createdAt?: DateTimeWithAggregatesFilter<"InvoiceItem"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"InvoiceItem"> | Date | string
@@ -51213,6 +51521,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -51242,6 +51553,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -51269,6 +51583,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -51298,6 +51615,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -51326,6 +51646,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -51350,6 +51673,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -51375,6 +51701,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -52117,6 +52446,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -52156,6 +52494,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -52187,6 +52534,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -52226,6 +52582,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -52261,6 +52626,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -52289,6 +52663,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -52321,6 +52704,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -52343,6 +52735,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -52364,6 +52760,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -52381,6 +52781,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -52402,6 +52806,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -52421,6 +52829,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -52437,6 +52849,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -52455,6 +52871,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55362,6 +55782,9 @@ export namespace Prisma {
     fax?: SortOrder
     website?: SortOrder
     taxId?: SortOrder
+    tin?: SortOrder
+    brn?: SortOrder
+    sstNo?: SortOrder
     billingAddress?: SortOrder
     shippingAddress?: SortOrder
     paymentTerms?: SortOrder
@@ -55393,6 +55816,9 @@ export namespace Prisma {
     fax?: SortOrder
     website?: SortOrder
     taxId?: SortOrder
+    tin?: SortOrder
+    brn?: SortOrder
+    sstNo?: SortOrder
     paymentTerms?: SortOrder
     creditLimit?: SortOrder
     currentBalance?: SortOrder
@@ -55415,6 +55841,9 @@ export namespace Prisma {
     fax?: SortOrder
     website?: SortOrder
     taxId?: SortOrder
+    tin?: SortOrder
+    brn?: SortOrder
+    sstNo?: SortOrder
     paymentTerms?: SortOrder
     creditLimit?: SortOrder
     currentBalance?: SortOrder
@@ -55927,6 +56356,15 @@ export namespace Prisma {
     balanceDue?: SortOrder
     currency?: SortOrder
     exchangeRate?: SortOrder
+    billingPeriodStart?: SortOrder
+    billingPeriodEnd?: SortOrder
+    billingFrequency?: SortOrder
+    paymentMode?: SortOrder
+    paymentBankAccount?: SortOrder
+    prepaymentAmount?: SortOrder
+    prepaymentDate?: SortOrder
+    prepaymentReference?: SortOrder
+    billReferenceNumber?: SortOrder
     notes?: SortOrder
     terms?: SortOrder
     footer?: SortOrder
@@ -55947,6 +56385,7 @@ export namespace Prisma {
     paidAmount?: SortOrder
     balanceDue?: SortOrder
     exchangeRate?: SortOrder
+    prepaymentAmount?: SortOrder
   }
 
   export type InvoiceMaxOrderByAggregateInput = {
@@ -55970,6 +56409,15 @@ export namespace Prisma {
     balanceDue?: SortOrder
     currency?: SortOrder
     exchangeRate?: SortOrder
+    billingPeriodStart?: SortOrder
+    billingPeriodEnd?: SortOrder
+    billingFrequency?: SortOrder
+    paymentMode?: SortOrder
+    paymentBankAccount?: SortOrder
+    prepaymentAmount?: SortOrder
+    prepaymentDate?: SortOrder
+    prepaymentReference?: SortOrder
+    billReferenceNumber?: SortOrder
     notes?: SortOrder
     terms?: SortOrder
     footer?: SortOrder
@@ -56001,6 +56449,15 @@ export namespace Prisma {
     balanceDue?: SortOrder
     currency?: SortOrder
     exchangeRate?: SortOrder
+    billingPeriodStart?: SortOrder
+    billingPeriodEnd?: SortOrder
+    billingFrequency?: SortOrder
+    paymentMode?: SortOrder
+    paymentBankAccount?: SortOrder
+    prepaymentAmount?: SortOrder
+    prepaymentDate?: SortOrder
+    prepaymentReference?: SortOrder
+    billReferenceNumber?: SortOrder
     notes?: SortOrder
     terms?: SortOrder
     footer?: SortOrder
@@ -56020,6 +56477,7 @@ export namespace Prisma {
     paidAmount?: SortOrder
     balanceDue?: SortOrder
     exchangeRate?: SortOrder
+    prepaymentAmount?: SortOrder
   }
 
   export type EnumInvoiceTypeWithAggregatesFilter<$PrismaModel = never> = {
@@ -56075,6 +56533,10 @@ export namespace Prisma {
     taxRate?: SortOrder
     taxAmount?: SortOrder
     total?: SortOrder
+    classificationCode?: SortOrder
+    unitCode?: SortOrder
+    taxTypeCode?: SortOrder
+    taxExemptionReason?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -56103,6 +56565,10 @@ export namespace Prisma {
     taxRate?: SortOrder
     taxAmount?: SortOrder
     total?: SortOrder
+    classificationCode?: SortOrder
+    unitCode?: SortOrder
+    taxTypeCode?: SortOrder
+    taxExemptionReason?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -56121,6 +56587,10 @@ export namespace Prisma {
     taxRate?: SortOrder
     taxAmount?: SortOrder
     total?: SortOrder
+    classificationCode?: SortOrder
+    unitCode?: SortOrder
+    taxTypeCode?: SortOrder
+    taxExemptionReason?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -61244,6 +61714,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -61271,6 +61744,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -61604,6 +62080,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -61641,6 +62126,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -62240,6 +62734,9 @@ export namespace Prisma {
     fax?: StringNullableFilter<"Customer"> | string | null
     website?: StringNullableFilter<"Customer"> | string | null
     taxId?: StringNullableFilter<"Customer"> | string | null
+    tin?: StringNullableFilter<"Customer"> | string | null
+    brn?: StringNullableFilter<"Customer"> | string | null
+    sstNo?: StringNullableFilter<"Customer"> | string | null
     billingAddress?: JsonNullableFilter<"Customer">
     shippingAddress?: JsonNullableFilter<"Customer">
     paymentTerms?: IntFilter<"Customer"> | number
@@ -62505,6 +63002,15 @@ export namespace Prisma {
     balanceDue?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     currency?: StringFilter<"Invoice"> | string
     exchangeRate?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    billingPeriodEnd?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    billingFrequency?: StringNullableFilter<"Invoice"> | string | null
+    paymentMode?: StringNullableFilter<"Invoice"> | string | null
+    paymentBankAccount?: StringNullableFilter<"Invoice"> | string | null
+    prepaymentAmount?: DecimalNullableFilter<"Invoice"> | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    prepaymentReference?: StringNullableFilter<"Invoice"> | string | null
+    billReferenceNumber?: StringNullableFilter<"Invoice"> | string | null
     notes?: StringNullableFilter<"Invoice"> | string | null
     terms?: StringNullableFilter<"Invoice"> | string | null
     footer?: StringNullableFilter<"Invoice"> | string | null
@@ -63254,6 +63760,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -63291,6 +63806,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -65258,6 +65782,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -65277,6 +65805,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -65563,6 +66095,10 @@ export namespace Prisma {
     taxRate?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    classificationCode?: StringNullableFilter<"InvoiceItem"> | string | null
+    unitCode?: StringNullableFilter<"InvoiceItem"> | string | null
+    taxTypeCode?: StringNullableFilter<"InvoiceItem"> | string | null
+    taxExemptionReason?: StringNullableFilter<"InvoiceItem"> | string | null
     sortOrder?: IntFilter<"InvoiceItem"> | number
     createdAt?: DateTimeFilter<"InvoiceItem"> | Date | string
     updatedAt?: DateTimeFilter<"InvoiceItem"> | Date | string
@@ -67226,6 +67762,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -67263,6 +67808,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -68134,6 +68688,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -68162,6 +68719,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -68477,6 +69037,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -68514,6 +69083,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -68643,6 +69221,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -68671,6 +69252,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -69433,6 +70017,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -69461,6 +70048,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -69551,6 +70141,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -69570,6 +70164,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -69890,6 +70488,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -69918,6 +70519,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -70063,6 +70667,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -70101,6 +70714,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -70264,6 +70886,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70302,6 +70933,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70521,6 +71161,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -70559,6 +71208,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -70588,6 +71246,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -70616,6 +71277,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -70806,6 +71470,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70844,6 +71517,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70879,6 +71561,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -70907,6 +71592,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -71525,6 +72213,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -71563,6 +72260,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -71905,6 +72611,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -71943,6 +72658,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -72157,6 +72881,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -72177,6 +72905,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -72274,6 +73006,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -72294,6 +73030,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -73256,6 +73996,9 @@ export namespace Prisma {
     fax?: string | null
     website?: string | null
     taxId?: string | null
+    tin?: string | null
+    brn?: string | null
+    sstNo?: string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: number
@@ -73401,6 +74144,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -73766,6 +74518,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -73793,6 +74548,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -73820,6 +74578,9 @@ export namespace Prisma {
     fax?: NullableStringFieldUpdateOperationsInput | string | null
     website?: NullableStringFieldUpdateOperationsInput | string | null
     taxId?: NullableStringFieldUpdateOperationsInput | string | null
+    tin?: NullableStringFieldUpdateOperationsInput | string | null
+    brn?: NullableStringFieldUpdateOperationsInput | string | null
+    sstNo?: NullableStringFieldUpdateOperationsInput | string | null
     billingAddress?: NullableJsonNullValueInput | InputJsonValue
     shippingAddress?: NullableJsonNullValueInput | InputJsonValue
     paymentTerms?: IntFieldUpdateOperationsInput | number
@@ -74202,6 +74963,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -74239,6 +75009,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -74273,6 +75052,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -74827,6 +75615,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -75205,6 +76002,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -75242,6 +76048,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -75276,6 +76091,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -75864,6 +76688,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -76065,6 +76893,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -76084,6 +76916,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -76102,6 +76938,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -76556,6 +77396,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -76713,6 +77562,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -76750,6 +77608,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -76784,6 +77651,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -77097,6 +77973,15 @@ export namespace Prisma {
     balanceDue?: Decimal | DecimalJsLike | number | string
     currency?: string
     exchangeRate?: Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: Date | string | null
+    billingPeriodEnd?: Date | string | null
+    billingFrequency?: string | null
+    paymentMode?: string | null
+    paymentBankAccount?: string | null
+    prepaymentAmount?: Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: Date | string | null
+    prepaymentReference?: string | null
+    billReferenceNumber?: string | null
     notes?: string | null
     terms?: string | null
     footer?: string | null
@@ -77191,6 +78076,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -77228,6 +78122,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -77262,6 +78165,15 @@ export namespace Prisma {
     balanceDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    billingPeriodStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingPeriodEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingFrequency?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMode?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentBankAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    prepaymentAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    prepaymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    prepaymentReference?: NullableStringFieldUpdateOperationsInput | string | null
+    billReferenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     terms?: NullableStringFieldUpdateOperationsInput | string | null
     footer?: NullableStringFieldUpdateOperationsInput | string | null
@@ -77285,6 +78197,10 @@ export namespace Prisma {
     taxRate?: Decimal | DecimalJsLike | number | string
     taxAmount?: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    classificationCode?: string | null
+    unitCode?: string | null
+    taxTypeCode?: string | null
+    taxExemptionReason?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -77345,6 +78261,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -77364,6 +78284,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -77382,6 +78306,10 @@ export namespace Prisma {
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    classificationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxTypeCode?: NullableStringFieldUpdateOperationsInput | string | null
+    taxExemptionReason?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

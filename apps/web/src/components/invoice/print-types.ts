@@ -64,6 +64,9 @@ export interface PrintSnapshot {
     customerName: string;
     customerEmail: string;
     customerAddress: string;
+    customerTin?: string;
+    customerBrn?: string;
+    customerSstNo?: string;
 
     // Line items (frozen copy)
     items: Readonly<InvoiceLineItem[]>;
@@ -77,6 +80,13 @@ export interface PrintSnapshot {
     // Additional fields
     notes: string;
     terms: string;
+
+    // E-Invoice specifics
+    currency: string;
+    paymentMode?: string;
+    billingPeriodStart?: string;
+    billingPeriodEnd?: string;
+    billReferenceNumber?: string;
 
     // Company info (frozen copy)
     companyInfo: Readonly<CompanyInfo>;
@@ -114,6 +124,9 @@ export function createPrintSnapshot(
         customerName: formData.customerName,
         customerEmail: formData.customerEmail,
         customerAddress: formData.customerAddress,
+        customerTin: formData.customerTin,
+        customerBrn: formData.customerBrn,
+        customerSstNo: formData.customerSstNo,
 
         items: Object.freeze(frozenItems),
 
@@ -124,6 +137,12 @@ export function createPrintSnapshot(
 
         notes: formData.notes,
         terms: formData.terms,
+
+        currency: formData.currency,
+        paymentMode: formData.paymentMode,
+        billingPeriodStart: formData.billingPeriodStart,
+        billingPeriodEnd: formData.billingPeriodEnd,
+        billReferenceNumber: formData.billReferenceNumber,
 
         companyInfo: Object.freeze({ ...companyInfo }),
         settings: Object.freeze({ ...settings }),

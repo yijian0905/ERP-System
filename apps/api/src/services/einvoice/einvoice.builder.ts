@@ -52,24 +52,39 @@ interface InvoiceData {
   issueDate: Date;
   dueDate: Date;
   currency: string;
+  exchangeRate?: number;           // Exchange rate for non-MYR currencies
   subtotal: number;
   taxAmount: number;
   discount: number;
   total: number;
   notes?: string | null;
+  // E-Invoice specific fields
+  billingPeriodStart?: Date | null;   // For recurring invoices
+  billingPeriodEnd?: Date | null;     // For recurring invoices
+  billingFrequency?: string | null;   // Daily, Weekly, Monthly
+  paymentMode?: string | null;        // Payment mode code (01-07)
+  paymentBankAccount?: string | null; // Bank account for transfer
+  prepaymentAmount?: number | null;   // Prepayment/advance
+  prepaymentDate?: Date | null;       // Prepayment date
+  prepaymentReference?: string | null;// Prepayment reference number
+  billReferenceNumber?: string | null;// Bill reference number
   customer: {
     id: string;
     code: string;
     name: string;
-    taxId?: string | null;
+    taxId?: string | null;     // TIN
+    tin?: string | null;       // TIN (explicit)
+    brn?: string | null;       // Business Registration Number
     email?: string | null;
     phone?: string | null;
     billingAddress?: {
-      street?: string;
+      street?: string;         // addressLine1
+      addressLine2?: string;
+      addressLine3?: string;
       city?: string;
-      state?: string;
+      state?: string;          // State code 01-17
       postalCode?: string;
-      country?: string;
+      country?: string;        // ISO 3166-1 alpha-3
     } | null;
   };
   items: Array<{
@@ -83,6 +98,11 @@ interface InvoiceData {
     taxRate: number;
     taxAmount: number;
     total: number;
+    // E-Invoice specific fields
+    classificationCode?: string | null;  // MSIC/product classification
+    unitCode?: string | null;            // Unit of measure (C62, KGM, LTR)
+    taxTypeCode?: string | null;         // Tax type (01-06, E)
+    taxExemptionReason?: string | null;  // If tax exempt
     product?: {
       unit: string;
     } | null;
@@ -282,10 +302,8 @@ export class EInvoiceBuilder {
       // Customer party
       AccountingCustomerParty: [this.buildCustomerParty(invoice.customer)],
 
-      // Payment means
-      PaymentMeans: [{
-        PaymentMeansCode: [{ _: '01' }], // Default: Cash
-      }],
+      // Payment means with dynamic code (Fields 49-50)
+      PaymentMeans: [this.buildPaymentMeans(invoice)],
 
       // Tax totals
       TaxTotal: [this.buildTaxTotal(invoice)],
@@ -705,6 +723,29 @@ export class EInvoiceBuilder {
     return {
       isValid: errors.length === 0,
       errors,
+    };
+  }
+
+  /**
+   * Build payment means section (Fields 49-50)
+   * 01=Cash, 02=Cheque, 03=Bank Transfer, 04=Credit Card
+   * 05=Debit Card, 06=E-Wallet, 07=Digital Bank
+   */
+  private buildPaymentMeans(invoice: InvoiceData) {
+    const paymentCode = invoice.paymentMode || '01'; // Default: Cash
+
+    // Build payment means - always return valid structure
+    if (paymentCode === '03' && invoice.paymentBankAccount) {
+      return {
+        PaymentMeansCode: [{ _: paymentCode }],
+        PayeeFinancialAccount: [{
+          ID: [{ _: invoice.paymentBankAccount }],
+        }],
+      };
+    }
+
+    return {
+      PaymentMeansCode: [{ _: paymentCode }],
     };
   }
 }

@@ -18,7 +18,8 @@
 10. [Special Scenarios](#10-special-scenarios)
 11. [Database Schema Reference](#11-database-schema-reference)
 12. [Code Examples](#12-code-examples)
-13. [Implementation Checklist](#13-implementation-checklist)
+13. [Sandbox Testing Environment (Preprod)](#13-sandbox-testing-environment-preprod)
+14. [Implementation Checklist](#14-implementation-checklist)
 
 ---
 
@@ -2141,9 +2142,372 @@ export { InvoiceBuilder, InvoiceData, InvoiceLineItem, InvoiceParty };
 
 ---
 
-## 13. Implementation Checklist
+## 13. Sandbox Testing Environment (Preprod)
 
-### 13.1 Pre-Implementation
+### 13.1 Environment Overview
+
+LHDN provides a **Sandbox/Preproduction Environment** for testing e-invoice integration before going live. This environment is completely separate from production and allows developers to test without affecting real data.
+
+| Environment | Purpose | Portal URL | API Base URL |
+|-------------|---------|------------|--------------|
+| **Sandbox (Preprod)** | Testing & Development | https://preprod-mytax.hasil.gov.my | https://preprod-api.myinvois.hasil.gov.my |
+| **Production** | Live Transactions | https://mytax.hasil.gov.my | https://api.myinvois.hasil.gov.my |
+
+> ⚠️ **Important**: Client ID and Client Secret are **different** for each environment. You must obtain credentials separately for Sandbox and Production.
+
+### 13.2 Sandbox Key Characteristics
+
+| Aspect | Details |
+|--------|---------|
+| Data Persistence | Test data is **NOT stored** in LHDN's official database |
+| Migration | Test data will **NOT migrate** to production |
+| Penalty | **No penalties** for errors in sandbox |
+| Digital Signature | Both v1.0 (no signature) and v1.1 (with signature) available |
+| Availability | Available since April 10, 2024 |
+| Document Validity | Invoices are for simulation only, not valid for real transactions |
+
+### 13.3 Sandbox Registration Process
+
+#### Step 1: First-Time Login to Preprod MyTax Portal
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  FIRST-TIME LOGIN TO SANDBOX                                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. Visit: https://preprod-mytax.hasil.gov.my
+
+2. Click "Log Masuk" (Login)
+
+3. Select Identification Type:
+   ├── MyKad (for Malaysian)
+   └── Passport (for Non-Malaysian)
+
+4. Enter your IC Number / Passport Number
+
+5. Click "Hantar" (Submit)
+
+6. First-time users:
+   ├── Click "Lupa Kata Laluan" (Forgot Password)
+   ├── Follow on-screen instructions
+   ├── Create new password for Preprod environment
+   └── Note: Production password does NOT work in Preprod
+
+7. Complete email verification if required
+
+8. After login, you'll see the MyTax homepage
+```
+
+#### Step 2: Switch to Company Profile
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  SWITCH TO COMPANY PROFILE                                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. After login, you are on Individual Profile by default
+
+2. Click "MyInvois" in top menu
+
+3. Select "preprod" from dropdown
+
+4. Click Profile icon (top-right corner)
+
+5. Select "Switch Taxpayer"
+
+6. Choose your registered company from the list
+
+7. Click "Switch"
+
+If company not listed:
+├── You need to apply for "Company Director" role
+├── Or be appointed as "Company Representative"
+└── Follow the New Role Application process
+```
+
+#### Step 3: Complete Taxpayer Profile Setup
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  TAXPAYER PROFILE SETUP                                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. First-time accessing company profile:
+   ├── Agree to Terms and Conditions
+   └── Verify/Update profile information
+
+2. IMPORTANT - Address Setup:
+   ├── Manually select Country (MYS)
+   ├── Manually select State code
+   ├── Manually type City name
+   └── If not done correctly, "Save" button won't work
+
+3. Click "Save" after completing all fields
+
+4. You should now see the MyInvois Home screen
+```
+
+#### Step 4: Register ERP System (Get Client ID & Secret)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  REGISTER ERP & OBTAIN CREDENTIALS                                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. In MyInvois Portal, click Profile icon (top-right)
+
+2. Select "View Taxpayer Profile"
+
+3. Scroll down to the bottom of the page
+
+4. Find the "ERP" section/table
+
+5. Click "Register ERP" button
+
+6. Fill in the dialog:
+   ├── ERP Name: [Your System Name, e.g., "MyERP System"]
+   └── Client Secret Expiration: [Select 1 Year / 2 Years / 3 Years]
+
+7. Click "Register"
+
+8. IMPORTANT - Copy credentials immediately:
+   ┌─────────────────────────────────────────────┐
+   │  Client ID:        XXXXXXXX-XXXX-XXXX-XXXX  │
+   │  Client Secret 1:  XXXXXXXXXXXXXXXXXXXXXXXX │
+   │  Client Secret 2:  XXXXXXXXXXXXXXXXXXXXXXXX │
+   └─────────────────────────────────────────────┘
+   
+   ⚠️ These are shown ONLY ONCE! Save them securely!
+
+9. Tick checkbox to confirm you have copied
+
+10. Click "Done"
+```
+
+### 13.4 Sandbox API Configuration
+
+```javascript
+// Sandbox Configuration
+const SANDBOX_CONFIG = {
+  // Authentication
+  tokenEndpoint: 'https://preprod-api.myinvois.hasil.gov.my/connect/token',
+  
+  // API Base URL
+  apiBaseUrl: 'https://preprod-api.myinvois.hasil.gov.my',
+  
+  // Your Sandbox Credentials (obtained from preprod portal)
+  clientId: 'YOUR_SANDBOX_CLIENT_ID',
+  clientSecret: 'YOUR_SANDBOX_CLIENT_SECRET',
+  
+  // Document Version for Testing
+  documentVersion: '1.1',  // Use 1.1 to test digital signature
+  
+  // Rate Limit (same as production)
+  rateLimit: 60  // requests per minute
+};
+
+// Production Configuration (for reference)
+const PRODUCTION_CONFIG = {
+  tokenEndpoint: 'https://api.myinvois.hasil.gov.my/connect/token',
+  apiBaseUrl: 'https://api.myinvois.hasil.gov.my',
+  clientId: 'YOUR_PRODUCTION_CLIENT_ID',
+  clientSecret: 'YOUR_PRODUCTION_CLIENT_SECRET',
+  documentVersion: '1.1',
+  rateLimit: 60
+};
+```
+
+### 13.5 Sandbox Testing Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│               RECOMMENDED TESTING WORKFLOW                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+Phase 1: Basic Connectivity
+├── 1.1 Test OAuth token request
+├── 1.2 Validate own company TIN
+└── 1.3 Search for test buyer TIN
+
+Phase 2: Document Submission (Version 1.0 - No Signature)
+├── 2.1 Submit simple Invoice
+├── 2.2 Submit Credit Note with reference
+├── 2.3 Submit Debit Note with reference
+├── 2.4 Submit Refund Note with reference
+└── 2.5 Verify all document statuses
+
+Phase 3: Document Submission (Version 1.1 - With Signature)
+├── 3.1 Configure digital certificate
+├── 3.2 Test signature generation
+├── 3.3 Submit signed Invoice
+└── 3.4 Verify signature validation result
+
+Phase 4: Self-Billed Documents
+├── 4.1 Submit Self-Billed Invoice (Type 11)
+├── 4.2 Submit Self-Billed Credit Note (Type 12)
+├── 4.3 Submit Self-Billed Debit Note (Type 13)
+└── 4.4 Submit Self-Billed Refund Note (Type 14)
+
+Phase 5: Cancellation & Rejection
+├── 5.1 Submit invoice for cancellation test
+├── 5.2 Cancel within 72 hours
+├── 5.3 Test buyer rejection flow
+└── 5.4 Test cancellation after rejection
+
+Phase 6: Query & Retrieval
+├── 6.1 Get Recent Documents
+├── 6.2 Get Document by UUID
+├── 6.3 Get Document Details
+├── 6.4 Search Documents with filters
+└── 6.5 Get Submission status
+
+Phase 7: Edge Cases & Error Handling
+├── 7.1 Test invalid TIN submission
+├── 7.2 Test missing mandatory fields
+├── 7.3 Test invalid date formats
+├── 7.4 Test duplicate document submission
+├── 7.5 Test expired cancellation window
+└── 7.6 Test rate limit handling
+
+Phase 8: Integration Testing
+├── 8.1 End-to-end invoice creation flow
+├── 8.2 Bulk submission testing
+├── 8.3 Concurrent submission testing
+└── 8.4 Webhook/notification handling (if applicable)
+```
+
+### 13.6 Test Data for Sandbox
+
+#### Sample Test TINs
+
+For testing in Sandbox, you can use your own company's TIN as supplier. For buyer, you may:
+
+1. Use another company's TIN (if you have permission)
+2. Use general TINs for specific scenarios:
+
+| Scenario | Test TIN | Notes |
+|----------|----------|-------|
+| Foreign Buyer | `EI00000000020` | No TIN available |
+| Foreign Supplier (Self-Bill) | `EI00000000030` | For import testing |
+| Government/Local Authority | `EI00000000040` | Exempt entity |
+| Individual without TIN | `EI00000000010` | Malaysian individual |
+
+#### Sample Test Invoice Data
+
+```json
+{
+  "testInvoice": {
+    "invoiceNumber": "TEST-INV-001",
+    "invoiceType": "01",
+    "issueDateTime": "2025-01-15T10:30:00Z",
+    "currencyCode": "MYR",
+    "supplier": {
+      "tin": "YOUR_COMPANY_TIN",
+      "brn": "YOUR_COMPANY_BRN",
+      "name": "Your Test Company Sdn Bhd",
+      "msicCode": "46510",
+      "businessActivity": "Wholesale of computers",
+      "address": {
+        "line1": "Test Address Line 1",
+        "city": "Kuala Lumpur",
+        "postalCode": "50000",
+        "state": "14",
+        "country": "MYS"
+      },
+      "phone": "+60312345678"
+    },
+    "buyer": {
+      "tin": "EI00000000020",
+      "name": "Test Foreign Buyer",
+      "address": {
+        "line1": "123 Test Street",
+        "city": "Singapore",
+        "postalCode": "123456",
+        "state": "17",
+        "country": "SGP"
+      },
+      "phone": "+6512345678"
+    },
+    "lineItems": [
+      {
+        "lineNumber": 1,
+        "classificationCode": "001",
+        "description": "Test Product A",
+        "quantity": 10,
+        "unitPrice": 100.00,
+        "taxType": "02",
+        "taxRate": 6.00
+      }
+    ]
+  }
+}
+```
+
+### 13.7 Common Sandbox Testing Issues & Solutions
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Cannot login to Preprod | Using Production password | Reset password via "Lupa Kata Laluan" in Preprod |
+| Company not listed in Switch Taxpayer | Role not applied | Apply for Company Director role |
+| "Save" button disabled in profile | Address fields not properly selected | Manually select Country, State; type City |
+| Invalid Client ID error | Using Production credentials in Sandbox | Obtain separate credentials from Preprod portal |
+| Document rejected - Invalid TIN | TIN not registered in Sandbox | Use general TINs or register test company |
+| Signature validation failed | Certificate issue | Check certificate format, use v1.0 for testing without signature |
+| 401 Unauthorized | Token expired | Refresh access token |
+| Rate limit exceeded | Too many requests | Implement backoff, respect 60 RPM limit |
+
+### 13.8 Sandbox vs Production Comparison
+
+| Aspect | Sandbox | Production |
+|--------|---------|------------|
+| URL | preprod-mytax.hasil.gov.my | mytax.hasil.gov.my |
+| API URL | preprod-api.myinvois.hasil.gov.my | api.myinvois.hasil.gov.my |
+| Data Storage | Temporary, not stored | Permanent, official record |
+| Legal Validity | None | Legally binding |
+| Credentials | Separate Client ID/Secret | Separate Client ID/Secret |
+| Digital Certificate | Optional (use v1.0) | Required (use v1.1) |
+| Penalties | None | Applied for non-compliance |
+| Rate Limits | Same as production | 60 RPM recommended |
+
+### 13.9 Transitioning from Sandbox to Production
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│               SANDBOX TO PRODUCTION CHECKLIST                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+□ All document types tested successfully in Sandbox
+□ Digital signature working with v1.1 in Sandbox
+□ Cancellation and rejection flows tested
+□ Error handling implemented and tested
+□ Rate limiting implemented
+□ Production credentials obtained from Production MyInvois Portal
+□ Production digital certificate procured from MCMC-licensed CA
+□ Environment configuration updated to Production URLs
+□ Production TIN validation tested
+□ First production invoice submitted successfully
+□ Monitoring and alerting configured
+□ Staff trained on e-invoice operations
+```
+
+### 13.10 Sandbox Resources
+
+| Resource | URL |
+|----------|-----|
+| Preprod MyTax Portal | https://preprod-mytax.hasil.gov.my |
+| Preprod MyInvois Portal | https://preprod.myinvois.hasil.gov.my |
+| SDK Documentation | https://sdk.myinvois.hasil.gov.my |
+| Sample Documents | https://sdk.myinvois.hasil.gov.my/sample/ |
+| Document Types | https://sdk.myinvois.hasil.gov.my/types/ |
+| Validation Rules | https://sdk.myinvois.hasil.gov.my/document-validation-rules/ |
+| FAQ | https://sdk.myinvois.hasil.gov.my/faq/ |
+| Contact LHDN | https://sdk.myinvois.hasil.gov.my/contacts/ |
+
+---
+
+## 14. Implementation Checklist
+
+### 14.1 Pre-Implementation
 
 - [ ] Register company on MyTax Portal (https://mytax.hasil.gov.my)
 - [ ] Obtain TIN for company and verify format
