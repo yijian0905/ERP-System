@@ -12,6 +12,8 @@ import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
 import { licenseRoutes } from './routes/license.js';
 import { subscriptionRoutes } from './routes/subscription.js';
+import { adminSubscribersRoutes } from './routes/admin-subscribers.js';
+import { adminAuthRoutes } from './routes/admin-auth.js';
 import { v1Routes } from './routes/v1/index.js';
 
 
@@ -182,6 +184,8 @@ export async function buildServer() {
   await server.register(licenseRoutes, { prefix: '/license' });
   await server.register(subscriptionRoutes, { prefix: '/subscription' });
   await server.register(v1Routes, { prefix: '/api/v1' });
+  await server.register(adminAuthRoutes, { prefix: '/admin/auth' });
+  await server.register(adminSubscribersRoutes, { prefix: '/api/v1/admin/subscribers' });
 
   // 404 handler
   server.setNotFoundHandler(notFoundHandler);

@@ -1,7 +1,16 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { db } from '../../lib/prisma.js';
-import { sendSuccess } from '../../lib/response.js';
+import { prisma } from '../../lib/prisma.js';
 import { logger } from '../../lib/logger.js';
+
+/**
+ * Send a successful response with data
+ */
+function sendSuccess<T>(reply: FastifyReply, data: T, statusCode = 200) {
+    return reply.status(statusCode).send({
+        success: true,
+        data,
+    });
+}
 
 /**
  * Dashboard Routes
@@ -23,7 +32,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
 
             // Calculate current period stats
             // Total revenue from paid invoices this month
-            const thisMonthRevenue = await db.invoice.aggregate({
+            const thisMonthRevenue = await prisma.invoice.aggregate({
                 where: {
                     tenantId,
                     status: 'PAID',
@@ -33,7 +42,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             });
 
             // Last month revenue for comparison
-            const lastMonthRevenue = await db.invoice.aggregate({
+            const lastMonthRevenue = await prisma.invoice.aggregate({
                 where: {
                     tenantId,
                     status: 'PAID',
@@ -43,7 +52,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             });
 
             // Order counts (SALES type orders)
-            const thisMonthOrders = await db.order.count({
+            const thisMonthOrders = await prisma.order.count({
                 where: {
                     tenantId,
                     type: 'SALES',
@@ -51,7 +60,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
                 },
             });
 
-            const lastMonthOrders = await db.order.count({
+            const lastMonthOrders = await prisma.order.count({
                 where: {
                     tenantId,
                     type: 'SALES',
@@ -60,11 +69,11 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             });
 
             // Product counts
-            const totalProducts = await db.product.count({
+            const totalProducts = await prisma.product.count({
                 where: { tenantId, status: 'ACTIVE' },
             });
 
-            const lastMonthProducts = await db.product.count({
+            const lastMonthProducts = await prisma.product.count({
                 where: {
                     tenantId,
                     status: 'ACTIVE',
@@ -73,11 +82,11 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             });
 
             // Customer counts
-            const totalCustomers = await db.customer.count({
+            const totalCustomers = await prisma.customer.count({
                 where: { tenantId },
             });
 
-            const customersLastWeek = await db.customer.count({
+            const customersLastWeek = await prisma.customer.count({
                 where: {
                     tenantId,
                     createdAt: { lt: startOfThisWeek },
@@ -85,7 +94,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             });
 
             // Financial stats
-            const paymentsReceived = await db.invoice.aggregate({
+            const paymentsReceived = await prisma.invoice.aggregate({
                 where: {
                     tenantId,
                     status: 'PAID',
@@ -94,7 +103,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
                 _sum: { total: true },
             });
 
-            const outstandingInvoices = await db.invoice.aggregate({
+            const outstandingInvoices = await prisma.invoice.aggregate({
                 where: {
                     tenantId,
                     status: { in: ['PENDING', 'OVERDUE'] },
@@ -103,7 +112,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             });
 
             // Inventory value
-            const inventoryItems = await db.inventoryItem.findMany({
+            const inventoryItems = await prisma.inventoryItem.findMany({
                 where: { tenantId },
                 select: {
                     quantity: true,
@@ -116,8 +125,8 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             }, 0);
 
             // Calculate percentage changes
-            const currentRevenue = thisMonthRevenue._sum.total?.toNumber() || 0;
-            const prevRevenue = lastMonthRevenue._sum.total?.toNumber() || 0;
+            const currentRevenue = thisMonthRevenue._sum?.total?.toNumber() || 0;
+            const prevRevenue = lastMonthRevenue._sum?.total?.toNumber() || 0;
             const revenueChange = prevRevenue > 0
                 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100
                 : 0;
@@ -151,8 +160,8 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
                 productsChange: Math.round(productsChange * 10) / 10,
                 customersChange: Math.round(customersChange * 10) / 10,
                 // Financial stats
-                paymentsReceived: paymentsReceived._sum.total?.toNumber() || 0,
-                outstanding: outstandingInvoices._sum.total?.toNumber() || 0,
+                paymentsReceived: paymentsReceived._sum?.total?.toNumber() || 0,
+                outstanding: outstandingInvoices._sum?.total?.toNumber() || 0,
                 avgOrderValue: Math.round(avgOrderValue * 100) / 100,
                 inventoryValue,
                 // Financial change percentages (simplified for now)
@@ -183,7 +192,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
                 const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
                 const monthName = monthDate.toLocaleString('en', { month: 'short' });
 
-                const sales = await db.invoice.aggregate({
+                const sales = await prisma.invoice.aggregate({
                     where: {
                         tenantId,
                         status: 'PAID',
@@ -192,7 +201,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
                     _sum: { total: true },
                 });
 
-                const orders = await db.order.count({
+                const orders = await prisma.order.count({
                     where: {
                         tenantId,
                         type: 'SALES',
@@ -202,7 +211,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
 
                 months.push({
                     name: monthName,
-                    sales: sales._sum.total?.toNumber() || 0,
+                    sales: sales._sum?.total?.toNumber() || 0,
                     orders,
                 });
             }
@@ -231,7 +240,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
                 const dayEnd = new Date(dayDate);
                 dayEnd.setHours(23, 59, 59, 999);
 
-                const revenue = await db.invoice.aggregate({
+                const revenue = await prisma.invoice.aggregate({
                     where: {
                         tenantId,
                         status: 'PAID',
@@ -242,7 +251,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
 
                 days.push({
                     name: daysOfWeek[dayDate.getDay()],
-                    revenue: revenue._sum.total?.toNumber() || 0,
+                    revenue: revenue._sum?.total?.toNumber() || 0,
                 });
             }
 
@@ -258,7 +267,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
         try {
             const tenantId = request.tenantId;
 
-            const orders = await db.order.findMany({
+            const orders = await prisma.order.findMany({
                 where: {
                     tenantId,
                     type: 'SALES',
@@ -270,7 +279,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
                 take: 5,
             });
 
-            const recentOrders = orders.map(order => ({
+            const recentOrders = orders.map((order) => ({
                 id: order.orderNumber,
                 customer: order.customer?.name || 'Unknown',
                 amount: `$${order.total.toNumber().toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -290,7 +299,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             const tenantId = request.tenantId;
 
             // Get products with inventory and filter for low stock
-            const inventoryItems = await db.inventoryItem.findMany({
+            const inventoryItems = await prisma.inventoryItem.findMany({
                 where: { tenantId },
                 include: {
                     product: {
@@ -306,10 +315,10 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
 
             // Filter to items below reorder point
             const lowStockItems = inventoryItems
-                .filter(item => item.quantity <= item.product.reorderPoint)
+                .filter((item) => item.quantity <= item.product.reorderPoint)
                 .slice(0, 4);
 
-            const products = lowStockItems.map(item => ({
+            const products = lowStockItems.map((item) => ({
                 sku: item.product.sku,
                 name: item.product.name,
                 stock: item.quantity,

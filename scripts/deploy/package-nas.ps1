@@ -109,7 +109,9 @@ foreach ($pkg in $Packages) {
         Get-ChildItem -Path $sourcePkg -Recurse | Where-Object {
             $_.FullName -notmatch "node_modules" -and
             $_.FullName -notmatch "\\dist\\" -and
+            $_.FullName -notmatch "\\generated\\" -and
             $_.Name -ne "dist" -and
+            $_.Name -ne "generated" -and
             $_.Name -notmatch "README" -and
             $_.Name -notmatch "\.example\." -and
             $_.Name -ne "env.example.txt" -and

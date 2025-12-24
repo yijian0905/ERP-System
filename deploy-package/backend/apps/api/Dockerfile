@@ -28,10 +28,10 @@ RUN pnpm install --shamefully-hoist
 # Set DATABASE_URL for Prisma (required for adapter initialization)
 ENV DATABASE_URL=postgresql://user:password@localhost:5432/db
 
-# Generate Prisma client (Prisma 7.x with adapter mode)
-# Note: --no-engine flag is used since we use @prisma/adapter-pg
+# Generate Prisma client (with driverAdapters preview feature enabled)
+# Note: DO NOT use --no-engine when using driver adapters
 WORKDIR /app/packages/database
-RUN pnpm prisma generate --schema=./prisma/schema.prisma --no-engine || pnpm prisma generate --schema=./prisma/schema.prisma
+RUN pnpm prisma generate --schema=./prisma/schema.prisma
 
 # Verify Prisma client was generated
 RUN ls -la ./generated/prisma-client/ && echo "Prisma client generated successfully!"

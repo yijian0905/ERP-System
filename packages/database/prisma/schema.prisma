@@ -3,12 +3,13 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
   output          = "../generated/prisma-client"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================
@@ -155,6 +156,53 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+// ============================================
+// PLATFORM ADMINISTRATION
+// (ERP product company internal management)
+// ============================================
+
+/// Platform administrators - ERP company staff who manage all tenants
+/// NOT to be confused with tenant Users who use the ERP system
+model PlatformAdmin {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique @db.VarChar(255)
+  name         String    @db.VarChar(255)
+  password     String    @db.VarChar(255)
+  role         String    @default("ADMIN") @db.VarChar(50) // SUPER_ADMIN, ADMIN, SUPPORT
+  department   String?   @db.VarChar(100)
+  avatar       String?   @db.VarChar(500)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  lastLoginIp  String?   @map("last_login_ip") @db.VarChar(45)
+  failedLogins Int       @default(0) @map("failed_logins")
+  lockedUntil  DateTime? @map("locked_until")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  refreshTokens PlatformAdminRefreshToken[]
+
+  @@map("platform_admins")
+}
+
+/// Refresh tokens for platform admin JWT authentication
+model PlatformAdminRefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  adminId   String   @map("admin_id") @db.Uuid
+  token     String   @unique @db.VarChar(500)
+  userAgent String?  @map("user_agent") @db.VarChar(500)
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  admin PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+  @@map("platform_admin_refresh_tokens")
 }
 
 // ============================================

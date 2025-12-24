@@ -1,5 +1,5 @@
 // Database seed script
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma-client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -11,66 +11,66 @@ const ALL_PERMISSIONS = [
   { code: 'users:create', name: 'Create Users', description: 'Can create new users', module: 'users', action: 'create', sortOrder: 2 },
   { code: 'users:update', name: 'Update Users', description: 'Can update user information', module: 'users', action: 'update', sortOrder: 3 },
   { code: 'users:delete', name: 'Delete Users', description: 'Can delete users', module: 'users', action: 'delete', sortOrder: 4 },
-  
+
   // Role management
   { code: 'roles:view', name: 'View Roles', description: 'Can view roles and permissions', module: 'roles', action: 'view', sortOrder: 1 },
   { code: 'roles:create', name: 'Create Roles', description: 'Can create new roles', module: 'roles', action: 'create', sortOrder: 2 },
   { code: 'roles:update', name: 'Update Roles', description: 'Can update role permissions', module: 'roles', action: 'update', sortOrder: 3 },
   { code: 'roles:delete', name: 'Delete Roles', description: 'Can delete custom roles', module: 'roles', action: 'delete', sortOrder: 4 },
-  
+
   // Product management
   { code: 'products:view', name: 'View Products', description: 'Can view product catalog', module: 'products', action: 'view', sortOrder: 1 },
   { code: 'products:create', name: 'Create Products', description: 'Can create new products', module: 'products', action: 'create', sortOrder: 2 },
   { code: 'products:update', name: 'Update Products', description: 'Can update product information', module: 'products', action: 'update', sortOrder: 3 },
   { code: 'products:delete', name: 'Delete Products', description: 'Can delete products', module: 'products', action: 'delete', sortOrder: 4 },
-  
+
   // Inventory management
   { code: 'inventory:view', name: 'View Inventory', description: 'Can view inventory levels', module: 'inventory', action: 'view', sortOrder: 1 },
   { code: 'inventory:adjust', name: 'Adjust Inventory', description: 'Can make inventory adjustments', module: 'inventory', action: 'adjust', sortOrder: 2 },
   { code: 'inventory:transfer', name: 'Transfer Inventory', description: 'Can transfer stock between warehouses', module: 'inventory', action: 'transfer', sortOrder: 3 },
-  
+
   // Customer management
   { code: 'customers:view', name: 'View Customers', description: 'Can view customer list', module: 'customers', action: 'view', sortOrder: 1 },
   { code: 'customers:create', name: 'Create Customers', description: 'Can create new customers', module: 'customers', action: 'create', sortOrder: 2 },
   { code: 'customers:update', name: 'Update Customers', description: 'Can update customer information', module: 'customers', action: 'update', sortOrder: 3 },
   { code: 'customers:delete', name: 'Delete Customers', description: 'Can delete customers', module: 'customers', action: 'delete', sortOrder: 4 },
-  
+
   // Supplier management
   { code: 'suppliers:view', name: 'View Suppliers', description: 'Can view supplier list', module: 'suppliers', action: 'view', sortOrder: 1 },
   { code: 'suppliers:create', name: 'Create Suppliers', description: 'Can create new suppliers', module: 'suppliers', action: 'create', sortOrder: 2 },
   { code: 'suppliers:update', name: 'Update Suppliers', description: 'Can update supplier information', module: 'suppliers', action: 'update', sortOrder: 3 },
   { code: 'suppliers:delete', name: 'Delete Suppliers', description: 'Can delete suppliers', module: 'suppliers', action: 'delete', sortOrder: 4 },
-  
+
   // Order management
   { code: 'orders:view', name: 'View Orders', description: 'Can view orders', module: 'orders', action: 'view', sortOrder: 1 },
   { code: 'orders:create', name: 'Create Orders', description: 'Can create new orders', module: 'orders', action: 'create', sortOrder: 2 },
   { code: 'orders:update', name: 'Update Orders', description: 'Can update orders', module: 'orders', action: 'update', sortOrder: 3 },
   { code: 'orders:delete', name: 'Delete Orders', description: 'Can delete orders', module: 'orders', action: 'delete', sortOrder: 4 },
   { code: 'orders:approve', name: 'Approve Orders', description: 'Can approve pending orders', module: 'orders', action: 'approve', sortOrder: 5 },
-  
+
   // Invoice management
   { code: 'invoices:view', name: 'View Invoices', description: 'Can view invoices', module: 'invoices', action: 'view', sortOrder: 1 },
   { code: 'invoices:create', name: 'Create Invoices', description: 'Can create new invoices', module: 'invoices', action: 'create', sortOrder: 2 },
   { code: 'invoices:update', name: 'Update Invoices', description: 'Can update invoices', module: 'invoices', action: 'update', sortOrder: 3 },
   { code: 'invoices:delete', name: 'Delete Invoices', description: 'Can delete invoices', module: 'invoices', action: 'delete', sortOrder: 4 },
   { code: 'invoices:send', name: 'Send Invoices', description: 'Can send invoices to customers', module: 'invoices', action: 'send', sortOrder: 5 },
-  
+
   // Payment management
   { code: 'payments:view', name: 'View Payments', description: 'Can view payment records', module: 'payments', action: 'view', sortOrder: 1 },
   { code: 'payments:create', name: 'Create Payments', description: 'Can record payments', module: 'payments', action: 'create', sortOrder: 2 },
   { code: 'payments:update', name: 'Update Payments', description: 'Can update payment records', module: 'payments', action: 'update', sortOrder: 3 },
-  
+
   // Reports
   { code: 'reports:view', name: 'View Reports', description: 'Can view reports and analytics', module: 'reports', action: 'view', sortOrder: 1 },
   { code: 'reports:export', name: 'Export Reports', description: 'Can export reports to file', module: 'reports', action: 'export', sortOrder: 2 },
-  
+
   // Settings
   { code: 'settings:view', name: 'View Settings', description: 'Can view system settings', module: 'settings', action: 'view', sortOrder: 1 },
   { code: 'settings:update', name: 'Update Settings', description: 'Can modify system settings', module: 'settings', action: 'update', sortOrder: 2 },
-  
+
   // Audit logs (L3)
   { code: 'audit:view', name: 'View Audit Logs', description: 'Can view audit trail', module: 'audit', action: 'view', sortOrder: 1 },
-  
+
   // AI features (L2/L3)
   { code: 'ai:predictions', name: 'AI Predictions', description: 'Can use predictive analytics', module: 'ai', action: 'predictions', sortOrder: 1 },
   { code: 'ai:chat', name: 'AI Chat Assistant', description: 'Can use AI chat assistant', module: 'ai', action: 'chat', sortOrder: 2 },
@@ -235,14 +235,14 @@ async function main() {
   console.log('👥 Creating system roles for tenant...');
   const allPermissions = await prisma.permission.findMany();
   const permissionMap = new Map(allPermissions.map(p => [p.code, p.id]));
-  
+
   const createdRoles: Record<string, string> = {};
-  
+
   for (const roleData of DEFAULT_SYSTEM_ROLES) {
     const existingRole = await prisma.role.findFirst({
       where: { tenantId: tenant.id, name: roleData.name },
     });
-    
+
     if (!existingRole) {
       const role = await prisma.role.create({
         data: {
@@ -255,12 +255,12 @@ async function main() {
           isActive: true,
         },
       });
-      
+
       // Create role permissions
       const permissionIds = roleData.permissionCodes
         .map(code => permissionMap.get(code))
         .filter((id): id is string => id !== undefined);
-      
+
       if (permissionIds.length > 0) {
         await prisma.rolePermission.createMany({
           data: permissionIds.map(permissionId => ({
@@ -269,7 +269,7 @@ async function main() {
           })),
         });
       }
-      
+
       createdRoles[roleData.name] = role.id;
       console.log(`   ✅ Created role: ${roleData.displayName} with ${permissionIds.length} permissions`);
     } else {
@@ -280,7 +280,7 @@ async function main() {
 
   // Create admin user
   const hashedPassword = await bcrypt.hash('password123', 10);
-  
+
   const adminUser = await prisma.user.upsert({
     where: { tenantId_email: { tenantId: tenant.id, email: 'admin@demo-company.com' } },
     update: {
@@ -648,10 +648,34 @@ async function main() {
 
   console.log('✅ Linked supplier to products');
 
+  // Create platform admin (for Admin Portal)
+  console.log('\n👤 Creating platform admin...');
+  const platformAdminPassword = await bcrypt.hash('Admin@123', 12);
+
+  const platformAdmin = await prisma.platformAdmin.upsert({
+    where: { email: 'admin@platform.local' },
+    update: {},
+    create: {
+      email: 'admin@platform.local',
+      name: 'Platform Administrator',
+      password: platformAdminPassword,
+      role: 'SUPER_ADMIN',
+      department: 'Technology',
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Created platform admin: ${platformAdmin.email}`);
+
   console.log('\n🎉 Database seed completed successfully!');
   console.log('\n📋 Login credentials:');
-  console.log('   Admin: admin@demo-company.com / password123');
-  console.log('   Manager: manager@demo-company.com / password123');
+  console.log('');
+  console.log('   ERP System (Tenant Users):');
+  console.log('   ├── Admin: admin@demo-company.com / password123');
+  console.log('   └── Manager: manager@demo-company.com / password123');
+  console.log('');
+  console.log('   Admin Portal (Platform Management):');
+  console.log('   └── Platform Admin: admin@platform.local / Admin@123');
 }
 
 main()
