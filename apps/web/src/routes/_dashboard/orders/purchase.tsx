@@ -40,7 +40,9 @@ import {
 import { FilterSelect } from '@/components/ui/filter-select';
 import { cn } from '@/lib/utils';
 import { useCanSkipApproval } from '@/stores/auth';
-import { ordersApi } from '@/lib/api';
+import { ordersApi, suppliersApi, warehousesApi } from '@/lib/api';
+import type { Supplier, SupplierProduct } from '@/lib/api/suppliers';
+import type { Warehouse as WarehouseType } from '@/lib/api/warehouses';
 
 // Search params type
 type PurchaseOrderSearch = {
@@ -94,9 +96,15 @@ interface PurchaseOrder {
   notes: string;
 }
 
-// Mock product types - these are created via "Add Product" in inventory
+// Helper function to format supplier address
+const formatSupplierAddress = (supplier: Supplier | undefined): string => {
+  if (!supplier?.address) return '';
+  const { street, city, state, postalCode, country } = supplier.address;
+  const parts = [street, city, state, postalCode, country].filter(Boolean);
+  return parts.join(', ');
+};
 
-// Company info
+// Company info (this is tenant-specific, could also come from API)
 const companyInfo = {
   name: 'Demo Company Ltd.',
   address: '123 Business Street, San Francisco, CA 94105',
@@ -107,7 +115,19 @@ const companyInfo = {
 
 function PurchaseOrdersPage() {
   const searchParams = Route.useSearch();
-  const [orders, setOrders] = useState<PurchaseOrder[]>(mockOrders);
+
+  // Data states - fetched from API
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [warehouses, setWarehouses] = useState<WarehouseType[]>([]);
+  const [supplierProducts, setSupplierProducts] = useState<SupplierProduct[]>([]);
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+
+  // Loading states
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(true);
+  const [isLoadingWarehouses, setIsLoadingWarehouses] = useState(true);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+
+  // Filter states
   const [productSearch, setProductSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [stockFilter, setStockFilter] = useState<string>('');
@@ -147,21 +167,80 @@ function PurchaseOrdersPage() {
     { id: 'pdf', name: 'Save as PDF' },
   ], []);
 
+  // Fetch suppliers on mount
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        setIsLoadingSuppliers(true);
+        const response = await suppliersApi.list({ isActive: true });
+        if (response.success && response.data) {
+          setSuppliers(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch suppliers:', error);
+      } finally {
+        setIsLoadingSuppliers(false);
+      }
+    };
+    fetchSuppliers();
+  }, []);
+
+  // Fetch warehouses on mount
+  useEffect(() => {
+    const fetchWarehouses = async () => {
+      try {
+        setIsLoadingWarehouses(true);
+        const response = await warehousesApi.list({ isActive: true });
+        if (response.success && response.data) {
+          setWarehouses(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch warehouses:', error);
+      } finally {
+        setIsLoadingWarehouses(false);
+      }
+    };
+    fetchWarehouses();
+  }, []);
+
+  // Fetch products when supplier changes
+  useEffect(() => {
+    if (!selectedSupplierId) {
+      setSupplierProducts([]);
+      return;
+    }
+
+    const fetchProducts = async () => {
+      try {
+        setIsLoadingProducts(true);
+        const response = await suppliersApi.getProducts(selectedSupplierId);
+        if (response.success && response.data) {
+          setSupplierProducts(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch supplier products:', error);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+    fetchProducts();
+  }, [selectedSupplierId]);
+
   // Initialize from URL params (e.g., from inventory low stock alert)
   useEffect(() => {
-    if (searchParams.warehouse) {
+    if (searchParams.warehouse && warehouses.length > 0) {
       setSelectedWarehouse(searchParams.warehouse);
-      const wh = warehouseData.find(w => w.name === searchParams.warehouse);
+      const wh = warehouses.find(w => w.name === searchParams.warehouse);
       if (wh) {
-        setSelectedWarehouseAddress(wh.address);
+        setSelectedWarehouseAddress(wh.address || '');
       } else if (searchParams.warehouseAddress) {
         setSelectedWarehouseAddress(searchParams.warehouseAddress);
       }
     }
 
     // If a specific product SKU is requested, auto-add it to draft
-    if (searchParams.productSku) {
-      const product = mockProductTypes.find(p => p.sku === searchParams.productSku);
+    if (searchParams.productSku && supplierProducts.length > 0) {
+      const product = supplierProducts.find(p => p.sku === searchParams.productSku);
       if (product) {
         // Auto-select supplier
         setSelectedSupplierId(product.supplierId);
@@ -169,7 +248,7 @@ function PurchaseOrdersPage() {
         const suggestedQty = Math.max(50, product.reorderPoint * 2 - product.currentStock);
         const newItem: POItem = {
           id: `draft-${Date.now()}`,
-          productId: product.id,
+          productId: product.productId,
           productName: product.name,
           sku: product.sku,
           quantity: suggestedQty,
@@ -180,22 +259,17 @@ function PurchaseOrdersPage() {
       }
       setProductSearch(searchParams.productSku);
     }
-  }, [searchParams]);
+  }, [searchParams, warehouses, supplierProducts]);
 
   // Handle warehouse selection
   const handleWarehouseChange = (warehouseName: string) => {
     setSelectedWarehouse(warehouseName);
-    const wh = warehouseData.find(w => w.name === warehouseName);
+    const wh = warehouses.find(w => w.name === warehouseName);
     setSelectedWarehouseAddress(wh?.address || '');
   };
 
   // Filter products - only show products from selected supplier
-  const filteredProducts = mockProductTypes.filter((item) => {
-    // Must have a supplier selected to show products
-    if (!selectedSupplierId) return false;
-    // Must match the selected supplier
-    if (item.supplierId !== selectedSupplierId) return false;
-
+  const filteredProducts = supplierProducts.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(productSearch.toLowerCase()) ||
       item.sku.toLowerCase().includes(productSearch.toLowerCase());
@@ -217,7 +291,6 @@ function PurchaseOrdersPage() {
   });
 
   // Get unique categories from supplier's products
-  const supplierProducts = mockProductTypes.filter(p => p.supplierId === selectedSupplierId);
   const categories = [...new Set(supplierProducts.map((i) => i.category))];
 
   // Calculate draft totals
@@ -225,8 +298,8 @@ function PurchaseOrdersPage() {
   const draftTotal = draftSubtotal;
 
   // Add item to draft
-  const handleAddToDraft = (product: typeof mockProductTypes[0]) => {
-    const existingIndex = draftItems.findIndex((i) => i.productId === product.id);
+  const handleAddToDraft = (product: SupplierProduct) => {
+    const existingIndex = draftItems.findIndex((i) => i.productId === product.productId);
 
     if (existingIndex >= 0) {
       // Increase quantity
@@ -237,7 +310,7 @@ function PurchaseOrdersPage() {
       const suggestedQty = Math.max(50, product.reorderPoint * 2 - product.currentStock);
       const newItem: POItem = {
         id: `draft-${Date.now()}`,
-        productId: product.id,
+        productId: product.productId,
         productName: product.name,
         sku: product.sku,
         quantity: suggestedQty,
@@ -297,7 +370,7 @@ function PurchaseOrdersPage() {
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const supplier = mockSuppliers.find((s) => s.id === selectedSupplierId);
+    const supplier = suppliers.find((s) => s.id === selectedSupplierId);
 
     const newOrder: PurchaseOrder = {
       id: String(orders.length + 1),
@@ -305,7 +378,7 @@ function PurchaseOrdersPage() {
       supplier: supplier?.name || '',
       supplierId: selectedSupplierId,
       supplierEmail: supplier?.email || '',
-      supplierAddress: supplier?.address || '',
+      supplierAddress: formatSupplierAddress(supplier),
       destinationWarehouse: selectedWarehouse,
       destinationAddress: selectedWarehouseAddress,
       items: draftItems,
@@ -568,6 +641,7 @@ function PurchaseOrdersPage() {
               <Label className="text-sm mb-2 block font-semibold flex items-center gap-2">
                 <Warehouse className="h-4 w-4 text-blue-600" />
                 Select Supplier
+                {isLoadingSuppliers && <Loader2 className="h-3 w-3 animate-spin" />}
               </Label>
               <FilterSelect
                 value={selectedSupplierId}
@@ -578,10 +652,11 @@ function PurchaseOrdersPage() {
                   setProductSearch('');
                 }}
                 options={[
-                  ...mockSuppliers.map((s) => ({ value: s.id, label: s.name })),
+                  ...suppliers.map((s) => ({ value: s.id, label: s.name })),
                 ]}
-                placeholder="Select supplier..."
+                placeholder={isLoadingSuppliers ? "Loading suppliers..." : "Select supplier..."}
                 className="w-full"
+                disabled={isLoadingSuppliers}
               />
             </div>
 
@@ -647,6 +722,13 @@ function PurchaseOrdersPage() {
                     Products will be displayed based on your supplier selection
                   </p>
                 </div>
+              ) : isLoadingProducts ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Loader2 className="h-12 w-12 text-muted-foreground/40 mb-4 animate-spin" />
+                  <p className="text-sm text-muted-foreground font-medium">
+                    Loading products...
+                  </p>
+                </div>
               ) : sortedProducts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Package className="h-12 w-12 text-muted-foreground/40 mb-4" />
@@ -660,12 +742,12 @@ function PurchaseOrdersPage() {
               ) : (
                 <div className="space-y-2">
                   {sortedProducts.map((item) => {
-                    const inDraft = draftItems.find((d) => d.productId === item.id);
+                    const inDraft = draftItems.find((d) => d.productId === item.productId);
                     const needsReorder = item.currentStock <= item.reorderPoint;
 
                     return (
                       <div
-                        key={item.id}
+                        key={item.productId}
                         className={cn(
                           'flex items-center justify-between rounded-lg border p-3 transition-colors',
                           inDraft && 'border-primary bg-primary/5',
@@ -697,7 +779,7 @@ function PurchaseOrdersPage() {
                                 size="icon-sm"
                                 variant="outline"
                                 onClick={() => {
-                                  const idx = draftItems.findIndex((d) => d.productId === item.id);
+                                  const idx = draftItems.findIndex((d) => d.productId === item.productId);
                                   if (inDraft.quantity > 10) {
                                     handleUpdateQuantity(idx, inDraft.quantity - 10);
                                   } else {
@@ -713,7 +795,7 @@ function PurchaseOrdersPage() {
                                 value={inDraft.quantity}
                                 onFocus={(e) => e.target.select()}
                                 onChange={(e) => {
-                                  const idx = draftItems.findIndex((d) => d.productId === item.id);
+                                  const idx = draftItems.findIndex((d) => d.productId === item.productId);
                                   handleUpdateQuantity(idx, parseInt(e.target.value) || 1);
                                 }}
                                 className="h-7 w-16 text-center text-sm"
@@ -722,7 +804,7 @@ function PurchaseOrdersPage() {
                                 size="icon-sm"
                                 variant="outline"
                                 onClick={() => {
-                                  const idx = draftItems.findIndex((d) => d.productId === item.id);
+                                  const idx = draftItems.findIndex((d) => d.productId === item.productId);
                                   handleUpdateQuantity(idx, inDraft.quantity + 10);
                                 }}
                               >
@@ -770,13 +852,17 @@ function PurchaseOrdersPage() {
 
             {/* Destination Warehouse Selection */}
             <div className="mb-4 flex-shrink-0">
-              <Label className="text-sm mb-2 block">Destination Warehouse</Label>
+              <Label className="text-sm mb-2 block flex items-center gap-2">
+                Destination Warehouse
+                {isLoadingWarehouses && <Loader2 className="h-3 w-3 animate-spin" />}
+              </Label>
               <FilterSelect
                 value={selectedWarehouse}
                 onChange={handleWarehouseChange}
-                options={warehouseData.map((w) => ({ value: w.name, label: w.name }))}
-                placeholder="Select warehouse..."
+                options={warehouses.map((w) => ({ value: w.name, label: w.name }))}
+                placeholder={isLoadingWarehouses ? "Loading warehouses..." : "Select warehouse..."}
                 className="w-full"
+                disabled={isLoadingWarehouses}
               />
 
             </div>

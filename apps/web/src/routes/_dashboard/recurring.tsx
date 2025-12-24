@@ -59,7 +59,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { recurringApi } from '@/lib/api';
+import { recurringApi, customersApi } from '@/lib/api';
+import type { Customer } from '@/lib/api/customers';
 
 export const Route = createFileRoute('/_dashboard/recurring')({
   component: RecurringRevenuePage,
@@ -87,6 +88,21 @@ interface RecurringItem {
   invoiceCount: number;
 }
 
+// Status styles
+const statusStyles: Record<SubscriptionStatus, { color: string; label: string }> = {
+  ACTIVE: { color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400', label: 'Active' },
+  PAUSED: { color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400', label: 'Paused' },
+  CANCELLED: { color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400', label: 'Cancelled' },
+  EXPIRED: { color: 'bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-400', label: 'Expired' },
+};
+
+// Billing cycle labels
+const billingCycleLabels: Record<BillingCycle, string> = {
+  WEEKLY: 'Weekly',
+  MONTHLY: 'Monthly',
+  QUARTERLY: 'Quarterly',
+  YEARLY: 'Yearly',
+};
 
 // Company info for invoice
 const companyInfo = {
@@ -106,6 +122,10 @@ function RecurringRevenuePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<RecurringItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Customers state for dropdown
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
 
   // Fetch recurring items from API
   useEffect(() => {
@@ -138,6 +158,24 @@ function RecurringRevenuePage() {
       }
     }
     fetchRecurringItems();
+  }, []);
+
+  // Fetch customers for dropdown
+  useEffect(() => {
+    async function fetchCustomers() {
+      setIsLoadingCustomers(true);
+      try {
+        const response = await customersApi.list({ activeOnly: true });
+        if (response.success && response.data) {
+          setCustomers(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch customers:', error);
+      } finally {
+        setIsLoadingCustomers(false);
+      }
+    }
+    fetchCustomers();
   }, []);
 
   const [formData, setFormData] = useState({
@@ -228,7 +266,7 @@ function RecurringRevenuePage() {
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const customer = mockCustomers.find((c) => c.id === formData.customerId);
+    const customer = customers.find((c) => c.id === formData.customerId);
 
     if (editingItem) {
       setItems((prev) =>
@@ -688,7 +726,16 @@ function RecurringRevenuePage() {
           </table>
         </div>
 
-        {filteredItems.length === 0 && (
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
+            <h3 className="mt-4 text-lg font-semibold">Loading recurring items...</h3>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && filteredItems.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <CalendarClock className="h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-semibold">No recurring items found</h3>
@@ -737,9 +784,10 @@ function RecurringRevenuePage() {
               <FilterSelect
                 value={formData.customerId}
                 onChange={(val) => setFormData((f) => ({ ...f, customerId: val }))}
-                options={mockCustomers.map((c) => ({ value: c.id, label: c.name }))}
-                placeholder="Select customer"
+                options={customers.map((c) => ({ value: c.id, label: c.name }))}
+                placeholder={isLoadingCustomers ? "Loading customers..." : "Select customer"}
                 className="w-full"
+                disabled={isLoadingCustomers}
               />
             </div>
             <div className="grid gap-2">
@@ -955,10 +1003,10 @@ function RecurringRevenuePage() {
                         {selectedItem.customer}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {mockCustomers.find(c => c.id === selectedItem.customerId)?.email}
+                        {customers.find(c => c.id === selectedItem.customerId)?.email}
                       </p>
                       <p className="text-sm text-gray-600 whitespace-pre-line">
-                        {mockCustomers.find(c => c.id === selectedItem.customerId)?.address}
+                        {customers.find(c => c.id === selectedItem.customerId)?.address}
                       </p>
                     </div>
                   ) : (

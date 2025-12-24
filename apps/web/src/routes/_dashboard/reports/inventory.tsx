@@ -140,6 +140,8 @@ function InventoryReportPage() {
 
   const totalStock = 285;
   const totalValue = 188500;
+  const previousValue = 179182; // Previous month value for comparison
+  const totalValueChange = ((totalValue - previousValue) / previousValue) * 100;
   const lowStockCount = 4;
   const turnoverRate = 4.2;
 
@@ -263,8 +265,8 @@ function InventoryReportPage() {
         <StatsCard
           title="Total Value"
           value={`$${totalValue.toLocaleString()}`}
-          change="+5.2% from last month"
-          changeType="positive"
+          change={`${totalValueChange >= 0 ? '+' : ''}${totalValueChange.toFixed(1)}% from last month`}
+          changeType={totalValueChange >= 0 ? 'positive' : 'negative'}
           icon={Warehouse}
         />
         <StatsCard

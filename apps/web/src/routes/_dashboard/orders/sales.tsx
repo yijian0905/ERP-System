@@ -731,7 +731,7 @@ function SalesOrdersPage() {
 
       {/* Invoice Settings Modal */}
       < Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} >
-        <DialogContent>
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Invoice Settings</DialogTitle>
             <DialogDescription>

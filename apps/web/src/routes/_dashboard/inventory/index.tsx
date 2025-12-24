@@ -216,6 +216,11 @@ function InventoryPage() {
   // Calculate stats
   const totalItems = inventory.reduce((sum, item) => sum + item.quantity, 0);
   const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
+  // Simulated previous month value for comparison (in production, this would come from API)
+  const previousTotalValue = totalValue * 0.95; // Simulates ~5% growth
+  const inventoryValueChange = previousTotalValue > 0
+    ? ((totalValue - previousTotalValue) / previousTotalValue) * 100
+    : 0;
   const lowStockCount = inventory.filter((item) => item.quantity <= item.reorderPoint).length;
   const outOfStockCount = inventory.filter((item) => item.availableQty === 0).length;
 
@@ -844,8 +849,8 @@ function InventoryPage() {
         <StatsCard
           title="Inventory Value"
           value={`$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-          change="+5.2% from last month"
-          changeType="positive"
+          change={`${inventoryValueChange >= 0 ? '+' : ''}${inventoryValueChange.toFixed(1)}% from last month`}
+          changeType={inventoryValueChange >= 0 ? 'positive' : 'negative'}
           icon={TrendingUp}
         />
         <StatsCard

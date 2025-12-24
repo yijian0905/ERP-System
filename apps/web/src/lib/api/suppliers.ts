@@ -42,6 +42,19 @@ export interface Supplier {
     updatedAt: string;
 }
 
+export interface SupplierProduct {
+    id: string;
+    supplierId: string;
+    productId: string;
+    name: string;
+    sku: string;
+    category: string;
+    cost: number;
+    currentStock: number;
+    reorderPoint: number;
+    leadTime: number;
+}
+
 export interface CreateSupplierData {
     code: string;
     name: string;
@@ -147,5 +160,15 @@ export const suppliersApi = {
      */
     async delete(id: string): Promise<ApiResponse<{ message: string }>> {
         return del<{ message: string }>(`/v1/suppliers/${id}`);
+    },
+
+    /**
+     * Get products from a supplier
+     */
+    async getProducts(
+        id: string,
+        params?: { search?: string; category?: string; page?: number; limit?: number }
+    ): Promise<ApiResponse<SupplierProduct[]> & { meta?: PaginationMeta }> {
+        return get<SupplierProduct[]>(`/v1/suppliers/${id}/products`, { params });
     },
 };

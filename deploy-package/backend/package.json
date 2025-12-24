@@ -42,6 +42,8 @@
     "desktop:package:win": "pnpm --filter @erp/desktop package:win",
     "desktop:package:mac": "pnpm --filter @erp/desktop package:mac",
     "desktop:package:linux": "pnpm --filter @erp/desktop package:linux",
+    "desktop:preview": "powershell -ExecutionPolicy Bypass -File scripts/deploy/preview-desktop.ps1",
+    "desktop:preview:local": "powershell -ExecutionPolicy Bypass -File scripts/deploy/preview-desktop.ps1 -ApiUrl http://localhost:3000",
     "backend:dev": "concurrently -n API,AI -c blue,green \"pnpm --filter @erp/api dev\" \"cd apps/ai-service && .\\\\venv\\\\Scripts\\\\python -m uvicorn app.main:app --reload --port 8000\""
   },
   "devDependencies": {

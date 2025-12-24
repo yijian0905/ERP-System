@@ -17,6 +17,8 @@ import { auditHandlers } from './handlers/audit';
 import { dashboardHandlers } from './handlers/dashboard';
 import { reportsHandlers } from './handlers/reports';
 import { aiChatHandlers } from './handlers/ai-chat';
+import { suppliersHandlers } from './handlers/suppliers';
+import { warehousesHandlers } from './handlers/warehouses';
 
 export const handlers = [
     ...productsHandlers,
@@ -34,4 +36,6 @@ export const handlers = [
     ...dashboardHandlers,
     ...reportsHandlers,
     ...aiChatHandlers,
+    ...suppliersHandlers,
+    ...warehousesHandlers,
 ];

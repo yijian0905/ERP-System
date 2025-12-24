@@ -2,7 +2,14 @@
  * Dashboard MSW Handlers
  */
 import { http, HttpResponse } from 'msw';
-import { mockDashboardStats, mockSalesChartData, mockTopProducts, mockRecentOrders } from '../data/dashboard';
+import {
+    mockDashboardStats,
+    mockSalesChartData,
+    mockRevenueTrend,
+    mockLowStockProducts,
+    mockTopProducts,
+    mockRecentOrders
+} from '../data/dashboard';
 
 export const dashboardHandlers = [
     // GET /api/v1/dashboard/stats
@@ -18,6 +25,22 @@ export const dashboardHandlers = [
         return HttpResponse.json({
             success: true,
             data: mockSalesChartData,
+        });
+    }),
+
+    // GET /api/v1/dashboard/revenue-trend
+    http.get('/api/v1/dashboard/revenue-trend', () => {
+        return HttpResponse.json({
+            success: true,
+            data: mockRevenueTrend,
+        });
+    }),
+
+    // GET /api/v1/dashboard/low-stock
+    http.get('/api/v1/dashboard/low-stock', () => {
+        return HttpResponse.json({
+            success: true,
+            data: mockLowStockProducts,
         });
     }),
 
