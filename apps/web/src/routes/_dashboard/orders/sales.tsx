@@ -15,9 +15,9 @@ import {
   ShoppingCart,
   Trash2,
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
+import { useDocumentPrint } from '@/lib/hooks/useDocumentPrint';
+import { InvoiceHtmlLayout, salesOrderToInvoice, type CompanyInfo } from '@/components/invoice/invoice-html-layout';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -83,13 +83,16 @@ interface SalesOrder {
 }
 
 
-// Company info for invoice
-const companyInfo = {
-  name: 'Demo Company Ltd.',
-  address: '123 Business Street, San Francisco, CA 94105',
-  phone: '+1 (555) 123-4567',
-  email: 'billing@demo-company.com',
-  taxId: 'US123456789',
+// Company info for invoice - matches CompanyInfo interface
+const companyInfo: CompanyInfo = {
+  name: 'Demo Company Sdn Bhd',
+  nameSecondary: '演示公司有限公司',
+  registrationNo: '123456-A',
+  address: 'No. 123, Jalan Example,\nTaman Business Park,\n50000 Kuala Lumpur, Malaysia',
+  phone: '+60 3-1234 5678',
+  email: 'sales@demo-company.com',
+  website: 'www.demo-company.com',
+  sstNo: 'W10-1234-56789012',
 };
 
 function SalesOrdersPage() {
@@ -108,9 +111,12 @@ function SalesOrdersPage() {
   // Invoice Settings
   const [invoiceSettings, setInvoiceSettings] = useState({
     notes: '',
-    terms: 'Default terms and conditions apply.',
+    terms: 'Goods sold are not returnable.\nInterest at 1.5% per month on overdue accounts.',
     taxRate: 0,
-    dueDateDays: 30
+    dueDateDays: 30,
+    bankName: '',
+    accountName: '',
+    accountNo: '',
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -118,28 +124,30 @@ function SalesOrdersPage() {
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
-
-  // Print ref
-  const invoicePrintRef = useRef<HTMLDivElement>(null);
 
   // Print Settings State
   const [isPrintSettingsOpen, setIsPrintSettingsOpen] = useState(false);
-  const [printSettings, setPrintSettings] = useState({
-    printer: 'default',
-    colorMode: 'color' as 'color' | 'bw',
-    paperSize: 'A4' as 'A4' | 'Letter' | 'Legal',
-    copies: 1,
-  });
 
-  // Mock printers list (in real app, this would come from system/electron)
-  const availablePrinters = useMemo(() => [
-    { id: 'default', name: 'System Default Printer' },
-    { id: 'hp-office', name: 'HP OfficeJet Pro 9015' },
-    { id: 'canon-lbp', name: 'Canon LBP6230' },
-    { id: 'epson-wf', name: 'Epson WorkForce WF-2860' },
-    { id: 'pdf', name: 'Save as PDF' },
-  ], []);
+  // Use unified print hook
+  const {
+    printRef: invoicePrintRef,
+    isPrinting,
+    printSettings,
+    availablePrinters,
+    setPrintSettings,
+    executeCurrentAction: executePrint,
+  } = useDocumentPrint({
+    onPrintComplete: () => {
+      if (selectedOrder) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === selectedOrder.id ? { ...o, status: o.status } : o
+          )
+        );
+        setTimeout(() => setIsInvoiceModalOpen(false), 1500);
+      }
+    },
+  });
 
   // Non-sellable categories should not appear in sales orders
   const nonSellableCategories = ['Operating Consumables'];
@@ -272,197 +280,15 @@ function SalesOrdersPage() {
     setIsInvoiceModalOpen(true);
   };
 
-  // Print invoice
-  const handleAfterPrint = useCallback(async () => {
-    setIsPrinting(false);
-    if (selectedOrder) {
-      console.log('📦 Deducting inventory for order:', selectedOrder.orderNumber);
-
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === selectedOrder.id
-            ? { ...o, status: o.status }
-            : o
-        )
-      );
-
-      setTimeout(() => {
-        setIsInvoiceModalOpen(false);
-      }, 1500);
-    }
-  }, [selectedOrder]);
-
-  // Handle Print - uses Electron silent print or iframe for browser
-  const handleSilentPrint = useCallback(async () => {
-    if (!selectedOrder || !invoicePrintRef.current) return;
-
-    setIsPrinting(true);
-    try {
-      const printContent = invoicePrintRef.current;
-
-      // Build complete HTML document with inline styles
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Invoice - ${selectedOrder.orderNumber}</title>
-            <style>
-              @page { size: A4; margin: 15mm; }
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                font-size: 14px; line-height: 1.5; color: #000; background: #fff;
-                -webkit-print-color-adjust: exact; print-color-adjust: exact;
-              }
-              .invoice-container { padding: 20px; background: white; }
-              .flex { display: flex; } .items-start { align-items: flex-start; }
-              .items-center { align-items: center; } .justify-between { justify-content: space-between; }
-              .justify-end { justify-content: flex-end; } .gap-2 { gap: 8px; } .gap-6 { gap: 24px; }
-              .mb-2 { margin-bottom: 8px; } .mb-4 { margin-bottom: 16px; } .mb-8 { margin-bottom: 32px; }
-              .mt-4 { margin-top: 16px; } .mt-12 { margin-top: 48px; }
-              .my-2 { margin: 8px 0; } .my-6 { margin: 24px 0; }
-              .p-4 { padding: 16px; } .p-8 { padding: 32px; } .pt-6 { padding-top: 24px; }
-              .py-3 { padding: 12px 0; } .space-y-1 > * + * { margin-top: 4px; }
-              .space-y-2 > * + * { margin-top: 8px; } .space-y-4 > * + * { margin-top: 16px; }
-              .grid { display: grid; } .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-              .w-full { width: 100%; } .w-72 { width: 288px; } .w-20 { width: 80px; } .w-28 { width: 112px; }
-              .text-left { text-align: left; } .text-center { text-align: center; } .text-right { text-align: right; }
-              .text-sm { font-size: 12px; } .text-lg { font-size: 18px; } .text-xl { font-size: 20px; } .text-3xl { font-size: 30px; }
-              .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; }
-              .uppercase { text-transform: uppercase; } .tracking-wider { letter-spacing: 0.05em; }
-              .whitespace-pre-line { white-space: pre-line; }
-              .text-gray-500 { color: #6b7280; } .text-gray-600 { color: #4b5563; }
-              .text-gray-700 { color: #374151; } .text-gray-900 { color: #111827; }
-              .text-blue-600 { color: #2563eb; } .bg-white { background-color: #fff; }
-              .bg-gray-50 { background-color: #f9fafb; } .rounded-lg { border-radius: 8px; }
-              .border { border: 1px solid #e5e7eb; } .border-t { border-top: 1px solid #e5e7eb; }
-              .border-b { border-bottom: 1px solid #e5e7eb; } .border-b-2 { border-bottom: 2px solid #e5e7eb; }
-              .border-gray-100 { border-color: #f3f4f6; } .border-gray-200 { border-color: #e5e7eb; }
-              table { border-collapse: collapse; width: 100%; } th, td { padding: 12px 8px; }
-              .h-10 { height: 40px; } .w-10 { width: 40px; } .h-6 { height: 24px; } .w-6 { width: 24px; }
-              .logo-box { height: 40px; width: 40px; background-color: #2563eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-              .logo-box svg { height: 24px; width: 24px; color: white; }
-            </style>
-          </head>
-          <body>
-            <div class="invoice-container">${printContent.innerHTML}</div>
-          </body>
-        </html>
-      `;
-
-      // Check if running in Electron with printHtmlContent support
-      const electronAPI = (window as unknown as {
-        electronAPI?: {
-          printHtmlContent: (
-            htmlContent: string,
-            options: {
-              deviceName?: string;
-              pageSize?: 'A4' | 'Letter' | 'Legal';
-              color?: boolean;
-              copies?: number;
-              silent?: boolean;
-            }
-          ) => Promise<{ success: boolean; error?: string }>;
-        }
-      }).electronAPI;
-
-      if (electronAPI?.printHtmlContent) {
-        // Electron: Use silent print with HTML content
-        const printerName = printSettings.printer === 'default' ? undefined :
-          availablePrinters.find(p => p.id === printSettings.printer)?.name;
-
-        const result = await electronAPI.printHtmlContent(htmlContent, {
-          deviceName: printerName,
-          pageSize: printSettings.paperSize,
-          color: printSettings.colorMode === 'color',
-          copies: printSettings.copies,
-          silent: true,
-        });
-
-        if (result.success) {
-          console.log('✅ Silent print successful');
-          await handleAfterPrint();
-        } else {
-          console.error('Silent print failed:', result.error);
-          setIsPrinting(false);
-        }
-      } else {
-        // Browser: Use iframe printing (will show print dialog)
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'absolute';
-        iframe.style.top = '-10000px';
-        iframe.style.left = '-10000px';
-        iframe.style.width = '210mm';
-        iframe.style.height = '297mm';
-        document.body.appendChild(iframe);
-
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc) {
-          console.error('Could not access iframe document');
-          setIsPrinting(false);
-          return;
-        }
-
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
-
-        // Wait for content to load, then print
-        setTimeout(() => {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-          setTimeout(() => document.body.removeChild(iframe), 1000);
-        }, 250);
-
-        await handleAfterPrint();
-      }
-    } catch (error) {
-      console.error('Print error:', error);
-      setIsPrinting(false);
-    }
-  }, [selectedOrder, printSettings, availablePrinters, handleAfterPrint]);
-
-  // Handle Save PDF - direct download without print dialog
-  const handleSavePdf = useCallback(async () => {
-    if (!invoicePrintRef.current || !selectedOrder) return;
-
-    setIsPrinting(true);
-    try {
-      const element = invoicePrintRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`Invoice-${selectedOrder.orderNumber}.pdf`);
-
-      // Call after print handler to update order status
-      await handleAfterPrint();
-    } catch (error) {
-      console.error('Failed to save PDF:', error);
-      setIsPrinting(false);
-    }
-  }, [selectedOrder, handleAfterPrint]);
-
+  // Handle print action using unified hook
+  const handlePrint = () => {
+    if (!selectedOrder) return;
+    executePrint({
+      title: `Invoice - ${selectedOrder.orderNumber}`,
+      number: selectedOrder.orderNumber,
+      type: 'invoice',
+    });
+  };
 
 
   return (
@@ -783,10 +609,10 @@ function SalesOrdersPage() {
         </DialogContent>
       </Dialog >
 
-      {/* Invoice Print Modal */}
-      < Dialog open={isInvoiceModalOpen} onOpenChange={setIsInvoiceModalOpen} >
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col p-0 gap-0 [&>button]:hidden">
-          <DialogHeader className="px-6 py-4 border-b">
+      {/* Invoice Print Modal - Split View: Form Left, Preview Right */}
+      <Dialog open={isInvoiceModalOpen} onOpenChange={setIsInvoiceModalOpen}>
+        <DialogContent className="max-w-[95vw] w-[1400px] max-h-[95vh] overflow-hidden flex flex-col p-0 gap-0 [&>button]:hidden">
+          <DialogHeader className="px-6 py-4 border-b shrink-0">
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle>Print Invoice</DialogTitle>
@@ -805,278 +631,151 @@ function SalesOrdersPage() {
             </div>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 bg-gray-100">
-            <div className="p-6 flex justify-center bg-gray-100">
-              {/* Printable Invoice - A4 Paper Size Preview */}
-              <div
-                ref={invoicePrintRef}
-                className="printable-invoice bg-white text-black p-8 shadow-lg border border-gray-200"
-                style={{
-                  width: '210mm',
-                  minHeight: '297mm',
-                  boxSizing: 'border-box',
-                }}
-              >
-                {/* Print-specific styles */}
-                <style>
-                  {`
-                    @media print {
-                      @page {
-                        size: A4;
-                        margin: 15mm;
-                      }
-                      
-                      /* Hide everything by default */
-                      body * {
-                        visibility: hidden;
-                      }
-                      
-                      /* Show only the printable invoice */
-                      .printable-invoice,
-                      .printable-invoice * {
-                        visibility: visible;
-                      }
-                      
-                      /* Position the invoice at the top left */
-                      .printable-invoice {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                        padding: 0;
-                        margin: 0;
-                        background: white !important;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                      }
-                      
-                      /* Remove shadows and borders for print */
-                      .printable-invoice {
-                        box-shadow: none !important;
-                        border: none !important;
-                      }
-                    }
-                  `}
-                </style>
-
-                {/* Header */}
-                <div className="flex justify-between items-start mb-8">
-                  {/* Company Info */}
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                        <svg
-                          className="h-6 w-6 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                          />
-                        </svg>
-                      </div>
-                      <span className="text-xl font-bold text-gray-900">
-                        {companyInfo.name}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">{companyInfo.address}</p>
-                    <p className="text-sm text-gray-600">{companyInfo.phone}</p>
-                    <p className="text-sm text-gray-600">{companyInfo.email}</p>
-                    <p className="text-sm text-gray-600">Tax ID: {companyInfo.taxId}</p>
-                  </div>
-
-                  {/* Invoice Title & Number */}
-                  <div className="text-right">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">INVOICE</h1>
-                    <p className="text-lg font-semibold text-blue-600">{selectedOrder?.orderNumber}</p>
-                    <div className="mt-4 space-y-1 text-sm">
-                      <p>
-                        <span className="text-gray-500">Invoice Date:</span>{' '}
-                        <span className="font-medium">
-                          {selectedOrder?.orderDate
-                            ? new Date(selectedOrder.orderDate).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })
-                            : '-'}
-                        </span>
-                      </p>
-                      <p>
-                        <span className="text-gray-500">Due Date:</span>{' '}
-                        <span className="font-medium">
-                          {selectedOrder?.orderDate
-                            ? new Date(
-                              new Date(selectedOrder.orderDate).getTime() + 30 * 24 * 60 * 60 * 1000
-                            ).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })
-                            : '-'}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Separator */}
-                <div className="border-t border-gray-200 my-6" />
-
-                {/* Bill To */}
-                <div className="mb-8">
-                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Bill To
-                  </h2>
-                  {selectedOrder?.customer ? (
-                    <div className="space-y-1">
-                      <p className="text-lg font-semibold text-gray-900">
-                        {selectedOrder.customer}
-                      </p>
-                      <p className="text-sm text-gray-600">{selectedOrder.customerEmail}</p>
-                      <p className="text-sm text-gray-600 whitespace-pre-line">
-                        {selectedOrder.customerAddress}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-400 italic">No customer selected</p>
-                  )}
-                </div>
-
-                {/* Line Items Table */}
-                <div className="mb-8">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b-2 border-gray-200">
-                        <th className="py-3 text-left text-sm font-semibold text-gray-700">
-                          Description
-                        </th>
-                        <th className="py-3 text-center text-sm font-semibold text-gray-700 w-20">
-                          Qty
-                        </th>
-                        <th className="py-3 text-right text-sm font-semibold text-gray-700 w-28">
-                          Unit Price
-                        </th>
-                        {selectedOrder?.taxRate !== 0 && (
-                          <th className="py-3 text-right text-sm font-semibold text-gray-700 w-20">
-                            Tax
-                          </th>
-                        )}
-                        <th className="py-3 text-right text-sm font-semibold text-gray-700 w-28">
-                          Amount
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedOrder?.items && selectedOrder.items.length > 0 ? (
-                        selectedOrder.items.map((item, index) => (
-                          <tr
-                            key={item.id}
-                            className={cn(
-                              'border-b border-gray-100',
-                              index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                            )}
-                          >
-                            <td className="py-3">
-                              <p className="font-medium text-gray-900">{item.productName}</p>
-                              <p className="text-sm text-gray-500">{item.sku}</p>
-                            </td>
-                            <td className="py-3 text-center text-gray-700">
-                              {item.quantity}
-                            </td>
-                            <td className="py-3 text-right text-gray-700">
-                              ${item.unitPrice.toFixed(2)}
-                            </td>
-                            {selectedOrder?.taxRate !== 0 && (
-                              <td className="py-3 text-right text-gray-500 text-sm">
-                                ${(item.total * ((selectedOrder?.taxRate || 0) / 100)).toFixed(2)}
-                              </td>
-                            )}
-                            <td className="py-3 text-right font-medium text-gray-900">
-                              ${item.total.toFixed(2)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="py-8 text-center text-gray-400 italic">
-                            No items in this invoice
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Totals */}
-                <div className="flex justify-end mb-8">
-                  <div className="w-72 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Subtotal</span>
-                      <span className="text-gray-900">${selectedOrder?.subtotal.toFixed(2)}</span>
-                    </div>
-                    {selectedOrder && selectedOrder.taxRate > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Tax ({selectedOrder.taxRate}%)</span>
-                        <span className="text-gray-900">${selectedOrder?.tax.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="border-t border-gray-200 my-2" />
-                    <div className="flex justify-between text-lg font-bold">
-                      <span className="text-gray-900">Total</span>
-                      <span className="text-blue-600">${selectedOrder?.total.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Notes */}
-                {selectedOrder?.notes && (
-                  <div className="border-t border-gray-200 pt-6 space-y-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                        Notes
-                      </h3>
-                      <p className="text-sm text-gray-600 whitespace-pre-line">
-                        {selectedOrder.notes}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Terms & Conditions */}
-                <div className={cn(
-                  "border-t border-gray-200 pt-6 space-y-4",
-                  !selectedOrder?.notes && "mt-0"
-                )}>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                      Terms & Conditions
-                    </h3>
-                    <p className="text-sm text-gray-600 whitespace-pre-line">
-                      {selectedOrder?.terms || 'Default terms and conditions apply.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="mt-12 pt-6 border-t border-gray-200 text-center">
-                  <p className="text-sm text-gray-500">
-                    Thank you for your business!
-                  </p>
-                </div>
+          {/* Split View Container */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Panel - Invoice Settings Form */}
+            <div className="w-[380px] shrink-0 border-r bg-muted/30 flex flex-col">
+              <div className="p-4 border-b bg-background">
+                <h3 className="font-semibold text-sm">Invoice Settings / 發票設定</h3>
               </div>
-            </div>
-          </ScrollArea>
+              <ScrollArea className="flex-1">
+                <div className="p-4 space-y-5">
+                  {/* Tax & Due Date */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Tax Rate (%) / 稅率</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={invoiceSettings.taxRate}
+                        onChange={(e) => setInvoiceSettings({ ...invoiceSettings, taxRate: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Due Days / 付款天數</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={invoiceSettings.dueDateDays}
+                        onChange={(e) => setInvoiceSettings({ ...invoiceSettings, dueDateDays: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
 
-          <div className="px-6 py-4 border-t bg-muted/30 flex justify-end gap-3">
+                  {/* Payment Info Section */}
+                  <div className="space-y-3 pt-2 border-t">
+                    <h4 className="font-medium text-sm">Payment Info / 付款資訊</h4>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Bank Name / 銀行名稱</Label>
+                      <Input
+                        placeholder="e.g. Maybank"
+                        value={invoiceSettings.bankName || ''}
+                        onChange={(e) => setInvoiceSettings({ ...invoiceSettings, bankName: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Account Name / 帳戶名稱</Label>
+                      <Input
+                        placeholder="e.g. Company Name Sdn Bhd"
+                        value={invoiceSettings.accountName || ''}
+                        onChange={(e) => setInvoiceSettings({ ...invoiceSettings, accountName: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Account No / 帳號</Label>
+                      <Input
+                        placeholder="e.g. 5123 4567 8901"
+                        value={invoiceSettings.accountNo || ''}
+                        onChange={(e) => setInvoiceSettings({ ...invoiceSettings, accountNo: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label className="text-xs">Notes / 備註</Label>
+                    <Textarea
+                      placeholder="Enter invoice notes..."
+                      className="min-h-[80px] text-sm"
+                      value={invoiceSettings.notes}
+                      onChange={(e) => setInvoiceSettings({ ...invoiceSettings, notes: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Terms */}
+                  <div className="space-y-2">
+                    <Label className="text-xs">Terms & Conditions / 條款</Label>
+                    <Textarea
+                      placeholder="Enter terms and conditions..."
+                      className="min-h-[80px] text-sm"
+                      value={invoiceSettings.terms}
+                      onChange={(e) => setInvoiceSettings({ ...invoiceSettings, terms: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Right Panel - Live Invoice Preview */}
+            <div className="flex-1 bg-gray-100 flex flex-col overflow-hidden">
+              <div className="p-4 border-b bg-background shrink-0">
+                <h3 className="font-semibold text-sm">Preview / 預覽</h3>
+              </div>
+              <ScrollArea className="flex-1">
+                <div className="p-6 flex justify-center">
+                  <div
+                    ref={invoicePrintRef}
+                    className="shadow-lg border border-gray-200 transform scale-[0.75] origin-top"
+                  >
+                    <style>
+                      {`
+                        @media print {
+                          @page { size: A4; margin: 15mm; }
+                          body * { visibility: hidden; }
+                          .printable-invoice, .printable-invoice * { visibility: visible; }
+                          .printable-invoice {
+                            position: absolute;
+                            left: 0; top: 0; width: 100%;
+                            padding: 0; margin: 0;
+                            background: white !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                            box-shadow: none !important;
+                            border: none !important;
+                            transform: none !important;
+                          }
+                        }
+                      `}
+                    </style>
+                    {selectedOrder && (
+                      <InvoiceHtmlLayout
+                        className="printable-invoice"
+                        invoice={{
+                          ...salesOrderToInvoice(selectedOrder, companyInfo),
+                          payment: invoiceSettings.bankName ? {
+                            bankName: invoiceSettings.bankName,
+                            accountName: invoiceSettings.accountName || '',
+                            accountNo: invoiceSettings.accountNo || '',
+                          } : undefined,
+                          notes: invoiceSettings.notes || undefined,
+                          terms: invoiceSettings.terms ? [invoiceSettings.terms] : undefined,
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="px-6 py-4 border-t bg-muted/30 flex justify-end gap-3 shrink-0">
             <Button variant="outline" onClick={() => setIsInvoiceModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => printSettings.printer === 'pdf' ? handleSavePdf() : handleSilentPrint()} disabled={isPrinting}>
+            <Button onClick={handlePrint} disabled={isPrinting}>
               {isPrinting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : printSettings.printer === 'pdf' ? (
@@ -1088,7 +787,7 @@ function SalesOrdersPage() {
             </Button>
           </div>
         </DialogContent>
-      </Dialog >
+      </Dialog>
 
       {/* Print Settings Modal */}
       < Dialog open={isPrintSettingsOpen} onOpenChange={setIsPrintSettingsOpen} >

@@ -136,7 +136,7 @@ const electronAPI = {
         isAuthenticated: (): Promise<boolean> => ipcRenderer.invoke('api:isAuthenticated'),
 
         /**
-         * Set API base URL
+         * Set API base URL (persisted)
          */
         setBaseUrl: (url: string): Promise<{ success: boolean }> => ipcRenderer.invoke('api:setBaseUrl', url),
 
@@ -144,6 +144,11 @@ const electronAPI = {
          * Get current API base URL
          */
         getBaseUrl: (): Promise<string> => ipcRenderer.invoke('api:getBaseUrl'),
+
+        /**
+         * Reset API URL to default
+         */
+        resetBaseUrl: (): Promise<{ success: boolean; url: string }> => ipcRenderer.invoke('api:resetBaseUrl'),
     },
 
     // ============ Print APIs ============

@@ -65,3 +65,6 @@ docker-compose.override.yml
 # Electron Builder
 release/
 release-build/
+
+# Deployment packages
+deploy-package/

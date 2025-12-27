@@ -9,14 +9,46 @@
  */
 
 import { ipcMain, net } from 'electron';
+import Store from 'electron-store';
 
-// Configuration - Read from environment variable for production deployment
-const DEFAULT_API_URL = process.env.ERP_API_URL || 'http://localhost:3000';
+// Persistent store for app configuration
+const store = new Store({
+    name: 'erp-config',
+    schema: {
+        apiUrl: {
+            type: 'string',
+            default: '',
+        },
+    },
+});
+
+// Configuration - Priority: stored config > environment variable > default
+// Default uses Tailscale IP for development, will be updated to public domain for production
+const DEFAULT_API_URL = 'http://100.120.133.59:3000';
+
+/**
+ * Get API URL from persistent storage, env var, or default
+ */
+function getApiUrl(): string {
+    // 1. User configured URL (stored persistently)
+    const storedUrl = store.get('apiUrl') as string;
+    if (storedUrl && storedUrl.trim() !== '') {
+        return storedUrl;
+    }
+
+    // 2. Environment variable (for preview-desktop.ps1)
+    if (process.env.ERP_API_URL) {
+        return process.env.ERP_API_URL;
+    }
+
+    // 3. Default
+    return DEFAULT_API_URL;
+}
 
 // Auth token storage (secure, not exposed to renderer)
 let authToken: string | null = null;
 let refreshToken: string | null = null;
-let apiBaseUrl: string = DEFAULT_API_URL;
+let apiBaseUrl: string = getApiUrl();
 
 /**
  * API Response type matching @erp/shared-types
@@ -201,10 +233,12 @@ export function setupApiHandlers(): void {
     });
 
     /**
-     * Set API base URL
+     * Set API base URL (persisted to disk)
      */
     ipcMain.handle('api:setBaseUrl', (_event, url: string) => {
         apiBaseUrl = url;
+        // Persist to disk so it survives restart
+        store.set('apiUrl', url);
         return { success: true };
     });
 
@@ -213,6 +247,15 @@ export function setupApiHandlers(): void {
      */
     ipcMain.handle('api:getBaseUrl', () => {
         return apiBaseUrl;
+    });
+
+    /**
+     * Reset API URL to default
+     */
+    ipcMain.handle('api:resetBaseUrl', () => {
+        store.delete('apiUrl');
+        apiBaseUrl = getApiUrl();
+        return { success: true, url: apiBaseUrl };
     });
 
     // ============ API Request Handlers ============

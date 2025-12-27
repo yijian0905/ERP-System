@@ -14,9 +14,9 @@ import {
   Trash2,
   Warehouse,
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { useDocumentPrint } from '@/lib/hooks/useDocumentPrint';
 
 import { DashboardCard, PageContainer, PageHeader } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -144,28 +144,31 @@ function PurchaseOrdersPage() {
   const [isPOModalOpen, setIsPOModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
-
-  // Print ref
-  const poPrintRef = useRef<HTMLDivElement>(null);
 
   // Print settings state
   const [isPrintSettingsOpen, setIsPrintSettingsOpen] = useState(false);
-  const [printSettings, setPrintSettings] = useState({
-    printer: 'default',
-    colorMode: 'color' as 'color' | 'bw',
-    paperSize: 'A4' as 'A4' | 'Letter' | 'Legal',
-    copies: 1,
-  });
 
-  // Mock printers list (in real app, this would come from system/electron)
-  const availablePrinters = useMemo(() => [
-    { id: 'default', name: 'System Default Printer' },
-    { id: 'hp-office', name: 'HP OfficeJet Pro 9015' },
-    { id: 'canon-lbp', name: 'Canon LBP6230' },
-    { id: 'epson-wf', name: 'Epson WorkForce WF-2860' },
-    { id: 'pdf', name: 'Save as PDF' },
-  ], []);
+  // Use unified print hook
+  const {
+    printRef: poPrintRef,
+    isPrinting,
+    printSettings,
+    availablePrinters,
+    setPrintSettings,
+    executeCurrentAction: executePrint,
+  } = useDocumentPrint({
+    onPrintComplete: () => {
+      if (selectedOrder) {
+        console.log('📄 PO printed:', selectedOrder.orderNumber);
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === selectedOrder.id ? { ...o, status: o.status } : o
+          )
+        );
+        setTimeout(() => setIsPOModalOpen(false), 1500);
+      }
+    },
+  });
 
   // Fetch suppliers on mount
   useEffect(() => {
@@ -402,200 +405,15 @@ function PurchaseOrdersPage() {
     setIsPOModalOpen(true);
   };
 
-  // Print PO
-  const handleAfterPrint = useCallback(async () => {
-    setIsPrinting(false);
-    if (selectedOrder) {
-      console.log('📄 PO printed:', selectedOrder.orderNumber);
-
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === selectedOrder.id
-            ? { ...o, status: o.status }
-            : o
-        )
-      );
-
-      setTimeout(() => {
-        setIsPOModalOpen(false);
-      }, 1500);
-    }
-  }, [selectedOrder]);
-
-  // Handle Print - uses Electron silent print or iframe for browser
-  const handleSilentPrint = useCallback(async () => {
-    if (!selectedOrder || !poPrintRef.current) return;
-
-    setIsPrinting(true);
-    try {
-      const printContent = poPrintRef.current;
-
-      // Build complete HTML document with inline styles
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Purchase Order - ${selectedOrder.orderNumber}</title>
-            <style>
-              @page { size: A4; margin: 15mm; }
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                font-size: 14px; line-height: 1.5; color: #000; background: #fff;
-                -webkit-print-color-adjust: exact; print-color-adjust: exact;
-              }
-              .po-container { padding: 20px; background: white; }
-              .flex { display: flex; } .items-start { align-items: flex-start; }
-              .items-center { align-items: center; } .justify-between { justify-content: space-between; }
-              .justify-end { justify-content: flex-end; } .gap-2 { gap: 8px; } .gap-6 { gap: 24px; }
-              .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-4 { margin-bottom: 16px; }
-              .mb-8 { margin-bottom: 32px; } .mt-4 { margin-top: 16px; } .mt-12 { margin-top: 48px; }
-              .my-2 { margin: 8px 0; } .my-6 { margin: 24px 0; }
-              .p-4 { padding: 16px; } .p-8 { padding: 32px; } .pt-6 { padding-top: 24px; }
-              .py-3 { padding: 12px 0; } .space-y-1 > * + * { margin-top: 4px; }
-              .space-y-2 > * + * { margin-top: 8px; } .space-y-4 > * + * { margin-top: 16px; }
-              .grid { display: grid; } .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-              .w-full { width: 100%; } .w-72 { width: 288px; } .w-20 { width: 80px; } .w-28 { width: 112px; }
-              .text-left { text-align: left; } .text-center { text-align: center; } .text-right { text-align: right; }
-              .text-sm { font-size: 12px; } .text-lg { font-size: 18px; } .text-xl { font-size: 20px; } .text-3xl { font-size: 30px; }
-              .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; }
-              .uppercase { text-transform: uppercase; } .tracking-wider { letter-spacing: 0.05em; }
-              .whitespace-pre-line { white-space: pre-line; }
-              .text-gray-500 { color: #6b7280; } .text-gray-600 { color: #4b5563; }
-              .text-gray-700 { color: #374151; } .text-gray-900 { color: #111827; }
-              .text-blue-600 { color: #2563eb; } .bg-white { background-color: #fff; }
-              .bg-gray-50 { background-color: #f9fafb; } .bg-blue-50 { background-color: #eff6ff; }
-              .rounded-lg { border-radius: 8px; }
-              .border { border: 1px solid #e5e7eb; } .border-t { border-top: 1px solid #e5e7eb; }
-              .border-b { border-bottom: 1px solid #e5e7eb; } .border-b-2 { border-bottom: 2px solid #e5e7eb; }
-              .border-gray-100 { border-color: #f3f4f6; } .border-gray-200 { border-color: #e5e7eb; }
-              .border-blue-200 { border-color: #bfdbfe; }
-              table { border-collapse: collapse; width: 100%; } th, td { padding: 12px 8px; }
-              .h-10 { height: 40px; } .w-10 { width: 40px; } .h-6 { height: 24px; } .w-6 { width: 24px; }
-              .logo-box { height: 40px; width: 40px; background-color: #2563eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-              .logo-box svg { height: 24px; width: 24px; color: white; }
-            </style>
-          </head>
-          <body>
-            <div class="po-container">${printContent.innerHTML}</div>
-          </body>
-        </html>
-      `;
-
-      // Check if running in Electron with printHtmlContent support
-      const electronAPI = (window as unknown as {
-        electronAPI?: {
-          printHtmlContent: (
-            htmlContent: string,
-            options: {
-              deviceName?: string;
-              pageSize?: 'A4' | 'Letter' | 'Legal';
-              color?: boolean;
-              copies?: number;
-              silent?: boolean;
-            }
-          ) => Promise<{ success: boolean; error?: string }>;
-        }
-      }).electronAPI;
-
-      if (electronAPI?.printHtmlContent) {
-        // Electron: Use silent print with HTML content
-        const printerName = printSettings.printer === 'default' ? undefined :
-          availablePrinters.find(p => p.id === printSettings.printer)?.name;
-
-        const result = await electronAPI.printHtmlContent(htmlContent, {
-          deviceName: printerName,
-          pageSize: printSettings.paperSize,
-          color: printSettings.colorMode === 'color',
-          copies: printSettings.copies,
-          silent: true,
-        });
-
-        if (result.success) {
-          console.log('✅ Silent print successful');
-          await handleAfterPrint();
-        } else {
-          console.error('Silent print failed:', result.error);
-          setIsPrinting(false);
-        }
-      } else {
-        // Browser: Use iframe printing (will show print dialog)
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'absolute';
-        iframe.style.top = '-10000px';
-        iframe.style.left = '-10000px';
-        iframe.style.width = '210mm';
-        iframe.style.height = '297mm';
-        document.body.appendChild(iframe);
-
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc) {
-          console.error('Could not access iframe document');
-          setIsPrinting(false);
-          return;
-        }
-
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
-
-        // Wait for content to load, then print
-        setTimeout(() => {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-          setTimeout(() => document.body.removeChild(iframe), 1000);
-        }, 250);
-
-        await handleAfterPrint();
-      }
-    } catch (error) {
-      console.error('Print error:', error);
-      setIsPrinting(false);
-    }
-  }, [selectedOrder, printSettings, availablePrinters, handleAfterPrint]);
-
-  // Handle Save PDF - direct download without print dialog
-  const handleSavePdf = useCallback(async () => {
-    if (!poPrintRef.current || !selectedOrder) return;
-
-    setIsPrinting(true);
-    try {
-      const element = poPrintRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`PurchaseOrder-${selectedOrder.orderNumber}.pdf`);
-
-      // Call after print handler to update order status
-      await handleAfterPrint();
-    } catch (error) {
-      console.error('Failed to save PDF:', error);
-      setIsPrinting(false);
-    }
-  }, [selectedOrder, handleAfterPrint]);
-
-
+  // Handle print action using unified hook
+  const handlePrint = () => {
+    if (!selectedOrder) return;
+    executePrint({
+      title: `Purchase Order - ${selectedOrder.orderNumber}`,
+      number: selectedOrder.orderNumber,
+      type: 'purchase-order',
+    });
+  };
 
 
   return (
@@ -1236,7 +1054,7 @@ function PurchaseOrdersPage() {
             <Button variant="outline" onClick={() => setIsPOModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => printSettings.printer === 'pdf' ? handleSavePdf() : handleSilentPrint()} disabled={isPrinting}>
+            <Button onClick={handlePrint} disabled={isPrinting}>
               {isPrinting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : printSettings.printer === 'pdf' ? (

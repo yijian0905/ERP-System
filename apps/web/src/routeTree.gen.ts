@@ -43,7 +43,6 @@ import { Route as DashboardReportsSalesRouteImport } from './routes/_dashboard/r
 import { Route as DashboardReportsInventoryRouteImport } from './routes/_dashboard/reports/inventory'
 import { Route as DashboardReportsFinancialRouteImport } from './routes/_dashboard/reports/financial'
 import { Route as DashboardReportsCostAccountingRouteImport } from './routes/_dashboard/reports/cost-accounting'
-import { Route as DashboardProductsCategoriesRouteImport } from './routes/_dashboard/products/categories'
 import { Route as DashboardOrdersSalesRouteImport } from './routes/_dashboard/orders/sales'
 import { Route as DashboardOrdersPurchaseRouteImport } from './routes/_dashboard/orders/purchase'
 import { Route as DashboardInventoryMovementsRouteImport } from './routes/_dashboard/inventory/movements'
@@ -228,12 +227,6 @@ const DashboardReportsCostAccountingRoute =
     path: '/reports/cost-accounting',
     getParentRoute: () => DashboardRoute,
   } as any)
-const DashboardProductsCategoriesRoute =
-  DashboardProductsCategoriesRouteImport.update({
-    id: '/categories',
-    path: '/categories',
-    getParentRoute: () => DashboardProductsRoute,
-  } as any)
 const DashboardOrdersSalesRoute = DashboardOrdersSalesRouteImport.update({
   id: '/orders/sales',
   path: '/orders/sales',
@@ -275,7 +268,7 @@ export interface FileRoutesByFullPath {
   '/invoices': typeof DashboardInvoicesRoute
   '/notifications': typeof DashboardNotificationsRoute
   '/payments': typeof DashboardPaymentsRoute
-  '/products': typeof DashboardProductsRouteWithChildren
+  '/products': typeof DashboardProductsRoute
   '/recurring': typeof DashboardRecurringRoute
   '/requisitions': typeof DashboardRequisitionsRoute
   '/suppliers': typeof DashboardSuppliersRoute
@@ -285,7 +278,6 @@ export interface FileRoutesByFullPath {
   '/inventory/movements': typeof DashboardInventoryMovementsRoute
   '/orders/purchase': typeof DashboardOrdersPurchaseRoute
   '/orders/sales': typeof DashboardOrdersSalesRoute
-  '/products/categories': typeof DashboardProductsCategoriesRoute
   '/reports/cost-accounting': typeof DashboardReportsCostAccountingRoute
   '/reports/financial': typeof DashboardReportsFinancialRoute
   '/reports/inventory': typeof DashboardReportsInventoryRoute
@@ -316,7 +308,7 @@ export interface FileRoutesByTo {
   '/invoices': typeof DashboardInvoicesRoute
   '/notifications': typeof DashboardNotificationsRoute
   '/payments': typeof DashboardPaymentsRoute
-  '/products': typeof DashboardProductsRouteWithChildren
+  '/products': typeof DashboardProductsRoute
   '/recurring': typeof DashboardRecurringRoute
   '/requisitions': typeof DashboardRequisitionsRoute
   '/suppliers': typeof DashboardSuppliersRoute
@@ -326,7 +318,6 @@ export interface FileRoutesByTo {
   '/inventory/movements': typeof DashboardInventoryMovementsRoute
   '/orders/purchase': typeof DashboardOrdersPurchaseRoute
   '/orders/sales': typeof DashboardOrdersSalesRoute
-  '/products/categories': typeof DashboardProductsCategoriesRoute
   '/reports/cost-accounting': typeof DashboardReportsCostAccountingRoute
   '/reports/financial': typeof DashboardReportsFinancialRoute
   '/reports/inventory': typeof DashboardReportsInventoryRoute
@@ -359,7 +350,7 @@ export interface FileRoutesById {
   '/_dashboard/invoices': typeof DashboardInvoicesRoute
   '/_dashboard/notifications': typeof DashboardNotificationsRoute
   '/_dashboard/payments': typeof DashboardPaymentsRoute
-  '/_dashboard/products': typeof DashboardProductsRouteWithChildren
+  '/_dashboard/products': typeof DashboardProductsRoute
   '/_dashboard/recurring': typeof DashboardRecurringRoute
   '/_dashboard/requisitions': typeof DashboardRequisitionsRoute
   '/_dashboard/suppliers': typeof DashboardSuppliersRoute
@@ -369,7 +360,6 @@ export interface FileRoutesById {
   '/_dashboard/inventory/movements': typeof DashboardInventoryMovementsRoute
   '/_dashboard/orders/purchase': typeof DashboardOrdersPurchaseRoute
   '/_dashboard/orders/sales': typeof DashboardOrdersSalesRoute
-  '/_dashboard/products/categories': typeof DashboardProductsCategoriesRoute
   '/_dashboard/reports/cost-accounting': typeof DashboardReportsCostAccountingRoute
   '/_dashboard/reports/financial': typeof DashboardReportsFinancialRoute
   '/_dashboard/reports/inventory': typeof DashboardReportsInventoryRoute
@@ -412,7 +402,6 @@ export interface FileRouteTypes {
     | '/inventory/movements'
     | '/orders/purchase'
     | '/orders/sales'
-    | '/products/categories'
     | '/reports/cost-accounting'
     | '/reports/financial'
     | '/reports/inventory'
@@ -453,7 +442,6 @@ export interface FileRouteTypes {
     | '/inventory/movements'
     | '/orders/purchase'
     | '/orders/sales'
-    | '/products/categories'
     | '/reports/cost-accounting'
     | '/reports/financial'
     | '/reports/inventory'
@@ -495,7 +483,6 @@ export interface FileRouteTypes {
     | '/_dashboard/inventory/movements'
     | '/_dashboard/orders/purchase'
     | '/_dashboard/orders/sales'
-    | '/_dashboard/products/categories'
     | '/_dashboard/reports/cost-accounting'
     | '/_dashboard/reports/financial'
     | '/_dashboard/reports/inventory'
@@ -760,13 +747,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardReportsCostAccountingRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/_dashboard/products/categories': {
-      id: '/_dashboard/products/categories'
-      path: '/categories'
-      fullPath: '/products/categories'
-      preLoaderRoute: typeof DashboardProductsCategoriesRouteImport
-      parentRoute: typeof DashboardProductsRoute
-    }
     '/_dashboard/orders/sales': {
       id: '/_dashboard/orders/sales'
       path: '/orders/sales'
@@ -805,17 +785,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface DashboardProductsRouteChildren {
-  DashboardProductsCategoriesRoute: typeof DashboardProductsCategoriesRoute
-}
-
-const DashboardProductsRouteChildren: DashboardProductsRouteChildren = {
-  DashboardProductsCategoriesRoute: DashboardProductsCategoriesRoute,
-}
-
-const DashboardProductsRouteWithChildren =
-  DashboardProductsRoute._addFileChildren(DashboardProductsRouteChildren)
-
 interface DashboardRouteChildren {
   DashboardAssetsRoute: typeof DashboardAssetsRoute
   DashboardAuditRoute: typeof DashboardAuditRoute
@@ -827,7 +796,7 @@ interface DashboardRouteChildren {
   DashboardInvoicesRoute: typeof DashboardInvoicesRoute
   DashboardNotificationsRoute: typeof DashboardNotificationsRoute
   DashboardPaymentsRoute: typeof DashboardPaymentsRoute
-  DashboardProductsRoute: typeof DashboardProductsRouteWithChildren
+  DashboardProductsRoute: typeof DashboardProductsRoute
   DashboardRecurringRoute: typeof DashboardRecurringRoute
   DashboardRequisitionsRoute: typeof DashboardRequisitionsRoute
   DashboardSuppliersRoute: typeof DashboardSuppliersRoute
@@ -866,7 +835,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardInvoicesRoute: DashboardInvoicesRoute,
   DashboardNotificationsRoute: DashboardNotificationsRoute,
   DashboardPaymentsRoute: DashboardPaymentsRoute,
-  DashboardProductsRoute: DashboardProductsRouteWithChildren,
+  DashboardProductsRoute: DashboardProductsRoute,
   DashboardRecurringRoute: DashboardRecurringRoute,
   DashboardRequisitionsRoute: DashboardRequisitionsRoute,
   DashboardSuppliersRoute: DashboardSuppliersRoute,
