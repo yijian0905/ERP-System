@@ -12,8 +12,20 @@
 
 import { cn } from '@/lib/utils';
 
-// Types based on spec
-export type InvoiceType = 'INVOICE' | 'QUOTATION' | 'PROFORMA' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'RECEIPT';
+// Types based on E-Invoice specification (8 document types)
+export type InvoiceType =
+    | 'INVOICE'           // 01
+    | 'CREDIT_NOTE'       // 02
+    | 'DEBIT_NOTE'        // 03
+    | 'REFUND_NOTE'       // 04
+    | 'SELF_BILLED'       // 11
+    | 'SELF_BILLED_CN'    // 12
+    | 'SELF_BILLED_DN'    // 13
+    | 'SELF_BILLED_REFUND'// 14
+    | 'QUOTATION'         // Non e-Invoice
+    | 'PROFORMA'          // Non e-Invoice
+    | 'RECEIPT';          // Non e-Invoice
+
 export type InvoiceVariant = 'PRODUCT_SALES' | 'SERVICE' | 'SUBSCRIPTION';
 export type InvoiceStatus = 'PAID' | 'OVERDUE' | 'CANCELLED' | undefined;
 
@@ -114,14 +126,19 @@ interface InvoiceHtmlLayoutProps {
     className?: string;
 }
 
-// Type titles mapping
-const TYPE_TITLES: Record<InvoiceType, { en: string; zh: string }> = {
-    INVOICE: { en: 'INVOICE', zh: '發票' },
-    QUOTATION: { en: 'QUOTATION', zh: '報價單' },
-    PROFORMA: { en: 'PROFORMA INVOICE', zh: '形式發票' },
-    CREDIT_NOTE: { en: 'CREDIT NOTE', zh: '貸項通知單' },
-    DEBIT_NOTE: { en: 'DEBIT NOTE', zh: '借項通知單' },
-    RECEIPT: { en: 'RECEIPT', zh: '收據' },
+// Type titles mapping with bilingual support
+const TYPE_TITLES: Record<InvoiceType, { en: string; zh: string; ms?: string }> = {
+    INVOICE: { en: 'INVOICE', zh: '發票', ms: 'INVOIS' },
+    CREDIT_NOTE: { en: 'CREDIT NOTE', zh: '貸項通知單', ms: 'NOTA KREDIT' },
+    DEBIT_NOTE: { en: 'DEBIT NOTE', zh: '借項通知單', ms: 'NOTA DEBIT' },
+    REFUND_NOTE: { en: 'REFUND NOTE', zh: '退款通知單', ms: 'NOTA BAYARAN BALIK' },
+    SELF_BILLED: { en: 'SELF-BILLED INVOICE', zh: '自開發票', ms: 'INVOIS BIL KENDIRI' },
+    SELF_BILLED_CN: { en: 'SELF-BILLED CREDIT NOTE', zh: '自開貸項通知單', ms: 'NOTA KREDIT BIL KENDIRI' },
+    SELF_BILLED_DN: { en: 'SELF-BILLED DEBIT NOTE', zh: '自開借項通知單', ms: 'NOTA DEBIT BIL KENDIRI' },
+    SELF_BILLED_REFUND: { en: 'SELF-BILLED REFUND', zh: '自開退款', ms: 'BAYARAN BALIK BIL KENDIRI' },
+    QUOTATION: { en: 'QUOTATION', zh: '報價單', ms: 'SEBUTHARGA' },
+    PROFORMA: { en: 'PROFORMA INVOICE', zh: '形式發票', ms: 'INVOIS PROFORMA' },
+    RECEIPT: { en: 'RECEIPT', zh: '收據', ms: 'RESIT' },
 };
 
 // Status stamp colors
@@ -153,7 +170,13 @@ export function InvoiceHtmlLayout({ invoice, className }: InvoiceHtmlLayoutProps
     const typeTitle = TYPE_TITLES[invoice.type];
     const showShipping = invoice.variant === 'PRODUCT_SALES' && invoice.shipping;
     const showSubscription = invoice.variant === 'SUBSCRIPTION' && invoice.subscription;
-    const showReference = ['CREDIT_NOTE', 'DEBIT_NOTE'].includes(invoice.type) && invoice.reference;
+    // Show reference for all adjustment notes (CN, DN, Refund) and Self-Billed variants
+    const showReference = [
+        'CREDIT_NOTE', 'DEBIT_NOTE', 'REFUND_NOTE',
+        'SELF_BILLED_CN', 'SELF_BILLED_DN', 'SELF_BILLED_REFUND'
+    ].includes(invoice.type) && invoice.reference;
+    // Self-billed invoices show supplier info differently
+    const isSelfBilled = invoice.type.startsWith('SELF_BILLED');
 
     return (
         <div
