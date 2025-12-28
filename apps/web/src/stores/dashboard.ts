@@ -74,6 +74,7 @@ interface DashboardActions {
     fetchDashboardData: () => Promise<void>;
     clearDashboard: () => void;
     refreshDashboard: () => Promise<void>;
+    waitForPreload: () => Promise<void>;
 }
 
 type DashboardStore = DashboardState & DashboardActions;
@@ -168,6 +169,27 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
         // Force refresh by clearing cache
         set({ lastFetchedAt: null, isLoaded: false });
         await get().fetchDashboardData();
+    },
+
+    waitForPreload: () => {
+        return new Promise<void>((resolve) => {
+            const state = get();
+            if (state.isLoaded || state.error) {
+                resolve();
+                return;
+            }
+
+            // Poll for completion
+            const checkLoaded = () => {
+                const currentState = get();
+                if (currentState.isLoaded || currentState.error) {
+                    resolve();
+                } else {
+                    setTimeout(checkLoaded, 100);
+                }
+            };
+            checkLoaded();
+        });
     },
 }));
 

@@ -12,7 +12,7 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   Bar,
   BarChart,
@@ -32,7 +32,7 @@ import {
   StatsCard,
 } from '@/components/layout/dashboard-layout';
 import { useAuthStore } from '@/stores/auth';
-import { get } from '@/lib/api-client';
+import { useDashboardStore } from '@/stores/dashboard';
 
 export const Route = createFileRoute('/_dashboard/dashboard')({
   component: DashboardPage,
@@ -89,56 +89,25 @@ interface LowStockProduct {
 
 function DashboardPage() {
   const { user } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalRevenue: 0,
-    orderCount: 0,
-    productCount: 0,
-    customerCount: 0,
-    revenueChange: 0,
-    ordersChange: 0,
-    productsChange: 0,
-    customersChange: 0,
-    paymentsReceived: 0,
-    outstanding: 0,
-    avgOrderValue: 0,
-    inventoryValue: 0,
-    paymentsReceivedChange: 0,
-    outstandingChange: 0,
-    avgOrderValueChange: 0,
-    inventoryValueChange: 0,
-  });
-  const [salesData, setSalesData] = useState<SalesData[]>([]);
-  const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
-  const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
 
-  // Fetch dashboard data from API
+  // Use preloaded dashboard data from store
+  const {
+    stats,
+    salesData,
+    revenueData,
+    recentOrders,
+    lowStockProducts,
+    isLoading,
+    isLoaded,
+    fetchDashboardData,
+  } = useDashboardStore();
+
+  // Fetch data if not already loaded (e.g., direct navigation without login transition)
   useEffect(() => {
-    async function fetchDashboardData() {
-      setIsLoading(true);
-      try {
-        const [statsRes, salesRes, revenueRes, ordersRes, lowStockRes] = await Promise.all([
-          get<DashboardStats>('/v1/dashboard/stats'),
-          get<SalesData[]>('/v1/dashboard/sales-chart'),
-          get<RevenueData[]>('/v1/dashboard/revenue-trend'),
-          get<RecentOrder[]>('/v1/dashboard/recent-orders'),
-          get<LowStockProduct[]>('/v1/dashboard/low-stock'),
-        ]);
-
-        if (statsRes.success && statsRes.data) setStats(statsRes.data);
-        if (salesRes.success && salesRes.data) setSalesData(salesRes.data);
-        if (revenueRes.success && revenueRes.data) setRevenueData(revenueRes.data);
-        if (ordersRes.success && ordersRes.data) setRecentOrders(ordersRes.data);
-        if (lowStockRes.success && lowStockRes.data) setLowStockProducts(lowStockRes.data);
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setIsLoading(false);
-      }
+    if (!isLoaded && !isLoading) {
+      fetchDashboardData();
     }
-    fetchDashboardData();
-  }, []);
+  }, [isLoaded, isLoading, fetchDashboardData]);
 
   // Helper function to format percentage changes
   const formatChange = (change: number, label: string = 'from last month') => {
